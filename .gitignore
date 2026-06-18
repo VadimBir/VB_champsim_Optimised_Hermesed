@@ -1,0 +1,74 @@
+traces/*
+
+!traces/LLM256.GPT-125M_32M.champsimtrace.xz
+!traces/LLM256.OPT-350M_42M.champsimtrace.xz
+!traces/LLM256.Pythia-70M_21M.champsimtrace.xz
+
+**/bin_cache/**
+*.csv*
+*.data*
+*.log
+*.tar
+*aocc*.tar
+outputs/*
+*.tmp
+**/bin/
+**/pin_champsim_build_*/
+
+**.zip
+**zsh-completions/
+**zsh*
+**__pycache__/
+
+# Whitelist: allow outputs/**/*.log (per-run logs kept in repo)
+!outputs/
+!outputs/**/
+!outputs/**/*.log
+
+# Block >100MB root artefacts explicitly
+/perf_v5.data
+/DGB_DEADLOCK.log
+/DBG_MEMOP_ERROR.log
+
+# BK / backup dirs
+_claude_backup/
+BK_OF_DROP/
+999_src_BK*/
+**/*.BK*
+outputs/output.log
+
+# Large files >100MB (GitHub limit)
+999_READY_EXCELS/out11_BOTH_CP7b_1778754982.xlsx
+*.xlsx
+
+# --- Build artifacts / caches (added for repo init: keep ~200MB of noise out) ---
+**/obj/
+**/obj_win/
+**/obj_win_clang/
+**/.lto_cache/
+*.o
+*.so
+*.profraw
+*.profdata
+*.l1_bypass
+*.l2c_pref
+**/.act_count_*
+*.act_count_unknown
+
+# Editor/tool state + knowledge-graph backups
+.understand-anything/
+graphify-out/cache/
+
+# Backup snapshots
+**/toDel/
+**/*_BEFOREDDLOCK_FIXES/
+**/BK_pf/
+**/BK/
+*.bak
+*.bk
+*_BK
+*_BK*
+*.PRE_MWP_BK
+*.OPT_A_BK
+*.OPT_B_BK
+wget-log

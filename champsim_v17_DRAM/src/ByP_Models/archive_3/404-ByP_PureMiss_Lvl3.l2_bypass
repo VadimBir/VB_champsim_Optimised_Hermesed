@@ -1,0 +1,52 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 404 — Lvl3 (L2 level): MST/CPA coverage + load MR guard
+// SIDE 1: coverage < 0.5 => bypass
+// SIDE 2: (free_LLC - 1) >= free_L2 * w2d_load_mr(LLC)
+
+inline bool l2_bypass_init_404[NUM_CPUS] = {};
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init_404[cpu]) return;
+    cout << "L2 Bypass [404-Lvl3]: MST/CPA coverage + load MR guard" << endl;
+    l2_bypass_init_404[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    // SIDE 1
+    uint64_t total_miss = L2C->sim_miss[cpu][0] + L2C->sim_miss[cpu][1];
+    uint32_t miss_lat;
+    if (total_miss > 0 && L2C->total_miss_latency > 0)
+        miss_lat = (uint32_t)(L2C->total_miss_latency / total_miss);
+    else
+        miss_lat = L2C->LATENCY * 2;
+
+    double w2d_cpa = lpm[cpu][LPM_L2C].met[MET_WL].cpa_totalCyDivAccesses;
+    if (w2d_cpa < 1.0) w2d_cpa = 1.0;
+
+    double overlap_from_rq = (double)L2C->RQ.occupancy * L2C->LATENCY;
+    double future_accesses = (double)miss_lat / w2d_cpa;
+    double coverage = (overlap_from_rq + future_accesses) / (double)miss_lat;
+
+    if (coverage >= 0.5) return false;
+
+    // SIDE 2
+    int32_t free_llc = (int32_t)LLC->MSHR.SIZE - (int32_t)(LLC->MSHR.occupancy + 1);
+    if (free_llc < 0) return false;
+    uint32_t free_l2 = L2C->MSHR.SIZE - L2C->MSHR.occupancy;
+
+    double mr = (lpm[cpu][LPM_LLC].bkt[BKT_W2DA].load_missRate() + lpm[cpu][LPM_LLC].bkt[BKT_W2DB].load_missRate()) / 2.0;
+    if (mr < 0.01) mr = 0.01;
+
+    return ((double)free_llc >= (double)free_l2 * mr);
+}

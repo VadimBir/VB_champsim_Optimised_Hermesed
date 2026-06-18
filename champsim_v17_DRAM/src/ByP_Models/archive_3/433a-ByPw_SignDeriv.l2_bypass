@@ -1,0 +1,24 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+inline bool l2_bypass_init_433a[NUM_CPUS] = {};
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init_433a[cpu]) return;
+    cout << "L2 Bypass [433a: F3 overlap collapsing]\n";
+    l2_bypass_init_433a[cpu] = true;
+}
+// F3: overlap = 1-kappa. Bypass when overlap collapsing (short < long)
+// => MSHRs about to jam => bypass preemptively
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+    double k_s = get_kappa_short(cpu, LPM_L2C);
+    double k_l = get_kappa_long(cpu, LPM_L2C);
+    double ov_s = 1.0 - k_s;
+    double ov_l = 1.0 - k_l;
+    return (ov_s < ov_l);
+}

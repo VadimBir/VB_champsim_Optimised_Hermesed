@@ -1,0 +1,221 @@
+---
+title: OOM Recovery — Bulk Script Merge + Resume Support
+project: champsim_VB
+created: 2026-05-08
+status: planned
+type: tsk
+source_issue: /home/cc/champsim_VB/UserDefinedIssue.md
+---
+
+# 0. CONTEXT (READ FIRST — every agent)
+
+OOM crash forced reboot. Two incomplete sweep dirs left behind:
+- `outputs/out06`  — main sweep (driver: `quickByP_v14_bulk.sh`,        script log: `6-GLOBAL-EVAL.txt`)
+- `outputs/out03`  — partial rerun (driver: `quickByP_v14_bulk_fixed.sh`, script log: `partialRerun.log`)
+
+Each log dir contains 3 categories of run:
+1. **DONE** — log has line `FINAL ROI CORE AVG IPC: ;<value>;`
+2. **FAILED (logged)** — entry in failed-runs CSV (path TBD by agent — grep bulk.sh for `FAILED`/`failed_csv` etc.)
+3. **OOM-KILLED (silent)** — no `FINAL ROI` line in log AND not in failed CSV. Caused by sudden reboot.
+
+Out06 ALSO has a logging bug: failed-runs CSV stopped appending after a manual extract (suspected cursor/seek-based open instead of pure `>>` append).
+
+The two driver scripts must be merged into a single `quickByP_v14-1_bulk.sh` that supports natural resume.
+
+**Agent model policy**: ALL working agents (Agent 1, 2, 3) = Opus 4.6. Monitoring/sanity agent (Agent M) = Opus 4.7.
+
+# 1. HARD CONSTRAINTS
+
+- NEVER `cat`/Read full logs. They are 3K–10K lines (some up to 100K+). Use grep with anchors only.
+  Anchors: `FINAL ROI CORE AVG IPC`, `STARTED:`, `[DONE]`, `failed`, `[SKIP]`.
+- For script logs (6-GLOBAL-EVAL.txt, partialRerun.log): last 100 `STARTED:` lines is enough.
+- DO NOT enter `champsim_v14/` source directory unless absolutely required (and ask user first).
+- Drop `glider` from repl-policy matrix in the new script — confirmed by user as not needed.
+- Log filename encodes the FULL cfg signature (path piped by bulk.sh). Do NOT re-derive cfg from internals — the path/filename is authoritative.
+- Failed-runs CSV must be opened with pure append (`>> failed.csv`) and a single `printf` per failure. NO cursor seeks.
+- DO NOT spawn ChampSim sims from agents. Agents only edit scripts + write helpers.
+
+# 2. INPUT FILES (paths frozen)
+
+| Purpose                  | Path |
+|--------------------------|------|
+| Main driver (broken rerun) | `/home/cc/champsim_VB/quickByP_v14_bulk.sh` |
+| Quick-fix rerun driver     | `/home/cc/champsim_VB/quickByP_v14_bulk_fixed.sh` |
+| Main script log (out06)    | `/home/cc/champsim_VB/6-GLOBAL-EVAL.txt` |
+| Rerun script log (out03)   | `/home/cc/champsim_VB/partialRerun.log` |
+| Sim logs (main)            | `/home/cc/champsim_VB/outputs/out06/core{1,2,4,8,16}/*.log` |
+| Sim logs (rerun)           | `/home/cc/champsim_VB/outputs/out03/core{1,2,4,8,16}/*.log` |
+| Bypass primary reference   | `/home/cc/.claude/projects/-home-cc/memory/bypass_reference_simple.md` |
+| Run-skill reference        | `/home/cc/.claude/skills/run-project/SKILL.md` |
+| Sim runner (canonical)     | `/home/cc/champsim_VB/quick_v14.sh` |
+
+# 3. OUTPUT DELIVERABLES
+
+| Path | What | Owner |
+|------|------|-------|
+| `/home/cc/champsim_VB/scripts/merge_valid_logs.sh` | Helper: scan out03+out06, copy logs containing FINAL ROI to `outputs/out_merged_03_06/coreN/` | Agent 1 |
+| `/home/cc/champsim_VB/outputs/out_merged_03_06/`   | Merged log tree (dirs: core1/2/4/8/16) + `manifest.csv` (`core,name,ipc,src_dir`) + `warnings.log` | Agent 1 |
+| `/home/cc/champsim_VB/quickByP_v14-1_bulk.sh`          | Merged driver — supports `--resume-from <DIR>`, glider removed, failed-CSV append fix | Agent 1 |
+| `/home/cc/champsim_VB/VERIFY_REPORT.md`           | Verifier audit (PASS/FAIL per criterion + evidence grep lines) | Agent 2 |
+| `/home/cc/champsim_VB/KEY_FINDINGS.md`             | Agent 1 live discovery log: deps found, changes made, stale code spotted, things to check | Agent 1 |
+| `/home/cc/champsim_VB/STALE_REPORT.md`            | Stale-deps / dead-code / inconsistent-logging report + ALL fixes applied | Agent 3 |
+
+# 4. GOAL — quickByP_v14-1_bulk.sh BEHAVIOUR
+
+Identical to `quickByP_v14_bulk.sh` EXCEPT:
+
+1. **New flag** `--resume-from <DIR>` (optional).
+   - When set, before launching each sim:
+     ```
+     OUT="$RESUME_DIR/core${C}/${LOGNAME}.log"
+     if [[ -f "$OUT" ]] && grep -q "FINAL ROI CORE AVG IPC" "$OUT"; then
+         echo "[SKIP] already done: $LOGNAME"
+         continue
+     fi
+     ```
+   - When unset → behave like original bulk.sh.
+2. **glider repl policy removed** from the matrix.
+3. **Failed-runs CSV** opened with append redirection only (`>>`) on each failure.
+   No global file handle, no `tee`, no `seek`.
+4. New `outXX` dir is still auto-created as before (next free index, see bulk.sh `find next outNN`).
+5. Reruns no longer require a separate `_fixed.sh` — `--resume-from` covers it.
+6. Preserve all other env, parallelism, prefetcher, model, ocp, trace iteration.
+
+# 5. TASK DECOMPOSITION
+
+## 5.M — AGENT M (Opus 4.7)  →  passive sanity monitor
+Model: **Opus 4.7** (only agent allowed this model).
+Role: read-only observer. Runs AFTER each working agent completes.
+Scope:
+1. Read this .tsk + UserDefinedIssue.md + the working agent's deliverables.
+2. Compare what was REQUESTED (in .tsk section for that agent) vs what was DELIVERED.
+3. Check for degradation patterns:
+   - task scope corruption (doing less than asked, cherry-picking, "minimum viable")
+   - dependency gaps (one side changed, other side forgotten)
+   - logic drift (code does something subtly different than spec)
+   - missing deliverables
+4. If ANY issue found → produce `SANITY_CHECK_<agent>.md` with:
+   - PASS/FAIL per scope item
+   - specific line references for failures
+   - recommended fix actions
+   - **PAUSE flag**: main Claude MUST stop and ask user before continuing to next agent.
+5. If all clean → produce short SANITY_CHECK with all-PASS, main Claude proceeds.
+6. NEVER modify files. Read + grep + report only.
+
+---
+
+## 5.A — AGENT 1 (Opus 4.6)  →  build merger + new driver
+Scope:
+1. Read this .tsk + UserDefinedIssue.md + bypass_reference_simple.md.
+2. Grep (do NOT cat) `quickByP_v14_bulk.sh` to find:
+   - failed-runs CSV path
+   - repl matrix
+   - log path template
+   - next-outXX logic
+3. Write `scripts/merge_valid_logs.sh`:
+   - For each `d in outputs/out03 outputs/out06`:
+     - For each `coreN`:
+       - For each `*.log` in that core dir:
+         - `grep -q "FINAL ROI CORE AVG IPC" "$f"` → copy to `outputs/out_merged_03_06/coreN/`
+         - extract IPC value via `grep -oE "FINAL ROI CORE AVG IPC: ;[0-9.]+;"` → manifest row
+   - Conflict policy:
+     - same basename in both: prefer out03 (newer rerun)
+     - both have FINAL ROI but different IPC → append to `warnings.log`; keep out03
+4. Run merger ONCE; populate `out_merged_03_06/`.
+5. Write `quickByP_v14-1_bulk.sh` per Section 4. Diff-style minimal — start from `quickByP_v14_bulk.sh` and apply changes.
+6. Sanity dry-run: `./quickByP_v14-1_bulk.sh --resume-from outputs/out_merged_03_06 --dry-run` (add `--dry-run` if not present; otherwise print would-run lines instead of executing).
+   ALL existing-with-FINAL-ROI logs must be SKIPped.
+7. **KEY_FINDINGS.md** — throughout steps 2–6, append every discovery to `/home/cc/champsim_VB/KEY_FINDINGS.md`:
+   - every dependency pair found (e.g. "STARTED log format depends on DONE log format")
+   - every stale code fragment spotted but not in scope to fix
+   - every variable/path/flag that references something that may need updating elsewhere
+   - every assumption made with evidence (grep line)
+   This file feeds Agent 3 so it can track ALL dependency chains, not guess.
+8. Report: paths created + counts (`logs merged`, `warnings`, `would-skip`, `would-run`).
+
+## 5.B — AGENT 2 (Opus 4.6)  →  verifier (read-only)
+Scope:
+1. Read this .tsk + UserDefinedIssue.md + Agent 1 deliverables.
+2. Verify each item:
+   - [ ] `--resume-from` flag parsed
+   - [ ] Skip logic uses BOTH `-f` test AND `grep -q "FINAL ROI CORE AVG IPC"`
+   - [ ] glider absent from repl array (grep -i glider quickByP_v14-1_bulk.sh → nothing)
+   - [ ] failed-runs CSV opened append-only (`>>`), no `>` overwrite, no tee/cursor games
+   - [ ] merger handles dup-name: out03 wins; warnings.log gets diff-IPC entries
+   - [ ] no hardcoded `out03`/`out06` paths in `quickByP_v14-1_bulk.sh`
+   - [ ] `out_merged_03_06/manifest.csv` row count == sum of core-dir log counts after filter
+   - [ ] script-log last-100 STARTED inspection: any STARTED with no matching log in merged dir is documented (these will be auto-rerun by resume)
+3. Output `VERIFY_REPORT.md` with PASS/FAIL per item + 1–2 grep-line evidence per check. NO file dumps.
+4. Hard rule: do NOT modify any file. Read + grep + write report only.
+
+## 5.C — AGENT 3 (Opus 4.6)  →  stale-deps cleanup — FIX ALL
+Scope:
+1. Read this .tsk + `KEY_FINDINGS.md` (Agent 1's discovery log) + Agent 1 outputs + VERIFY_REPORT.md.
+2. Audit `quickByP_v14-1_bulk.sh` and `merge_valid_logs.sh` for:
+   - logging mismatches (e.g. STARTED line updated to new format but DONE/end line still old)
+   - dead variables, unused arrays
+   - half-renamed flags
+   - placeholder/mock code (TODO, FIXME, hardcoded test paths)
+   - missed dependency: any function/var referenced but not defined; any defined but never used
+   - dependency chains from KEY_FINDINGS.md: verify BOTH sides of each pair are updated
+   - any change Agent 1 made that has a dependent counterpart left stale
+3. Output `STALE_REPORT.md` with line-anchored findings.
+4. **FIX ALL ISSUES FOUND.** No severity filtering. No cherry-picking. Every stale item gets fixed.
+   Prior laziness (fixing only "high-sev") corrupted a week of sim results. NEVER repeat that.
+5. After all fixes: re-grep each fixed location to confirm the fix is consistent with surrounding code.
+
+# 6. AGENT BRIEFING TEMPLATE (use verbatim per agent)
+
+```
+You are AGENT <N> (<MODEL>) for OOM bulk-merge task. Mandatory pre-reads:
+1. /home/cc/champsim_VB/UserDefinedIssue.md             (full read OK — small)
+2. /home/cc/champsim_VB/OOM_BULK_MERGE.tsk              (this file — full read)
+3. /home/cc/.claude/projects/-home-cc/memory/bypass_reference_simple.md
+4. /home/cc/.claude/skills/run-project/SKILL.md
+
+Hard rules:
+- DO NOT cat/Read full sim logs. Grep-only with anchors.
+- DO NOT enter champsim_v14/ source.
+- DO NOT spawn ChampSim sims.
+- Last-100 STARTED lines max from script logs.
+- Output: only the deliverables in Section 3 of the .tsk.
+- Agent 1 MUST maintain KEY_FINDINGS.md — append every dependency, stale code, assumption.
+- Agent 3 MUST fix ALL stale issues — no severity filtering, no cherry-picking.
+
+Model assignment:
+- Agent 1, 2, 3 = Opus 4.6 (working agents)
+- Agent M = Opus 4.7 (passive sanity monitor only)
+
+Your scope: <paste Section 5.X>
+```
+
+# 7. VALIDATION GATES (sequential — NO sim runs, grep/check only)
+
+| Gate | Check | If FAIL |
+|------|-------|---------|
+| G1 | Agent 1 produced deliverables; manifest non-empty per core dir; KEY_FINDINGS.md exists | re-run Agent 1 |
+| G1M | Agent M sanity-checks Agent 1 output → all PASS | PAUSE → ask user → fix per M's report |
+| G2 | Agent 2 PASS on all checklist items | re-run Agent 1 to fix, then re-verify |
+| G2M | Agent M sanity-checks Agent 2 output → all PASS | PAUSE → ask user |
+| G3 | Agent 3 ALL stale issues fixed (not just high-sev — ALL) | re-run Agent 3 with explicit list |
+| G3M | Agent M sanity-checks Agent 3 output → all PASS | PAUSE → ask user |
+| G4 | Main Claude grep-checks `quickByP_v14-1_bulk.sh` for --resume-from, skip logic, no glider, append-only CSV. NO sim execution. | inspect, fix |
+
+# 8. OPEN QUESTIONS (Agent 1 must resolve via grep before editing)
+
+- Failed-runs CSV path / variable name in bulk.sh
+- Exact repl-policy array contents (after glider removal)
+- Log path template — confirm core dir naming (`core1` vs `core_1` etc.)
+- Next-outXX detection logic — re-use as-is
+
+# 9. NON-GOALS
+
+- No new sweep matrix entries. No new bypass models.
+- No changes to `quick_v14.sh`, `qbuildPrefetcher_v14.sh`, or any C/C++ code.
+- No removal of out03/out06 source dirs (read-only).
+
+# 10. POST-RUN HANDOFF
+
+After all gates PASS, main Claude will:
+- Print summary: total runs swept (orig matrix), runs DONE in merged dir, runs to be redone via resume.
+- Confirm with user before launching `./quickByP_v14-1_bulk.sh --resume-from outputs/out_merged_03_06` for real.

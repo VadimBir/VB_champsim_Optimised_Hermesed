@@ -1,0 +1,798 @@
+TOTAL PAGES: 8
+
+=== PAGE 1 ===
+MARS: Reducing MSHR Admission Stalls with
+Selective Miss Forwarding
+Abstract—Misslatencydominatesperformancelossinmemory- 1000,0 90,8 511,4 205,9 107,5 314,8 81,7 89,9 intensive workloads. Prior work resolves it along three axes: 100,0 11,2 9,3 21,1
+10,0
+prefetchingshiftswhenamississues,replacementreshapeswhich 1,0
+lines a level retains, and off-chip prediction overlaps the DRAM 450 473 603 605 607 621 bc bfs cc sssp
+probe with on-chip lookup. Each family moves a miss in time, SPEC GAP
+in space, or in destination, however, none addresses the cycles in
+which a cache level cannot admit a newly detected miss because
+itsMissHandlingConcurrencyisalreadysaturated.Wecallthese
+admission stall cycles, and we show they concentrate at the first-
+levelcache,wheretheunfiltereddemandstreammeetsthetightest
+admission capacity while lower-level resources are underutilized.
+WeproposeMARS,aselective,adaptive,andlightweightforward-
+ing framework that hands qualifying misses to the next level so
+its underused capacity absorbs them. The decision reads short-
+andlong-windowsignalsofhitactivityandpure-missratiodrawn
+fromtheconcurrentmemoryaccessmodel,andathree-gatemodel
+triggersonlywhenthroughputdropsandratiorisescomparedto
+the level’s own baseline. The mechanism lifts a level’s effective
+miss handling concurrency past its structural bound, preserves
+baselineorderingandconsistency,andcollaborateswithdifferent
+prefetchers and replacement policies that the system uses. Across
+SPEC CPU traces and LLM inference traces, MARS reduces
+admission stall cycles and delivers a 4.3% geomean speedup, at
+92 bits of storage at L1 and L2.
+I. INTRODUCTION
+The widening gap between processor speed and main mem-
+orylatency[1]hasmadememoryaccessadominantbottleneck
+in modern memory-intensive workloads [2]. To mitigate the
+long latency of off-chip main-memory accesses, modern pro-
+cessorsusemulti-levelcachehierarchiestoexploitdatalocality.
+When a requested block is absent from a cache level, the
+resultingmisspropagatesdownwardthroughthehierarchyuntil
+the data is found or fetched from DRAM. Beyond exploiting
+locality, processors further improve data-access performance
+through concurrency support, allowing independent memory
+accesses to overlap rather than being serialized [3], [4]. In par-
+ticular,non-blockingcaches[5],[6]enablemultipleoutstanding
+misses to be serviced in parallel, with Miss Status Holding
+Registers (MSHRs) tracking these in-flight misses until the
+requested data returns. However, finite MSHR capacity at each
+cache level bounds the number of concurrent misses supported
+byhardware[7].OnceallMSHRentriesatalevelareoccupied,
+the level cannot admit newly detected misses until an entry is
+released, limiting overall performance.
+To improve memory-system performance, prior work has
+mitigated the performance impact of cache misses from three
+complementary directions. Hardware prefetching anticipates
+future cache misses and issues speculative requests before
+the corresponding demand accesses occur, shifting miss han-
+dling earlier to hide memory latency [8]–[14]. Replacement
+IKCSAM
+Fig. 1: MSHR Admission Stall Cycles Per Kilo instructions
+across different SPEC and GAP traces.
+policies improve cache residency by predicting which cache
+lines are likely to be reused and evicting lines with low
+predicted value, thereby reducing future misses [15]–[19]. Off-
+chip predictors identify demand requests likely to miss across
+thecachehierarchyandinitiateparalleloff-chipaccesses[20]–
+[22], overlapping costly DRAM access with on-chip lookups
+acrosscachelevelsandmaskingoff-chiplatencybehindcache-
+hierarchy traversal.
+However, hardware prefetching, replacement policies, and
+off-chip predictors mainly reduce the number of cache misses
+or hide miss latency; they do not address the performance loss
+caused by MSHR Admission Stall Cycles, defined as cycles in
+which a detected miss waits because all MSHR entries at that
+cache level are occupied. Figure 1 quantifies this bottleneck
+using MSHR Admission Stall Cycles per Kilo Instructions
+(MASCKI),whichmeasuresthenumberofcyclesperthousand
+instructions during which L1 cannot admit a detected miss be-
+cause all MSHR entries are occupied. Under LRU replacement
+without prefetching, SPEC workloads exhibit between 81.7
+and 511.4 MASCKI, while GAP workloads range from 9.3 to
+89.9 MASCKI. At 511.4 MASCKI, the accumulated stall time
+is comparable to several complete cache-hierarchy traversals,
+during which a known miss remains queued at L1 before it
+can initiate request the next cache level. Unlike conventional
+miss latency, these stalls cannot be mitigated by prefetching,
+replacement policies, or off-chip predictors, since no new miss
+can be admitted once all MSHR entries are occupied.
+A direct solution is to enlarge the MSHR structure [23],
+whichincreasesthelocalmiss-handlingcapacity.However,this
+approach does not exploit the imbalance across the cache hier-
+archy: upper-level MSHRs may be saturated while lower-level
+MSHR resources remain available. This observation motivates
+adifferentapproach:forwardingselectedmissestolowercache
+levels with available miss-handling capacity, thereby utilizing
+available hardware-supported concurrency instead of stalling
+while waiting for an upper-level MSHR entry to be released.
+To this end, we propose MARS, a selective miss forwarding
+framework that reduces MSHR admission stalls by exploiting
+available miss-handling capacity across cache levels. First,
+
+=== PAGE 2 ===
+MARSallowsselectedmissestobypasslocalMSHRallocation Based on these categories, two performance factors, φ and
+at an upper cache level and be handled by the next level, miti- κ, are introduced to characterize cache level concurrency
+gating stalls caused by waiting for an upper-level MSHR entry behavior [27], [28]. φ measures the fraction of memory active
+to be released. Second, MARS uses lightweight concurrency- cycles that include useful hit service, as shown in Equation 1.
+aware runtime signals to identify when local cache-level han- A high φ indicates that the cache level actively provides
+dling provides limited benefit and forwarding becomes more useful hit service during memory active cycles, reflecting
+effective. This enables MARS to forward misses selectively data locality benefit at this level. κ measures the fraction of
+rather than blindly bypassing the current level. Finally, MARS miss related active cycles that appear as exposed pure miss
+improves effective miss-handling concurrency with low hard- behavior rather than being hidden by hit service, as shown
+wareoverheadandremainscomplementarytoexistingprefetch- in Equation 2. A high κ indicates that more miss activity
+ing, replacement, and off-chip prediction mechanisms. appears as exposed pure miss cycles, suggesting limited
+The performance of MARS is extensively evaluated across hit service overlap and weaker ability to hide miss latency.
+memory-intensive workloads from SPEC [24], [25] and
+h+x m
+GAP [26], under multiple prefetchers, replacement policies φ= (1) κ= (2)
+ω m+x
+and core configurations. The results demonstrate that MARS,
+by targeting both MSHR Admission stall cycles and degrad- Takeaway 1: φ and κ provide a compact way to evaluate
+ing performance miss, consistently outperforms state-of-the- cache performance by jointly capturing data locality benefit
+art (SOTA) off-chip prediction schemes, including TTP [21], and the effectiveness of hit and miss overlap.
+HMP [20] and Hermes [21]. Notably, in the 1-core configu-
+ration, MARS achieves 42.1% performance improvement on B. MSHR as the Miss-Handling Resource
+SPEC workloads, outperforming these SOTAs by 5.1%, 4.9%,
+On a miss, the cache checks whether the missed block is
+and 2.1%, while reducing L1 MSHR Admission stalls by
+already tracked by an existing MSHR entry. If so, the new
+30.6% and pure misses by 34.4%. Moreover, MARS achieves
+request merges with that entry. Otherwise, the miss becomes a
+22.3% improvement on GAP workloads over the base line
+new primary miss and requires a free MSHR entry to track
+configuration.
+it until the data returns from the next level. The number
+This paper makes the following contributions:
+of MSHR entries, denoted as MSHR , limits how many
+size
+• We introduce and characterize MSHR Admission stall as primary misses can be tracked concurrently at a cache level.
+a first-level structural bottleneck that no prior families ThenumberofoccupiedMSHRentries,denotedasMSHR ,
+occ
+actively addresses. reflects the current miss handling concurrency supported by
+• We propose MARS, a selective, adaptive and lightweight hardwareatthatlevel.MSHRentriesarereleasedonlyafterthe
+forwarding framework that resolves MSHR Admission correspondingmissesareservicedbythenextlevel.Therefore,
+stalls by redirecting qualifying misses so the next level’s longer downstream service latency keeps entries occupied for
+MSHR, raising Miss HandlingConcurrency pastits struc- more cycles and increases the chance that new primary misses
+tural bound while preserving consistency. cannot be admitted.
+• We derive MARS’s three-gate forwarding model from When MSHR occ reaches MSHR size , the cache level has no
+short and long window using hit and miss performance free entry for a new primary miss, so the miss cannot be
+signals,withoutstoringper-missstateatanyskippedlevel. admitted into the local miss handling pipeline until an entry
+• We extensively evaluate MARS across SPEC CPU and is released. We refer to this condition as an MSHR admission
+GAP workloads under multiple prefetching and replace- stall.Duringthisstall,alreadyadmittedmissesmaycontinueto
+ment policy configurations, consistently outperforming beserviced,buttheincomingprimarymissmustwait,delaying
+Hermes, HMP, and TTP across both workloads. memory access and degrading overall performance. MSHR
+admission stalls are asymmetric across the cache hierarchy.
+II. BACKGROUND
+They appear more frequently at upper cache levels, especially
+A. Concurrent Memory Access Model L1, because L1 first receives the demand stream, has limited
+MSHR capacity, and must keep entries occupied until misses
+Modern memory systems support concurrent data accesses,
+are serviced by lower cache levels or main memory. Since L1
+allowing independent accesses to overlap rather than execute
+is closest to the core, stalls at this level directly delay demand
+serially. As a result, cache hits and outstanding misses may
+requests and are therefore performance critical. In contrast,
+occur in the same cycle. The Concurrent Average Memory
+lower cache levels receive a filtered stream of misses and may
+Access Time (C-AMAT) model [4] captures the impact of data
+still have available miss handling capacity when the upper
+access concurrency by classifying memory active cycles ω at
+level is saturated. This imbalance motivates MARS to forward
+eachcachelevelintothreecategories:apurehitcycleh,where
+selected misses to lower cache levels instead of waiting for an
+only cache hits are serviced without overlapping miss activity;
+upper level MSHR entry to be released.
+anoverlapcyclex,wherehitserviceoverlapswithoutstanding
+miss activity; a pure miss cycle m, where outstanding miss Takeaway 2: Upper-level MSHR saturation degrades perfor-
+activity exists but no hit service occurs and an idle cycle e mance and creates an opportunity to forward selected misses
+where no memory activity is present. to lower levels with available miss-handling capacity.
+
+=== PAGE 3 ===
+C. Existing Cache Performance Optimizations Demand Requests
+A L1: Read Queue (RQ)
+L1: Cache Read
+Existing cache optimizations improve cache hierarchy per-
+L1: Return Yes Cache No
+formance from three complementary directions, each targeting Request Hit?
+a different aspect of cache-miss behavior. B Yes New No L1: Merge
+MSHR? MSHR
+Hardware Prefetching. Hardware prefetchers [8]–[14] pre- Yes Forward? No
+L1: Set Skip L1: Create
+dict future memory accesses and issue speculative requests C MSHR
+before the corresponding demand accesses occur. SPP [10] L2: add to RQ
+L2: add to RQ
+compresses stride history into a signature and walks a spec-
+ulative delta chain until confidence drops. Zion [12] runs five L2: Cache Read
+independent temporal-spatial modules with feedback-directed L2: Return Yes Cache No
+Request Hit?
+throttling that lags by one epoch after accuracy collapses. Yes New No L2: Merge
+D MSHR? MSHR
+Bingo [9] replays a spatial bitmap of co-accessed lines on a
+IfL1 not Skip
+t B ri e g r g ti er [8 m ] at s c e h le , c i t s s su d in e g lta m s a w ny ho p s r e efe o t b c s h er r v e e q d ues la ts te s n i c m y ul m ta e n e e t o s us t l h y e . L2: Set Skip Yes Forward? No L2 M : C S r H e R ate
+LLC: add to RQ
+current LLC round-trip time, discarding stale mappings after E E LLC: add to RQ
+a pattern shift.
+LLC: Cache Read
+ReplacementPolicies.Cachereplacementpolicies[15]–[19]
+Fig. 2: MARS downward forwarding path: a per-level skip-
+improvecacheresidencybyselectingwhichcachelinesshould
+bit replaces MSHR allocation and routes the miss to the next
+be retained or evicted. LRU evicts the least recently used line
+level’s read queue.
+and serves as a simple recency-based baseline. SHiP++ [17]
+predicts reuse behavior using instruction-based signatures and
+adjusts insertion priority based on historical reuse. Hawk- 
+III. MARS:REDUCINGMSHRADMISSIONSTALLSWITH
+eye [18] approximates Belady’s optimal policy over a sampled SELECTIVEMISSFORWARDING
+history window to classify cache lines as cache-friendly or
+Traditionally,MSHRisusedtotrackandpropagatethemiss
+cache-averse. CARE [19] incorporates concurrency awareness
+downwards the cache hierarchy until it reaches DRAM, to
+by estimating the performance impact of cache misses through
+service levels upwards. We propose MARS, an MSHR Admis-
+pure-miss contribution and using it to guide eviction decisions.
+sion stall Reduction via Selective Miss forwarding framework
+Off-chip Predictor. Off-chip access predictors [20]–[22] operating within the cache. To make a decision, it evaluates
+identify load requests that are likely to miss across the cache incoming misses against two windowed performance signals
+hierarchy and issue early DRAM requests to overlap off-chip (φ and κ) from the concurrent memory access model. When
+latency with on-chip cache traversal. TTP [21] tracks per- MARS forwards the request, MSHR allocation at a level is
+instructionhitandmissbehaviortopredictlong-latencymisses omitted and lower-level receives a marked demand request
+and trigger speculative memory accesses. HMP [20] uses IP- along the standard miss path. The signal indicates no upper-
+indexed prediction tables to classify load behavior and initiate level MSHR exists, and requires the receiving lower-level to
+earlyoff-chiprequestsforpredictedcachemisses.Hermes[21] allocateMSHRtotrackbothlevelssimultaneously.Asaresult,
+improves prediction accuracy by using a perceptron-based onthedatareturn,thelower-levelactsasamisstrackinganchor
+predictor that combines multiple load-related features. routing the return directly to upper-level’s requester while
+Overall, these mechanisms improve memory-system perfor- filling the skipped level to keep the cache content consistent.
+mance by reducing cache misses, improving cache residency, The framework restricts forwarding to a single non-adjacent
+or hiding miss latency. However, they do not directly address skip per-in-flight request, so the lower-level’s MSHR absorbs
+MSHR admission stalls, where a newly detected miss cannot the miss and decisions are kept localized to align with the
+allocate an MSHR entry at the current cache level. standard cache hierarchy.
+The remainder of this section details the downward forward
+Takeaway 3:Existingmechanismsmainlyfocusonreducing propagation (Section III-A), the three-gate model in MARS
+cache misses or miss costs, but do not directly address the controlling decisions (Section III-B), the upward return path
+performance impact of MSHR admission stalls. (SectionIII-D),MissHandlingConcurrency(SectionIII-C)and
+Before I move on to the next part, please carefully review my the storage overhead (Section III-E).
+revisions and think about why I made these changes. Please
+A. Downwards Forwarding
+takemoreownershipofthenextrevisionandmakesureSection
+3 is carefully revised to a near submission-ready level before Figure 2 illustrates the MARS flow through the cache hier-
+sending it back. With the help of current AI and writing tools, archy. A demand (A) enters the L1 read queue (RQ) along
+basic scientific writing and consistency should be improved the standard path. On a new miss, MARS three-gate model is
+before my review, so I need to see more careful checking and triggered to make a forwarding decision (B). When selected,
+stronger ownership from your side. insteadofMSHRallocation,therequestreceivesalevel-skipbit
+
+=== PAGE 4 ===
+L1 skip ( C ), indicating no MSHR allocation, and propagates Cache: New Load
+Miss
+directly into the RQ of L2. When chosen to keep, L1 allocates
+the MSHR entry and the request proceeds to L2 through the Gate 1: Yes
+Pure Miss Get φlongterm
+conventional path. exist?
+At L2, the L1 miss follows the standard path through the No
+Get φshortterm
+Allocate
+RQ for a cache lookup. On a hit, if the request carried the MSHR Gate 2: Yes
+L1 skip bit, L2 returns the demand directly to the upper-level’s φshort<φlong
+Getκlongterm
+Gate 3: Yes Skip MSHR
+requesterwithoutfillingit.ForanewL2miss,(D),theL1 No Getκshortterm κshort>κlong Allocation
+skip Allocate
+bit is checked, if set, the MSHR is allocated to anchor both its MSHR No
+Allocate Set LevelSkip
+own and the upwards-stream miss. When L1 was not skipped, MSHR
+MARS is triggered and either sets L2 skip bit to forward the Fig. 3: Three-gate model making forwarding decisions using
+requestwithoutMSHRallocation,orallocatestheL2MSHRso short and long windows, considering κ, φ.
+itanchorsthemiss.Inbothcases,( E ),thedemandpropagates
+to LLC’s RQ. TABLE I: Gate-pair states when Gate 1 is satisfied (m >0).
+s
+At LLC, the L2 miss is read from the RQ. On a new miss,
+if L2 is not set, the L2 MSHR already handles its own Gate2 Gate3 Interpretation Action
+skip
+miss and potentially the L1 miss as well (if L1 was skipped). 0 0 Levelatbaseline:nomisspressure Keep
+We always set the LLC so the request is routed directly to 1 0 φdeclining:missoverlapxstable Keep
+skip 0 1 κrising:hitactivitysustained Keep
+DRAM without MSHR allocation. In cases when L2 skip was 1 1 φdecliningAND κrising Forward
+set, LLC creates MSHR entry to avoid creation of an upstream
+handling gap.
+When two consecutive levels do not track a miss, the lower- toward its baseline. However, Gate alone cannot tell whether
+2
+level is responsible to resolve the full upwards return chain, as the φ drop comes from fewer pure-hits or from fewer overlap
+routing complexity compounds with each additional skip. cycles.Gate resolvesthissincerisingκ wouldindicatemore
+3 s
+B. Three-gate Forwarding Decision Model pure-misses, resulting in less overlap. The AND condition
+preventsforwardingwhenφdropsbutκisunchanged,orwhen
+MARS maintains four cycle counters at each cache level:
+κrisesbutφactivityisadequate.Comparingeachratioagainst
+pure-hits h, pure-misses m, overlaps x and a window counter,
+its long-window value sets a per-level reference, so the gates
+used in short and long history windows. The long window acts
+activate only when the level deviates from its own history.
+as a baseline against recent performance signals to compare
+Table I summarizes the interpretation of each condition
+them. We utilize 512 cycles for immediate demand behavior
+used, Gate and Gate , assuming Gate is already satisfied.
+and16384cyclesforsteady-statehistory.Whenawindowlimit 2 3 1
+When neither activates, the level operates within its baseline
+is reached, all counters are halved rather than reset, offering a
+and no forwarding is needed. Gate 2 alone signals a hit-side
+decayingaveragewhererecentcyclescarrygreaterweightthan
+disturbance without rising a pure-miss ratio, so the level is
+old history.
+not stalling and MARS keeps the miss. Gate 3 alone signals a
+Counter-halving is also a natural adaptive throttling mech-
+rising pure-miss ratio that sustained hit could be absorbing, so
+anism, which reduces the frequency of MSHR under sus-
+skip
+forwarding here disrupts a stable flow and blocks a lower-level
+tained pressure by narrowing the short-long signal gap. As a
+decision with greater latency benefit. Only (G =1∧ G =1) is
+result,themodeltriggerslessfrequentlyatthelevel,permitting 2 3
+abletoconfirmdeclininghitsandlosingoverlapsimultaneously
+itslower-leveltomakeitsownforwardingdecisionsmoreoften
+which is the state when MARS forwards the request.
+toalleviateitsownMSHRpressure.UsingthecountersMARS
+During an MSHR Admission stall, outstanding misses satu-
+computes the concurrent memory access model ratios φ and κ
+rateMSHRandblocksnewallocations.Whenamissisunable
+definedinEquations1and2:φmeasuresthefractionofactive
+to be admitted, pure-miss cycles rise immediately, satisfying
+cycles including both beneficial and neutral work (h and x),
+Gate 1 (m > 0) within the short window. The pure-miss
+whileκmeasuresthefractionofpure-missactivity(m)stalling s
+traffic simultaneously triggers reduction of φ below the long-
+the hierarchy [27]. s
+windowbaseline(sinceoverlapcyclesandhitcyclesareabsent)
+MARS forwarding decisions are made using a three-gate
+and quickly elevates κ above the baseline, triggering all three
+model at every new miss occurred at the L1 or L2 (Fig- s
+gates, allowing to forward the MSHR Admission stall miss.
+ure 3). Only when all three gates satisfy their conditions
+(Gate ∧Gate ∧Gate )thelevelforwardsamisstothelower-
+1 2 3
+C. Miss Handling Concurrency
+level.Gate confirmsthelevelisundertheactivemisspressure
+1
+- without it, there is nothing to relieve. When satisfied, the L1andL2eachrunthethree-gatemodelindependentlywith
+modelusesshortandlong-termφinGate ,todetectdeclining privatecountersateachlevel.L1observesitsownunfilteredh,
+2
+hit activity relative to the level’s own history. Forwarding a mandxcyclesandL2seesanyL1admittedmissorforwarded
+miss prevents it from occupying an MSHR entry at the level, cycles without cross-level state sharing. The LLC does not run
+which frees capacity allowing potential overlap or pure-miss the gate model, since the choice of L2 indirectly affects it and
+cycles to become pure-hits or idle cycles instead, pushing φ LLC’s traffic tends to be spread across where non-overlapping
+
+=== PAGE 5 ===
+TABLE II: Storage overhead of MARS
+DRAM
+Structure Field Ent. #Bits
+DRAM: Return Data CycleCounter short(9b):h,m,x 3 27
+Return to L2 Yes No Return to LLC long(14b):h,m,x 3 42
+LLC Skip?
+A Yes B WindowCounter short(9b)+long(14b) − 23
+L2: MSHR LLC: MSHR Requesttag level-skip(3b) in-flight 3
+LLC: Fill
+Complete Complete CacheLeveltotal: 92b
+E L2: Fill D C LLC: Fill
+Return to L1 Return to L2
+Yes No Yes No with the lower-level’s data return, maintaining cache content
+Return Demand L1 Skip? Return to L1 L2Skip?
+Request consistency.Theskippedlevelfillenablesreplacementpolicies
+Yes L1: MSHR
+to retain the line and serve repeated demands as cache hits,
+L1: Fill Complete
+while forwarding reduces MSHR Admission stalls. On the
+L1: Fill
+Return Demand return, skipped levels are untouched and data routes directly to
+Request therequester,reducingthereturnlatency.Likewise,theskipped
+Fig.4:Upwardsreturn:directroutetorequester;decoupledfill level fill enables replacement policies to retain the line and
+at skipped levels. serve repeated demands as cache hits.
+Consistency. The return path is consistent with the baseline
+cache. Three cases cover every forwarded miss:
+pure-missesdominatewhichpersistentlymakeshighκandlow
+1) At the originating forwarding level. Downwards on a
+φ, making the gate’s state not bring corresponding benefits.
+repeated demand if the repeated demand creates MSHR at the
+Because a forwarded miss counts towards MSHR rather
+skip skipped level the request propagates to the lower-level. It will
+than MSHR , we define Miss Handling Concurrency (Equa-
+occ be merged into the existing MSHR, which will clear the skip
+tion 3)as the numberof misses originating at thelevel that are bit.Upward,whendatareturns,presenceofthebitdetermines
+currently in-flight (MSHR ) plus the misses forwarded to a
+occ whether an upper-level awaits a return, based on this, the level
+lower-level that are also in-flight (MSHR ).
+skip routes to the upper-level or its requester accordingly.
+2)Atanintermediatelevelwhoseskipbitisset:thelevelholds
+MHC = MSHR + MSHR (3)
+occ skip
+no MSHR entry for the miss. Downwards path there cannot
+In the baseline, MHC is bound to MHC of the first level be any new repeating request to the level, because it would be
+Ω
+that accepts the demand request. Utilizing MARS forward- merged during the upper-level’s MSHR anchor (Section III-A)
+ing raises the peak MHC via a lower-level’s MSHR. The creating no new downward requests. Upward propagation will
+upper bound MHC (Equation 4) is reached when the first notinteractwiththeskippedlevel,asMSHRentrycannotexist
+Ω
+level’s in-flight misses fully occupy its MSHR plus the hit- here, because it would mean the upper-level has already been
+relaxed number of forwarded misses the next level sustains, served.
+MSHR (L+1,size) /M L+1 , where L denotes the first cache level 3)Atalevelwhoseskipbitisclear,thelevelholdsthestandard
+accepting the demand request and M L+1 the miss ratio of the MSHRentry.Itcompletesthenormalfillandisidenticaltothe
+lower-level L+1. baseline.
+MSHR
+(L+1,size) E. Storage Overhead
+MHC =MSHR + (4)
+Ω L,size M
+L+1 Ateachgatedlevel(L1andL2),MARSmaintainstwosam-
+D. Upwards Forwarding Return pling windows: a short (9-bit) and a long (14-bit). Each tracks
+Figure 4 depicts the data return path, the 3-b skip tag three cycle counters (h, m, x) and window counter itself. The
+determines which levels were skipped on the forward path per-gated-level storage requirement is 4×(9+14) = 92 bits.
+(Section III-A). DRAM checks the LLC bit, if set (A), it The LLC runs no gate model and stores no gate counters,
+skip
+routes the return directly to L2, while concurrently filling the therefore, total cache storage is 23 bytes. Each in-flight miss
+skipped LLC via its replacement policy, otherwise, (B), LLC carriesaseparate3-bitskiptagontherequestpacket.Thegate
+completes its MSHR normally, gets filled, and returns to the logic reuses the existing miss-path control and adds no MSHR
+upper-level( C ).AnyreturnedrequesttoL2,duringthereturn entry at any skipped level. Table II summarizes the per-gated-
+level breakdown.
+would have the L1 checked, (D), if set, it returns directly
+skip
+to the requester ( E ), filling L1 in parallel, otherwise returns
+IV. METHODOLOGY
+to L1 where MSHR completes, level fills, and data returns to
+the requester. Furthermore, when data returns to LLC from the Simulated system. We evaluate MARS using a modified
+DRAM, before turning to L2, ( C ) it would check L2 and ChampSim simulator [29], used in the 2nd and 3rd Data
+skip
+direct the return to L1 while filling L2. Prefetching Championships [30], [31]. We simulate the Intel
+The data return path routes directly from the resolving level Alder Lake (GLC) [32] multi-core processor as the default mi-
+to the requester, reducing the return latency without touching croarchitecturein1-coreto16-coreconfigurations.TableIII(A)
+the skipped levels. The fill at each skipped level overlaps liststheparameters.WealsosimulatetheAppleA14Firestorm
+
+=== PAGE 6 ===
+TABLE III: Simulated system parameters. TTP HMP HERMES MARS
+1,6
+(A)(Default)IntelAlderLake(GLC)
+Core 1/4/8/16cores,6-widefetch/execute/commit,512-entry 1,4
+ROB,128/72-entryLQ/SQ,perceptronbranchpredictor 1,2
+L1/L2Cache Private,48KB/1.25MB,64Bline,12/20-way,
+1,0
+16/48MSHRs,LRU,5/15-cycleround-triplatency
+SPP Zion Bingo Berti Geomean
+LLC 3MB/core,64Bline,12-way,64MSHRs/slice,LRU,
+55-cycleround-triplatency
+1,3
+(B)AppleA14Firestorm(A14)
+Core 1core,8-widefetch/execute/commit,632-entryROB, 1,2
+148/106-entryLQ/SQ,perceptronbranchpredictor 1,1
+L1/L2Cache Private,128KB/4MB,64Bline,8/16-way, 1,0
+16/48MSHRs,LRU,3/16-cycleround-triplatency
+SPP Zion Bingo Berti Geomean
+LLC Shared,8MB,64Bline,16-way,64MSHRs/core,LRU,
+24-cycleround-triplatency
+MainMemory(BothArchitectures)
+GLC/A14 1C:1channel,1rankperchannel;
+GLC 4C-16C:4channels,2ranksperchannel;
+Both 8banksperrank,DDR4-3200MTPS,64bdata-bus
+perchannel,2KBrowbuffer,tRCD/tRP/tCAS=12.5ns
+TABLE IV: Evaluated workloads.
+Suite Workload
+SPEC2006 mcf,milc,leslie3d,soplex,
+GemsFDTD,astar,wrf,sphinx3
+SPEC2017 bwaves,mcf,cactuBSSN,omnetpp,
+wrf,xalancbmk,fotonik3d,roms
+GAP bc(0,3,5,12),bfs(3,8,10,14),
+cc(5,6,13,14),pr(3,5,10,14),
+sssp(3,5,10,14)
+processor in 1-core and 2-core configurations. Table III(B)
+details its parameters.
+Evaluated workloads. We evaluate MARS on 30 memory-
+intensive workloads drawn from SPEC CPU2006 [24] and
+SPEC CPU2017 [25], each exhibiting LLC MPKI greater than
+1 in a baseline without prefetching or forwarding. Evaluations
+include homogeneous configurations with each core running
+the same trace and heterogeneous 4-core mixes with distinct
+traces per core. For every SPEC benchmark, the cache warms
+up over 50M instructions and statistics are collected over the
+next200Minstructions,matchingstandardconvention[8],[19],
+[33], [34].
+WeadditionallyevaluateMARSon20GAPworkloads[26],
+covering five graph algorithms: Betweenness Centrality (bc),
+BreadthFirstSearch(bfs),ConnectedComponents(cc),PageR-
+ank (pr), and Single Source Shortest Path (sssp). Traces are
+drawn from the ML-Based Data Prefetching Competition [35].
+Compared mechanisms. We evaluate MARS across a three-
+axis mechanism matrix of off-chip prediction, L2 prefetcher,
+and replacement policy. Off-chip predictors: TTP [21],
+HMP [20], and Hermes [21]. Prefetchers deployed at L2:
+Bingo [9], Berti [8], SPP [10], and Zion [12]. Replacement
+policies:SHiP++[17],Hawkeye[18],andCARE[19]deployed
+at LLC.
+Metrics. We report normalized weighted speedup [34], [36]
+over a no-prefetch, LRU replacement baseline unless stated
+otherwise. MSHR admission stall reduction and pure miss
+reductionaremeasuredrelativetotheTTPno-prefetchbaseline,
+capturing the two mechanisms that underpin IPC gains.
+pudeeps
+naemoeG
+metsys
+gnihcteferP-oN
+eht
+revO
+(a) SPEC
+(b) GAP
+Fig. 5: Single-core geometric mean IPC speedup across SPEC
+and GAP workloads with and without L2 prefetching.
+TTP HMP HERMES MARS
+(a) SPEC
+30%
+20%
+10%
+0%
+SPP Zion Bingo Berti Geomean
+(b) GAP
+30%
+20%
+10%
+0%
+SPP Zion Bingo Berti Geomean
+noitcudeR
+llatS
+noissimdA
+RHSM
+rehcteferP
+ta
+mumixaM
+eht
+revO
+Fig.6:L1MSHRadmissionstallreductionrelativetoTTPno-
+prefetch baseline, single-core.
+V. RESULTS
+A. Single-Core Performance Analysis
+Figure 5(a) presents geometric mean IPC speedup in SPEC
+workloads under 1-core GLC configuration, using no-prefetch
+and four L2 prefetcher configurations (SPP, Zion, Bingo, and
+Berti). MARS achieves a geometric mean IPC speedup of
+42.1%, outperforming TTP, HMP, and Hermes by 5.1%, 4.9%,
+and 2.1%, respectively. Figure 5(b) presents results in GAP
+workloadsunderthesameconfiguration,whereMARS(22.3%)
+outperformsTTP(20.6%),HMP(15.9%),andHermes(17.1%),
+respectively. Figure 4 demonstrates that since MARS targets
+bothMSHRadmissionstallsandhistory-discrepantmissesthat
+degradeper-levelMHC,itconsistentlyoutperformsalloff-chip
+prediction schemes across both workloads.
+Off-chip predictors operate in parallel with the cache hier-
+archy and issue earlier DRAM requests affecting the return
+latency of on-chip requests. This cannot resolve the structural
+MHC bottlenecks of cache, regardless of which L2 prefetcher
+is being used.
+Figures 6 and 7 present the fraction of L1 MSHR admission
+stalls and L1 pure misses eliminated by each scheme. On
+SPEC (Figures 6(a) and 7(a)), MARS achieves 35.7% MSHR
+admission stall reduction and 54.4% pure miss reduction in
+the geomean, while TTP, HMP, and Hermes eliminate 9.2%,
+12.2%, and 11.8% of MSHR admission stalls and 35.0%,
+32.4%, and 37.4% of pure misses, respectively. On GAP, with
+
+=== PAGE 7 ===
+(a) SPEC TTP HMP HERMES MARS
+40%
+30%
+20%
+10%
+0%
+SPP Zion Bingo Berti Geomean
+(b) GAP
+30%
+20%
+10%
+0%
+SPP Zion Bingo Berti Geomean
+decudeR
+ssiM-eruP
+fo
+noitcarF
+rehcteferP
+ta
+mumixaM
+eht
+revO
+Fig. 7: L1 pure miss reduction relative to TTP no-prefetch
+baseline, single-core.
+activeL2prefetchingallmechanismshaveworsenedL1MSHR
+admissionstallsrelativetothebaseline,asinaccurateprefetcher
+requests generate additional MSHR traffic which exacerbates
+the MSHR admission stall at L1. MARS incurs the smallest
+degradation at 18.9%, compared to 33.3%, 37.6%, and 40.5%
+for TTP, HMP, and Hermes, respectively. However, the degra-
+dationonlycapturesMSHRadmissionstalls,whileoverallpure
+miss reduction remains achievable. MARS eliminates 31.4%,
+compared to 12.3%, 4.5%, and 5.6% for TTP, HMP, and
+Hermes,respectively.Theconsistentpuremissreductionacross
+both workloads indicates MARS effectively increases MHC in
+the memory system.
+PALACE HOLDER
+B. Multi-Core Performance Analysis
+Figure 8 presents normalized weighted speedup across 4-
+core, 8-core, and 16-core homogeneous configurations, av-
+eraged over no-prefetch, SPP, Zion, Bingo, and Berti. On
+SPEC, MARS achieves ¡4C SPEC¿%, ¡8C SPEC¿%, and ¡16C
+SPEC¿% at 4, 8, and 16 cores, outperforming TTP, HMP, and
+Hermesacrossallconfigurations.OnGAP,MARSachieves¡4C
+GAP¿%,¡8CGAP¿%,and¡16CGAP¿%at4,8,and16cores.
+As core count scales, contention for shared LLC and MSHR
+resources intensifies. MARS sustains its advantage because its
+admission control operates per-level, targeting the structural
+MHC bottleneck that compounds underincreased thread pres-
+sure. Figure 11 presents normalized weighted speedup across
+495 heterogeneous 4-core SPEC mixes sorted by speedup,
+prefetcher-averaged. MARS outperforms TTP, HMP, and Her-
+mes across virtually every mix, with a geomean weighted
+speedup of ¡MARS hetero¿% compared to ¡TTP hetero¿%,
+¡HMP hetero¿%, and ¡Hermes hetero¿%, respectively. The
+advantage is consistent across mix indices, indicating that
+MSHR admission stall reduction generalizes across workload
+interference patterns.
+C. Performance Sensitivity Analysis
+Figure 9(a) presents normalized weighted speedup un-
+der four LLC replacement policies (LRU, SHiP++, Hawk-
+eye, and CARE) across SPEC workloads. MARS achieves
+¡LRU¿%, ¡SHiP++¿%, ¡Hawkeye¿%, and ¡CARE¿% under
+eht
+revo
+pudeeps
+naemoeG
+metsys
+gnihcteferP-oN
+TTP HMP HERMES MARS
+1,5
+1,4
+1,3
+1,2
+1,1
+1
+4 Core 8 Core 16 Core 4 Core 8 Core 16 Core
+SPEC GAP
+Fig. 8: Geometric mean IPC speedup for homogeneous 4-, 8-,
+and 16-core SPEC and GAP workloads.
+(a) SPEC TTP HMP HERMES MARS
+1,4
+1,3
+1,2
+1,1
+1,0
+LRU SHiP++ Hawkeye CARE
+(b) GAP
+1,3
+1,2
+1,1
+1,0
+LRU SHiP++ Hawkeye CARE
+eht
+revo
+pudeeps
+naemoeG
+metsys
+gnihcteferP-oN
+Fig. 9: Replacement policy sensitivity across LRU, SHiP++,
+Hawkeye, and CARE, single-core.
+LRU, SHiP++, Hawkeye, and CARE, respectively, outper-
+forming TTP, HMP, and Hermes in all four configurations.
+Figure 9(b) presents GAP workloads under the same policies,
+where the same trend holds. This is because MARS targets
+L1 MSHR admission stalls, which are upstream of the LLC
+replacement decision, making its benefit orthogonal to the
+eviction policy.
+Figure 10 presents normalized weighted speedup on the
+A14architectureunder1-coreand2-coreconfigurationsacross
+SPECandGAPworkloads.MARSachieves¡1CSPECA14¿%
+and¡2CSPECA14¿%onSPEC,and¡1CGAPA14¿%and¡2C
+GAP A14¿% on GAP, outperforming TTP, HMP, and Hermes
+across all configurations. These results confirm that MARS
+generalizes across microarchitectural generations and is not
+specific to the GLC pipeline.
+REFINED RESUTLS PLACEHOLFDER
+Takeaway. Across the eight result blocks, MARS delivers IPC
+gain on both SPEC and self-attention workloads at the LRU
+baseline(A,B),composeswithallthreeevaluatedreplacement
+policies (C), outperforms off-chip prediction across replace-
+mentchoices(D),scalestoheterogeneousmulti-coreconfigura-
+tions(E),achievesnon-zeroL1ASRwhereoff-chipprediction
+yieldszero(F),generalizestotheAppleA14microarchitecture
+(G), and operates at sub-100-bit storage (H). The result set
+closesthecontribution:selectiveper-levelforwardingaddresses
+the admission stall regime that prefetching, replacement, and
+off-chip prediction each leave unaddressed.
+
+=== PAGE 8 ===
+eht
+revopudeeps
+naemoeG
+metsys
+gnihcteferP-oN
+TTP HMP HERMES MARS
+1,25
+1,23
+1,21
+1,19
+1,17
+1,15
+1 Core 2 Core 1 Core 2 Core
+SPEC GAP
+Fig. 10: Architecture sensitivity under A14 configuration, 1-
+core and 2-core SPEC and GAP workloads.
+2,0
+1,9
+1,8
+1,7
+1,6
+1,5
+1,4
+1,3
+0 30 60 90 120150180210 240270300330360390420450480
+pudeepS
+dezilamroN
+[6] S.BelaynehandD.R.Kaeli,“Adiscussiononnon-blocking/lockup-free
+caches,”SIGARCHComputerArchitectureNews,vol.24,no.3,pp.18–
+25,1996.
+[7] M. K. Qureshi, D. N. Lynch, O. Mutlu, and Y. N. Patt, “A case for
+mlp-awarecachereplacement,”ACMSIGARCHComputerArchitecture
+News,vol.34,no.2,pp.167–178,2006.
+[8] Navarro-Torresetal.,“Berti:anaccuratelocal-deltadataprefetcher,”in
+MICRO,2022,pp.975–991.
+[9] M.Bakhshalipouretal.,“Bingospatialdataprefetcher,”inHPCA,2019,
+pp.399–411.
+[10] J.Kimetal.,“Pathconfidencebasedlookaheadprefetching,”inMICRO,
+2016,pp.1–12.
+[11] M. Shakerinava et al., “Multi-lookahead offset prefetching,” DPC3, no.
+2019,2019.
+[12] V.Biryukov,X.Lu,Z.Liu,K.Zhou,andX.-H.Sun,“Zion:Acompre-
+hensive,adaptive,andlightweighthardwareprefetcher,”inDATE,2026.
+TTP HMP Hermes MARS [13] X. Lu et al., “Apac: An accurate and adaptive prefetch framework with
+concurrentmemoryaccessanalysis,”inICCD,2020,pp.222–229.
+[14] S. Srinath et al., “Feedback directed prefetching: Improving the per-
+formance and bandwidth-efficiency of hardware prefetchers,” in HPCA.
+IEEE,2007,pp.63–74.
+[15] A.Jaleel,K.B.Theobald,S.C.S.Jr.,andJ.Emer,“Highperformance
+cache replacement using re-reference interval prediction (RRIP),” in
+ISCA,2010,pp.60–71.
+[16] C.-J. Wu, A. Jaleel, W. Hasenplaugh, M. Martonosi, S. C. S. Jr., and
+J. Emer, “SHiP: Signature-based hit predictor for high performance
+Fig. 11: Normalized weighted speedup across 495 heteroge-
+caching,”inMICRO,2011,pp.430–441.
+neous 4-core SPEC workload mixes. [17] C.-J.Wu,A.Jaleel,M.Martonosi,andS.C.S.Jr.,“SHiP++:Enhancing
+signature-based hit predictor for high performance caching,” 2016, 2nd
+CacheReplacementChampionship(CRC2),ISCA.
+[18] A.JainandC.Lin,“Backtothefuture:LeveragingBelady’salgorithm
+VI. CONCLUSION forimprovedcachereplacement,”inISCA,2016,pp.78–89.
+[19] X.Lu,R.Wang,andX.-H.Sun,“CARE:Aconcurrency-awareenhanced
+This paper presents MARS, a selective, adaptive, and lightweightcachemanagementframework,”inHPCA. IEEE,2023,pp.
+1208–1220.
+lightweight per-level forwarding framework targeting MSHR
+[20] A. Yoaz, M. Erez, R. Ronen, and S. Jourdan, “Speculation techniques
+Admission stall cycles. A level enters the admission stall for improving load related instruction scheduling,” in ISCA, 1999, pp.
+regimewhenitsmiss-handlingcapacityissaturatedandcannot 42–53.
+[21] R. Bera et al., “Hermes: Accelerating long-latency load requests via
+admit newly detected misses. Prior families leave this regime
+perceptron-basedoff-chiploadprediction,”inMICRO,2022,pp.1–18.
+unaddressed.Byforwardingqualifyingmissestothenextlevel, [22] H. Geng, X. Lu, Y. Che, Z. Tian, D. Cheng, X.-H. Sun, M. Niemier,
+MARSextendsthelevel’seffectiveMissHandlingConcurrency and X. S. Hu, “Cosmos: Rl-enhanced locality-aware counter cache
+optimizationforsecurememory,”inProceedingsofthe58thIEEE/ACM
+past its structural bound while adding 92 bits of counter state
+InternationalSymposiumonMicroarchitecture,2025,pp.1073–1086.
+per gated level (L1, L2) and a 3-bit skip tag per in-flight miss, [23] J.Tuck,L.Ceze,andJ.Torrellas,“Scalablecachemisshandlingforhigh
+withnoMSHRentryallocatedatanyskippedlevel.Thethree- memory-levelparallelism,”inMICRO,2006.
+[24] “SPEC CPU2006 Benchmark Suite,” http://www.spec.org/cpu2006/,
+gateforwardingdecisionreadsshort-andlong-windowedφand
+2006.
+κ signals derived from the concurrent memory access model, [25] “SPEC CPU2017 Benchmark Suite,” http://www.spec.org/cpu2017/,
+firesinlineatmiss-time,andcomposeswithexistingprefetchers 2017.
+[26] S.Beamer,K.Asanovic´,andD.Patterson,“TheGAPbenchmarksuite,”
+andreplacementpolicieswithoutsharedstate.Across30SPEC
+arXivpreprintarXiv:1508.03619,2015.
+CPUtracesand15self-attentionworkloads,MARSreducesL1 [27] J.Liu,P.Espina,andX.-H.Sun,“Astudyonmodelingandoptimization
+MSHRAdmissionstallcyclesanddeliversconsistentIPCgain, of memory systems,” Journal of Computer Science and Technology,
+vol.36,no.1,pp.71–89,2021.
+establishing selective forwarding as a distinct and lightweight
+[28] Y.LiuandX.-H.Sun,“Lpm:Asystematicmethodologyforconcurrent
+mechanism slot in the cache hierarchy. data access pattern optimization from a matching perspective,” IEEE
+Transactions on Parallel and Distributed Systems, vol. 30, no. 11, pp.
+2478–2493,2019.
+REFERENCES [29] N.Goberetal.,“TheChampionshipSimulator:ArchitecturalSimulation
+forEducationandCompetition,”2022.
+[1] W.A.Wulfetal.,“Hittingthememorywall:Implicationsoftheobvious,” [30] “2ndcachereplacementchampionship.”https://crc2.ece.tamu.edu/,2017.
+ACMSIGARCHcomputerarchitecturenews,vol.23,no.1,pp.20–24, [31] “3rdcachereplacementchampionship.”https://crc2.ece.tamu.edu/,2019.
+1995. [32] E.Rotemetal.,“Intelalderlakecpuarchitectures,”MICRO,pp.13–19,
+[2] X.-H. Sun and X. Lu, “The memory-bounded speedup model and its 2022.
+impacts in computing,” Journal of Computer Science and Technology, [33] P. Papaphilippou et al., “Pangloss: a novel markov chain prefetcher,”
+vol.38,no.1,pp.64–79,2023. arXivpreprintarXiv:1906.00877,2019.
+[3] Y.Chou,B.Fahs,andS.Abraham,“Microarchitectureoptimizationsfor [34] S.Pakalapatietal.,“Bouquetofinstructionpointers:Instructionpointer
+exploitingmemory-levelparallelism,”inProceedingsofthe31stAnnual classifier-based spatial hardware prefetching,” in ISCA, 2020, pp. 118–
+International Symposium on Computer Architecture (ISCA), 2004, pp. 131.
+76–87. [35] A.Jainetal.,“Ml-baseddataprefetchingcompetition,”2021,mLArchSys
+[4] X.-H. Sun and D. Wang, “Concurrent average memory access time,” Workshop,ISCA2021.
+Computer,vol.47,no.5,pp.74–80,2014. [36] X. Lu et al., “Chrome: Concurrency-aware holistic cache management
+[5] D.Kroft,“Lockup-freeinstructionfetch/prefetchcacheorganization,”in framework with online reinforcement learning,” in HPCA, 2024, pp.
+ISCA,1998,pp.195–201. 1154–1167.

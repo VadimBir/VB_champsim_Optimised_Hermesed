@@ -1,0 +1,81 @@
+# INFLIGHT_BYP_FIX — ByPLatTracker rewrite
+
+## Symptom
+Reported peak BYP-MLP ≈ 512 (saturating). Real concurrent inflight BYP cannot reach 512. Root cause hypothesis: `on_fill` path filters merged-with-prefetch packets whose BYP flag was reset → counter never decremented → leaks → saturates. Existing dedup table also shrinks effective drain.
+
+## Goal
+Replace existing inflight-tracking inside `ByPLatTracker` (per-level, in `inc/lpm_tracker.h`) with a hashmap-based per-block scheme that decouples drain from BYP flag.
+
+## Required reading (every agent MUST read first)
+1. `/home/cc/.claude/bypass_reference_simple.md` — full bypass mechanics + BYP_DERFILL behavior + scope (LOADs only).
+2. `/home/cc/champsim_VB/champsim_v14_mockingjay_fix/inc/lpm_tracker.h` — current `ByPLatTracker` impl; sections defining `try_insert / sample / on_fill` and the per-level `g_l*_byplat` globals.
+3. `/home/cc/champsim_VB/champsim_v14_mockingjay_fix/src/ByP_Models/4000-KappaPhiL1L2.l1_bypass`
+4. `/home/cc/champsim_VB/champsim_v14_mockingjay_fix/src/ByP_Models/4000-KappaPhiL1L2.l2_bypass`
+5. `/home/cc/champsim_VB/champsim_v14_mockingjay_fix/src/ByP_Models/4000-KappaPhiL1L2.llc_bypass`
+
+## Required Spec (verbatim from user)
+
+### State (per `ByPLatTracker`, per cpu, per level)
+- `std::unordered_map<uint64_t,uint8_t> inflight_blk` — key = `addr >> LOG2_BLOCK_SIZE`, val=1 (presence). Value field reserved for branchless reset; size of map == inflight count, but maintain explicit counter for O(1) sampling.
+- `uint32_t inflight_now` — current inflight BYP count (incremented on issue, decremented on fill).
+- Accumulators (uint64_t):
+  - `mshr_acc`, `mshr_peak`, `inflight_acc`, `inflight_peak`
+  - `mlp_acc` (mshr+inflight at sample time; for avg), `mlp_peak`
+  - `samples` (== model-issue calls; denominator for all averages)
+
+### API (caller perspective from .l*_bypass model files)
+- Issue side (`l*d_bypass_operate` returning true) — caller invokes ONE function:
+  - `on_issue(blk, mshr_occupancy_now)` — inserts blk into hashmap, increments `inflight_now`, samples mshr+inflight (updates accs, updates peaks), increments `samples`. **Must be called only when model's final return is true** (i.e. only when bypass actually issued). If caller currently splits `try_insert` + `sample`, replace with single `on_issue` so semantics are atomic.
+- Fill side (`l*d_bypass_fill`) — caller invokes:
+  - `on_fill(blk)` — lookup blk; if found erase + decrement `inflight_now`. **No BYP flag check** anywhere on fill path. This catches merged-prefetch / BYP-reset cases that currently leak.
+
+### Sampling semantics
+- Sample point = inside `on_issue` (one sample per accepted bypass issue).
+- Avg formula: `mshr_avg = mshr_acc / samples`, `inflight_avg = inflight_acc / samples`, `mlp_avg = mlp_acc / samples`.
+- Peak: track running max for each.
+
+### Stats output
+- Print at end-of-sim per cpu per level: `MSHR avg, MSHR peak, BYP inflight avg, BYP inflight peak, MLP avg, MLP peak`. Keep current header style; rename if cleaner.
+
+### Sizes
+- Counters: uint64_t for accumulators; uint32_t for inflight_now (already widened by user — keep).
+- No fixed table size cap. Hashmap grows as needed (LOADs-only scope keeps it bounded by real concurrency).
+
+## Implementation steps (the implementer agent must do all)
+1. Read all 5 required files above.
+2. Rewrite `ByPLatTracker` struct in `inc/lpm_tracker.h`:
+   - Remove old fixed-size table / dedup-by-level logic if present.
+   - Add hashmap + counters per spec.
+   - Implement `on_issue(blk, mshr_occ)` and `on_fill(blk)`.
+   - Implement init() / print_stats() variants per spec.
+3. Update the three bypass model files (`4000-KappaPhiL1L2.{l1,l2,llc}_bypass`):
+   - Replace `try_insert(blk, cycle)` + `sample(mshr_occ)` pair with `on_issue(blk, mshr_occ)`.
+   - In `l*_bypass_fill`: replace existing call with `on_fill(blk)` only — strip any BYP-flag conditional.
+   - Critical: `on_issue` must run **only on final true return** of `l*d_bypass_operate` — verify the call sits after the predicate and before `return true;`.
+4. If existing print/stats site references removed fields → fix to print new ones.
+5. Build via `qcheck_consistency.sh` if exists, else `quick_v14.sh` build phase. Do NOT run sims yourself — STOP after build success.
+
+## Constraints
+- LOADs-only. Do not extend to stores/RFOs/PFs.
+- No cross-level dedup. Per-level counters only.
+- Branchless preferred where it doesn't hurt clarity.
+- No new compile flags. No conditional behavior.
+- Do NOT touch cache.cc / dram_controller.cc / ooo_l*_byp_model.cc.
+- Do NOT run simulations. Build-only.
+
+## Verification (separate agent, after impl)
+1. Re-read same 5 required files + the diffs implementer made.
+2. Confirm:
+   - `on_fill` has no BYP-flag check.
+   - `on_issue` only runs on final-true predicate path.
+   - Hashmap key is `addr >> LOG2_BLOCK_SIZE`.
+   - Counters: avg = acc/samples; peak = running max; MLP_now = mshr+inflight.
+   - Build succeeds.
+3. Optionally inspect tracker print site for new stat layout.
+4. Report PASS/FAIL with evidence (file:line refs).
+
+## Done criteria
+- All 3 model files use `on_issue` / `on_fill` (clean API).
+- Header rewritten per spec.
+- Build passes.
+- Verifier reports PASS.

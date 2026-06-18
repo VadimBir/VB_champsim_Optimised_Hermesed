@@ -1,0 +1,3 @@
+#!/bin/bash
+# Compact 1-line-per-host watch. Usage: ./watch_hosts.sh
+watch -n 10 'for info in "H1 10.52.3.46" "H2 10.52.3.166" "H3 10.52.2.124" "H4 10.52.1.108" "H5 10.52.2.153" "H6 10.52.3.1" "H7 10.52.0.126" "H8 10.52.3.96" "H9 10.52.0.214"; do h=$(echo $info|cut -d" " -f1); ip=$(echo $info|cut -d" " -f2); ssh -n -i /home/cc/.ssh/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 cc@$ip "printf \"%-3s %-13s pf=%-3s fc=%-3s ld=%s cpu=%4s%% ram=%s\n\" \"$h\" \"$ip\" \"\$(pgrep -c champsim)\" \"\$(pgrep -fc simulation_instructions)\" \"\$(cat /proc/loadavg|cut -d\" \" -f1-3|tr \" \" /)\" \"\$(top -bn1|grep \"Cpu(s)\"|awk \"{printf \\\"%.0f\\\", \\\$2+\\\$4}\")\" \"\$(free -h|awk \"/Mem:/{print \\\$3\\\"/\\\"\\\$2}\")\""; done'

@@ -1,0 +1,580 @@
+TOTAL PAGES: 7
+
+=== PAGE 1 ===
+Zion: A Comprehensive, Adaptive, and Lightweight
+Hardware Prefetcher
+Vadim Biryukov1,2, Xiaoyang Lu1, Zirui Liu3, Kaixiong Zhou4, Xian-He Sun1
+1IllinoisInstituteofTechnology2LewisUniversity3UniversityofMinnesota4NorthCarolinaStateUniversity
+Abstract—As the gap between processor and memory per- capture the diverse memory access patterns occurring across
+formance widens, optimizing data access performance becomes thesevaryingphases,therebyreducingoverallpatterncoverage.
+increasingly critical. Hardware prefetching is a widely used
+Second, most prefetchers lack the ability to utilize runtime
+technique to hide long-latency off-chip memory accesses, but
+feedback, leading to limited adaptability to system dynamics
+state-of-the-art prefetchers struggle with diverse and dynamic
+access patterns. Their limited adaptability leads to excessive stor- andthussuboptimalperformance.Hardwareprefetcheswithout
+age overhead and reduced effectiveness under memory-intensive proper runtime control can introduce undesirable side effects
+workloads. We propose Zion, a comprehensive, adaptive, and such as increased memory bandwidth consumption, cache pol-
+lightweighthardwareprefetcherformemory-intensiveworkloads.
+lution,andmemoryaccessinterference,ultimatelydiminishing
+At its core, Zion uses Independent Temporal-Spatial Modules
+or even negating the expected performance benefits. Third,
+(ITSM) for broad pattern coverage and runtime adaptability to
+diversememoryaccesspatterns.Moreover,Zionleveragesruntime state-of-the-art prefetchers typically rely on a large, unified
+feedbacktodynamicallyguideprefetchingdecisionsandmaintain prediction table to maintain high accuracy, incurring excessive
+efficiency under memory pressure. Extensive multi-core evalu- storage overhead, particularly at cache levels. Moreover, this
+ations show that Zion consistently outperforms state-of-the-art
+unified prediction table inherently suffers from entry conflicts
+prefetchers, achieving up to 43.2% performance improvement on
+acrossunrelateddatastreams,causingprematureevictionoflo-
+SPEC and 43.0% on self-attention workloads, while maintaining
+low overhead and broad effectiveness. callyfrequentyetgloballyrarepatterns,ortheunderestimation
+ofinfrequentbuthighlyaccuratepredictionswhencount-based
+I. INTRODUCTION confidence mechanisms are employed. These limitations moti-
+vate the need for a comprehensive, adaptive, and lightweight
+The unbalanced technological advancements between pro-
+hardware prefetcher for modern memory-intensive workloads.
+cessor speed and memory performance over the past decades
+Tothisend,weproposeZion,whichincorporatesthefollow-
+haveledtothewell-knownMemoryWall problem[1].Modern
+ing core features to overcome existing limitations and effec-
+memory-intensive workloads further exacerbate this problem,
+tively handle diverse and dynamic access patterns. First, at the
+placing memory access latency at the forefront of performance
+core lies the ITSM (Independent Temporal-Spatial Modules)
+bottlenecks [2]. Recently, the emergence of Large Language
+design, consisting of five prediction modules, each with a
+Models (LLMs) has introduced attention-based workloads,
+differently sized prediction table that retains entries capturing
+representing an important new category of memory-intensive
+repeating access patterns to effectively exploit either temporal
+workloads. Although traditionally executed on GPUs, there
+or spatial locality. ITSM addresses the limitations of tradi-
+is growing interest in enabling local CPU-based LLM infer-
+tional prefetchers [6]–[9], which typically rely on one global
+ence [3], [4] due to demands for privacy-preserving and low-
+unified table prone to frequent entry conflicts. Second, Zion
+latency execution on widely available personal devices. Addi-
+employs dynamic runtime adjustment for each ITSM module,
+tionally, advancements in compact LLM architectures, which
+toadjustprefetchingdecisionsandtheinsertiondestinationsof
+significantly reduce model size while maintaining competi-
+prefetchedblocksbasedonreal-timefeedback.Bycontinuously
+tive accuracy, have made CPU-based deployments increasingly
+monitoring each module’s prediction accuracy and incorporat-
+practical.Nevertheless,executingattention-basedcomputations
+inghardwarefeedback,Zionoptimizesperformancewhilemin-
+on CPUs poses significant challenges due to the quadratic
+imizing memory pressure. Finally, Zion achieves a balanced
+memory complexity inherent in self-attention mechanisms [5],
+trade-off between performance and overhead, reducing storage
+whichgreatlyintensifiesdatamovementbetweenon-chipcache
+requirements while guaranteeing coverage capabilities.
+hierarchies and off-chip DRAM.
+Hardware prefetching is a widely used technique to mitigate The performance of Zion is extensively evaluated using
+memoryaccesslatencybypredictingandfetchingdatacloserto memory-intensive workloads from the SPEC CPU2006 [17]
+the CPU before it is needed, thereby improving overall system and SPEC CPU2017 [18] benchmark suites, as well as diverse
+performance [6]–[16]. Despite numerous proposed hardware self-attention workloads from various LLM architectures [19]
+prefetchers, we observe three critical limitations that con- implementedinPyTorch,withmemoryaccessbehaviorshaped
+strain their effectiveness in memory-intensive workloads. First, by CPU libraries and runtime backends [20]. The results
+memory-intensive workloads typically exhibit distinct and dy- demonstrate that Zion, with its comprehensive and adaptive
+namicphases,eachcharacterizedbyuniquememoryaccessbe- design, consistently outperforms state-of-the-art (SOTA) hard-
+haviors. However, existing prefetchers often fail to adequately ware prefetchers, including IPCP [7], Bingo [9], SPP [6], and
+
+=== PAGE 2 ===
+Berti[8],acrossarangeofsystemconfigurations.Notably,ina 40
+30
+4-coreconfiguration,Zionachievesperformanceimprovements
+20
+of 18.2%, 10.1%, 8.0% and 5.1% over these SOTAs, respec- 10
+tively in SPEC CPU [17], [18] workloads. Moreover, Zion 0
+improves the performance of self-attention workloads, up to
+42.2% speedup over the baseline in an 8-core configuration.
+The contributions of this paper are summarized as follows:
+• We comprehensively analyze the memory access patterns
+of memory-intensive workloads from SPEC CPU bench-
+marks and self-attention mechanisms, identifying their
+diverse and irregular behaviors.
+• We propose ITSM, a novel design based on independent
+temporal-spatial modules, to enhance prediction accuracy
+and coverage of varying memory access patterns.
+• We propose a runtime adaptive mechanism that dynam-
+ically adjusts prefetch and insertion decisions based on
+real-time system feedback.
+• WeextensivelyevaluateanddemonstratethatZionconsis-
+tentlyoutperformsSOTAprefetchersonmemory-intensive
+workloads with lightweight overhead.
+II. BACKGROUNDANDMOTIVATION
+A. State-of-the-Art Hardware Prefetchers
+Hardware prefetching is a widely adopted technique for
+mitigating memory access latency by proactively fetching data
+before it is requested, with state-of-the-art prefetchers employ-
+ing diverse and distinct design strategies.
+IPCP [7] classifies instruction pointers into categories:
+constant stride, complex stride, and global stream, enabling
+tailored prefetching strategies for each pattern type. IPCP
+employs a unified IP (instruction pointer) table shared among
+these categories, which can cause early evictions of infrequent
+but potentially valuable entries due to conflicts. Bingo [9]
+enhances spatial pattern learning by associating short-range
+(IP-based) and long-range (IP plus memory region) access
+correlations. Bingo utilizes a large (114KB) unified hardware
+tabletoaccommodateandmanagemultiplepredictionstreams,
+improving performance at the cost of significantly increased
+storage overhead. SPP [6] predicts irregular L2 strides by en-
+codingaccesspatternsintosignaturesderivedfromconsecutive
+memoryaddresses.Througharecursivelookaheadmechanism,
+it issues prefetches until the confidence level drops below
+a threshold. However, its count-based confidence mechanism
+inherently underestimates entries. Berti [8] tracks local deltas
+togeneratetimelyandpreciseprefetches.ByassociatingfirstIP
+accessingapagewithlocaldeltasofthatpage,itmaintainstwo
+compact history tables (totaling 19.85KB), resulting in mod-
+erate storage overhead. However, its count-based confidence
+mechanism ignores rare but accurate stream patterns in favor
+of frequent deltas reducing overall effectiveness.
+B. Workload Memory Access Behavior
+Memory-intensiveSPECWorkloads.Weanalyzememory-
+intensive SPEC workloads and identify two critical challenges
+in SOTA prefetcher designs. First, workloads exhibit distinct
+and dynamic phases, each with its own unique memory access
+652 215 4201 8402 6904 652 215 4201 8402 6904 652 215 4201 8402 6904
+Pythia-70M GPT-125M OPT-350M AVG
+IKPM
+L1D L2C LLC
+Fig. 1: MPKI across different cache levels for self-attention
+workloads.
+behavior. Existing prefetchers often struggle to adapt quickly
+to such phase variations, resulting in delayed or inaccurate
+predictions. Second, independent data streams frequently share
+the same instruction pointer (IP), causing conflicts that reduce
+the prediction accuracy of IP-based prefetchers.
+For instance, in memory-intensive workloads such as mcf,
+we observe two distinct phases. The first phase involves high
+latencies between consecutive memory accesses, characterized
+by significant IP variation and relatively small address deltas
+between consecutive accesses. Conversely, the second phase
+features shorter latencies between memory accesses, fewer
+unique IPs, and significantly larger and wider-ranging address
+deltas. These phases alternate irregularly, either intermittently
+or repeatedly, posing challenges for traditional prediction ta-
+bles.Furthermore,whenasingleIPisassociatedwithmultiple
+distinct access streams, traditional unified-table designs often
+prematurely evict infrequent yet important entries, particularly
+if a count-based confidence mechanism is employed. Similar
+patterns are also observed in other memory-intensive SPEC
+workloads, emphasizing the need for a prefetcher that quickly
+adaptstoshiftingaccesspatternsandavoidsprematurelylosing
+critical pattern information.
+Self-Attention. The self-attention mechanism imposes a
+significant memory demand due to the quadratic growth in
+memory complexity with increasing sequence length [5]. As
+LLMs evolve, running them locally on CPUs has become an
+attractive option for privacy and accessibility, particularly for
+lightweight tasks where compact models are practical. How-
+ever, attention computations involve frequent data movement
+between on-chip caches and off-chip DRAM, exacerbating
+memory bottlenecks and limiting overall performance. We an-
+alyze memory access patterns of self-attention computations in
+TransformermodelsexecutedinPyTorch,wherekeyoperations
+(e.g.,matrixmultiplications)aredispatchedtobackendroutines
+providedbyIntelMKL[21].Basedonthisanalysis,wepresent
+two key observations that guide the design and optimization
+of a hardware prefetcher to accelerate memory accesses for
+attention-based workloads on CPUs.
+Observation 1. Self-attention in LLMs exhibits very high
+MPKI rates across all levels of the cache hierarchy.
+Thequadraticmemorycomplexityoftheself-attentionmech-
+anismhasasignificantimpactonthememoryhierarchybehav-
+ior of LLMs. Figure 1 presents the Misses Per Kilo Instruction
+(MPKI) rates observed for self-attention workloads across
+variousmodelswithdifferentsequencelengthsinasingle-core
+configuration(seeSectionIVfordetails).Weobservethatself-
+
+=== PAGE 3 ===
+a) b) MT5 MT4
+B C Ind I 0 n e x d x I 0 0 n e Dx 0 d x 0e I 0 0 e n D 0l x x x t - d 0 0 e a 1 I 0 0 e D - n l0 12 x x1𝑪 t x d e0 0 a 2 M 𝒅 e l D + - 0 1 1 t 𝒆6 𝐶 x 6 aT e 𝒍 M 4 (cid:3031) 𝒕 4 D + - 1 l 𝒂1 t (cid:3032)6 𝐶6 Ta e (cid:3039) M 4 (cid:3031) (cid:3047) 4 2 l 7 7 (cid:3028) t (cid:3032) 𝐶 T 3 0 a (cid:3039) (cid:3031) (cid:3047) 3 7 7 (cid:3028) (cid:3032) 𝐶 3 0 (cid:3039) (cid:3031) (cid:3047)(cid:3028) (cid:3032)(cid:3039)(cid:3047)(cid:3028) D
+IP “AB” 0x000x0-610+x10027-2488 13
+0x010x+0120-2488 13
+0x0 0 1 x 0 0 x 2 0+0 25x-01 0- 35 x105 +13 135 16 +1316 8 8 IP Address 0x020x0-13+13405
+0x03 +135
+0xA30x44 -1 0x03 +3 33
+0xC50x45 +3 0xD20x42 -1 0xAB0x43 +3 G Fig. 2: Various access patterns in self-attention workloads 0 0 x x C 20 50 0 x x8 4 0 0 + - 1 64 A exhibiting temporal evolution: (a) locally-regular pattern and 0xA30x7F -1 0x570x80 +27
+(b) globally-irregular and unpredictable patterns. 0xAB0x65 -5
+0xA30x60
+-6 0xC50x66
+-1
+0xA30x67
++64
+0x200x27
+attention workloads in LLMs incur a high number of cache
+misses at all levels of the hierarchy. The average MPKI values
+for the L1 data cache (L1D), L2 cache (L2C), and last-level
+cache (LLC) are 36.2, 11.6 and 10.9, respectively. Moreover,
+weobservethat94.0%ofaccessesthatmissintheL2alsomiss
+in the LLC, ultimately leading to costly DRAM accesses and
+highlighting significant inefficiencies in cache utilization. This
+underscores the importance of optimizing cache performance
+(especially at the L2) to reduce memory traffic and mitigate
+memory bottlenecks.
+Observation 2.Self-attentioninLLMsexhibitsadiverseand
+dynamic behavior in memory access patterns.
+We analyze the memory traces of the self-attention mech-
+anism in LLMs and observe varying memory behaviors. In
+Figure 2, the x-axis represents the temporal order of memory
+accesses,whilethey-axiscorrespondstotheaccessed(reddot)
+memory addresses. A thin green line connects given accesses
+consecutively and visualizes the temporal flow of memory
+references.
+Figure 2(a) presents a region illustrating dense clusters of
+accesses with high spatial locality and small, varying strides.
+These behaviors are typically associated with token-level op-
+erations such as embedding lookups. Figure 2(b) provides a
+zoomed-out view of the accesses shown in Figure 2(a), high-
+lighting a phase spanning tens of thousands of addresses. Fig-
+ure2(b)exhibitsphasessimilartothoseinmcf,characterizedby
+highlyfragmentedandirregularmemoryaccesspatterns,which
+posesignificantchallengesfortraditionalprefetchingstrategies.
+In such cases, blind or overly aggressive prefetching can
+increase memory traffic and contention, ultimately degrading
+performance.Theseobservationshighlighttheimportanceofan
+adaptive prefetcher that tunes its decisions and insertion desti-
+nationsatruntimetomaintainefficiencywithoutoverwhelming
+the memory hierarchy.
+III. ZION:ACOMPREHENSIVEANDADAPTIVE
+PREFETCHER
+WeproposeZion,acomprehensive,adaptiveandlightweight
+prefetcher designed to accelerate memory-intensive workloads.
+At the core, it features ITSM, an independent temporal-spatial
+modulesdesignthatprovidespredictionsbyachievingcompre-
+hensivecoverageofbothtemporalandspatiallocalityaccesses.
+Additionally, Zion employs runtime feedback to dynamically
+𝐧𝐨𝐢𝐭𝐚𝐫𝐞𝐧𝐞𝐆
+𝐱𝐞𝐝𝐧𝐈
+A
+D I M P e l “ t T a C T F 5 + r ” 3 aining B I 0 0 0 0 n x x x x d 0 0 0 0 eI 0 1 2 3 0 0 0 0 nx x x x x dD I 0 0 0 0 0 0 0 0 ne x x x x + + e 0 1 2 3 - - dx 0 0 0 0 6 1 I 0 0 0 0 5 3 l ne t 0 1 2 3 D x x x x a dx + + - - 0 0 0 0 e 1 1 e 1 1 D - + - + 0 1 2 3 3 𝑪l 1 1 2 5 x 0 3 t 1 1 e 2 a 𝒅2 5 M 0 3 D + - - + 1 4 l → 𝒆 7 t 6 4 1 2 1 5 6 3 𝐶 5 0 𝒍 ea T 4 8 8 1 𝒕 M 3 4 6 (cid:3031) l 𝒂 1t 1 2 1 5 3 (cid:3032) 𝐶a TM (cid:3039) 8 1 (cid:3031)(cid:3047)7 7 1 8 2 𝐶 (cid:3028)(cid:3032)3 0 3 TM (cid:3039)(cid:3031)(cid:3047) 3 (cid:3032)(cid:3028) T (cid:3039)(cid:3047) 4 (cid:3028)
+H MT5
+IP “AB” IndexPrior BlockPrior StrideIndex Stride 𝐶(cid:3031)(cid:3032)(cid:3039)(cid:3047)(cid:3028)
+0x00 7F 31 0x00 31 73
+0x01 80 16 0x01 0
+0x02 60 -7 0x02 -7 13
+0x03 65→43 -34→-34 0x03 -34 92→93
+𝐧𝐨𝐢𝐭𝐚𝐫𝐞𝐧𝐞𝐆
+𝐱𝐞𝐝𝐧𝐈
+MT Decision
+E
+B I J
+Fig. 3: Overview of ITSM.
+adjust prefetch decisions and insertion destinations, optimizing
+performance while minimizing memory pressure.
+A. ITSM: Independent Temporal-Spatial Modules
+Independent Temporal-Spatial Modules (ITSM) consist of
+multiplepredictionmodulesthatleverageIPtopredictmemory
+access patterns by tracking both deltas and strides. Traditional
+prefetchers typically rely on a unified prediction table that
+globally tracks memory access transitions. Such a monolithic
+structure is prone to entry conflicts across unrelated data
+streams. Specifically, when count-based confidence is used,
+locallyfrequentbutgloballyrarepatternsoftenresultinoverly
+short-sightedpredictionsandpoorresponsiveness.Additionally,
+the unified table structure enforces coarse-grained prefetch
+management,whichcanpenalizehighlyaccuratepredictionsin
+otherwiseeffectivelocalregions.Furthermore,accessingalarge
+unified table suffers from scalability and responsiveness issues
+duetosignificantstorageandlookupoverhead.ITSMaddresses
+these limitations by employing five monitoring-tables (MTs),
+four of which are each dedicated to a distinct delta range, and
+oneMTspecificallyfocusesonspatialaccesseswithinaunified
+stride range.
+Predictions. Figure 3 presents a high-level overview of
+ITSM.Tomakeprefetchingdecisions,thenumberofcandidates
+issuedbyZionislimitedtothosetargetingaddresseswithinthe
+samephysicalpage,sincepredictionaccuracytypicallydeclines
+whendeltaorstridemagnitudesincreaseandcrosspagebound-
+aries [22]. The workload begins by processing each demand
+requestandextractingtheIPassociatedwiththecorresponding
+memory access (A). We then compress the IP using a hash
+function[23]andsimultaneouslyindexthefiveMTs(B).Four
+MTsusedeltas(thedifferencebetweenthecurrentandprevious
+addresses) to capture temporal locality, while a single MT
+targets strides (the difference between two consecutive blocks
+accessed by the current IP [24]) to capture spatial locality,
+enabling comprehensive pattern recognition. ITSM distributes
+thepredictionprocessacrossthesefivedistinctMTs( C ),each
+predicting the most likely next delta or stride for a given IP to
+generate prediction addresses within the Zion prefetcher (D).
+
+=== PAGE 4 ===
+Training. Besides making prediction decisions, ITSM also CPU
+leverageseverydemandaccesstodynamicallyupdatetheMTs, ••••• 4 LLC L2
+ensuring that they remain relevant to changing memory access AAAAA period ∈32 L2C req MSHR-driven prefetch L1DL1I
+••••• total = 16 decision
+patterns. For the first four MTs (which handle deltas), the ••••• T = MSHR periods 3 Y
+training phase begins by processing each memory address to AAAAA A r c e c q >= T req L2 N Zion L2 Cache
+compute the delta ( E ). This computed delta, based on the Skip Predictions
+[MT1][MT2][MT3][MT4][MT5]
+range, determines which MT should be updated. Similar to Prediction History 2
+the prediction phase, ITSM uses the IP ( F ), to index the 𝐶𝑜𝑛𝑓𝑖𝑑𝑒𝑛𝑐𝑒(𝑃)= 𝐶 (cid:3031) (cid:3032) (cid:3032) (cid:3041) (cid:3039) (cid:3047) (cid:3047) (cid:3045) (cid:3028) (cid:3052) Confidence Filter L3 Cache
+appropriate MT (B) and update it. If a matching entry is ∑ (cid:3036) 𝐶 (cid:3031) (cid:3036) (cid:3032)(cid:3039)(cid:3047)(cid:3028) 1
+found in the MT, the confidence score of the corresponding MT1 MT2 MT3 MT4 MT5
+entry is incremented. Otherwise, a new entry is inserted into ITSM
+Off-Chip DRAM
+the corresponding MT (G). The training phase ensures that
+the prediction model continuously adapts to evolving memory Fig. 4: Zion architecture in the memory hierarchy.
+access patterns, and table segmentation mitigates conflicts be-
+tween low- and high-delta streams that share the same IP.
+Simultaneously, the fifth MT targets spatial locality by pre- • MT4: [−63,−32]∪[+32,+63] with 64 entries, targeting
+dicting strides. During the training process, currently accessed the largest and least frequent deltas.
+IP (H) is compressed [23], to index the corresponding table Beyond delta-based prediction, we implement a stride-based
+(B). Before updating the stored prior block of an IP to the MT, to keep track of multiple consecutively repeated strides
+current block ( I ), using these two subsequently accessed per IP:
+blocks, the current stride is computed and compared with the • MT5: [−64,0)∪(0,+64] with 320 entries, focusing on
+priorstridestored.Onamismatch,thestoredstrideisupdated; strides for spatial locality.
+otherwise,theconfidencescoreisincrementedforthematching
+Werelaxthestrictnon-overlapconstraintatboundaryvalues
+entry( J ).Thisimprovescoverageofalternatingstrides[7]by
+(e.g., allowing shared deltas such as ±8,±16,±32), which
+storing multiple variants of consecutively repeated strides for
+improves prediction accuracy at delta range boundaries.
+the same IP.
+Range-Segmented Monitoring-Tables. To ensure efficient
+hardware realization for predictions, ITSM adopts a cache-like B. Dynamic Adjustment of Prefetcher Behavior
+structureforeachsegmentedMT.EachMTisindexedusingthe
+Although Zion provides both temporal and spatial pattern
+encoded IP [23] and retrieves the corresponding delta or stride
+recognition, unmanaged and overly aggressive predictions may
+alongwitha16-bitconfidencescore,C (saturatedat65535).
+delta cause severe cache pollution, increased memory pressure, and
+Each MT uses a Least Recently Used (LRU) replacement
+degradedperformance[12],[25].Toaddressthis,Zionemploys
+policy, allowing to adapt to evolving memory behavior while
+threeadjustmentstrategiestodynamicallymanagethebehavior
+remaining efficient and scalable for modern memory systems.
+of ITSM at the L2 cache level, as shown in Figure 4.
+Each delta-based MT is independently sized to reflect the
+For every MT prediction ( 1 ), a confidence-based filtering
+observed frequency and reuse characteristics of deltas within
+mechanism applies empirically selected thresholds of 20%,
+its range. Based on our analysis, smaller deltas occur more
+25%, 30%, and 40% for delta-based MT1 to MT4, and 1% is
+frequently and exhibit shorter reuse distances; therefore, larger
+set for stride-based MT5 ( 2 ). The confidence is computed as
+tables are allocated to accommodate more entries. Conversely,
+theratiobetweenthecandidate’sconfidencescoreandthetotal
+larger deltas, which are less frequent and have longer reuse
+numberofupdatescorrespondingtoagivenIPintheMT.Can-
+distances, thus smaller tables are assigned to reduce storage
+didates that do not meet the assigned threshold are discarded,
+overhead. This design effectively mitigates count-based confi-
+minimizing inaccurate prefetches and cache pollution.
+dence bias, caused by the dominance of frequent deltas, while
+Accuracy Monitoring.ZionprefetcherevaluateseachMT’s
+balancing storage overhead with prediction performance.
+performance over 512 accesses by using a 32 access period
+To cover deltas in the range [−63,+63] for a system with a
+effectiveness level. If MT’s level falls below the required
+standard4KBpagesizeand64Bcacheline,weusedasoftware-
+threshold, determined by hardware feedback, it is temporarily
+like logarithmic partitioning to define the delta ranges for each
+disabled.
+MT as follows:
+For each MT, confidence-filtered candidates are recorded in
+• MT1: [−8,0) ∪ (0,+8] with 512 entries, covering the the prediction history table ( 3 ) using the First-In-First-Out
+smallestandmostfrequentdeltas,whichtypicallyindicate (FIFO) replacement policy. Each entry stores a 6-bit page-
+accesses with high spatial locality. relative predicted block number and a 10-bit encoded page
+• MT2: [−16,−8]∪[+8,+16] with 320 entries, handling number. On every L2 hit request, the access is encoded and
+slightly larger deltas while maintaining separation from searched across all prediction history tables. If an MT had
+the smaller range. predicted a given block, a 5-bit counter is incremented. Every
+• MT3:[−32,−16]∪[+16,+32]with128entries,capturing 32-access period, the numbers of successful MT predictions
+moderately infrequent patterns. are encoded in three-level effectiveness (using a 2n scaling)
+
+=== PAGE 5 ===
+TABLE 1: Storage overhead of Zion TABLE 2: Simulated system parameters
+Structure Field(#bitsineachentry) Entries #Bits (A)(Default)IntelAlderLake(GLC)
+MT1:IP(16)+Delta(3)+Cdelta(16) 512 17920 Core 1–8cores,6-widefetch/execute/commit,512-entry
+MT2:IP(16)+Delta(3)+Cdelta(16) 320 11200 ROB,128/72-entryLQ/SQ,perceptronbranchpredictor
+ITSM
+MT3:IP(16)+Delta(4)+Cdelta(16) 128 4608 L1/L2Cache Private,48KB/1.25MB,64Bline,12/20-way,
+MT4:IP(16)+Delta(5)+Cdelta(16) 64 2368 16/48MSHRs,LRU,5/15-cycleround-triplatency
+MT5:IP(16)+Delta(6)+Cdelta(16) 320 12160 LLC 3MB/core,64Bline,12-way,64MSHRs/slice,LRU,
+Previous:Stride(6)+Block(58) 320 20480 55-cycleround-triplatency
+LRU MT1(9)+MT2(9)+MT3(7)+MT4(6)+MT5(9) 40 (B)AppleA14Firestorm(A14)
+ITSMTotal: 8.4KB Core 1core,8-widefetch/execute/commit,632-entryROB,
+Predictions #MT(5)x(Page(10)+PageBlock(6)) 64 5120 148/106-entryLQ/SQ,perceptronbranchpredictor
+Period GlobalCounter(5) Effectiveness(2) 16 37 L1/L2Cache Private,128KB/4MB,64Bline,8/16-way,
+Metadata Counter(5)+FIFO(4) 5 45 16/48MSHRs,LRU,3/16-cycleround-triplatency
+TrackerTotal:0.64KB ZionTotal:9.03KB LLC Shared,8MB,64Bline,16-way,64MSHRs/core,LRU,
+24-cycleround-triplatency
+MainMemory(BothArchitectures)
+GLC/A14 1C:1channel,1rankperchannel;
+using 2-bits in the 16-entry period table before advancing to
+GLC 2C:2channels,2ranksperchannel;
+the next period. After 15 periods, based on effectiveness, MT 4C–8C:4channels,2ranksperchannel;
+is temporarily disabled ( 3 ). Both 8banksperrank,DDR4-3200MTPS,64bdata-bus
+perchannel,2KBrowbuffer,tRCD/tRP/tCAS=12.5ns
+Real-time System Feedback. The required effectiveness
+level is determined by the availability of L2 Miss Status
+TABLE 3: Evaluated workloads
+Holding Register (MSHR). When 25% or 12.5% of MSHR
+is available, an MT, must have the second or third level, Suite Workload
+respectively,toremainactive.Toavoidfalse-positivedisabling, SPEC2006 gcc,gobmk,libquantum,lbm,astar,wrf
+sphinx3,xalancbmk
+Zion continuously monitors inactive MTs, and if a new, in-
+SPEC2017 perlbench,gcc,bwaves,mcf,cactuBSSN,lbm
+progress,periodmonitoringreachestherequiredthreshold,MT wrf,xalancbmk,x264,fotonik3d,roms
+is reactivated. Moreover, based on MSHR, the L2 pressure is Self-Attention Pythia:256,512,10242048,4096(Tokens)
+GPT:256,512,10242048,4096(Tokens)
+alleviated when occupancy exceeds thresholds (75% spatial,
+OPT:256,512,10242048,4096(Tokens)
+50% temporal locality MTs), Zion redirects prefetch requests
+to LLC cache, which maintains overall performance ( 4 ).
+Evaluated Workloads. We evaluate Zion prefetcher on a set
+C. Storage Overhead
+ofmemory-intensiveworkloadsfromSPECCPU2006[17]and
+Table 1 summarizes the storage overhead of Zion. The SPEC CPU2017 [18], to assess its effectiveness for general-
+primary storage overhead arises from maintaining the five purpose CPU workloads. We select 37 traces, each exhibiting
+modules in ITSM, along with the LRU policy used to manage LLC miss per kilo instructions (MPKI) greater than 1 in the
+their respective tables. A hash function is used to encode the baseline system without prefetching. These evaluations include
+IP into 16 bits for indexing all prediction tables. Delta values both homogeneous configurations (running identical copies of
+are encoded using N-bit representations, with the number of the same trace) and heterogeneous configurations (running
+bits tailored to each segmented delta range. The confidence distinct traces, one per core). For every benchmark cache is
+score C delta is allocated 16 bits, to track a broad range of initialized through warm-up of 50M sim-point instructions and
+observed repetitions and to ensure robust prediction accuracy. statistics are kept for the next 200M sim-point instructions.
+Inaddition,Zionusesalightweightaccuracymonitoring,using Table 3 summarizes the workloads evaluated in this study.
+a prediction table and accuracy table requiring only 128 bytes We also evaluate Zion using three widely adopted open-
+permodule.Overall,Zionislightweight,requiringonly9.03KB source language model variants: Pythia [30], GPT [31], and
+of storage for the 1-core configuration (see Table 2). This OPT [32], which represent compact LLM architectures opti-
+achieves 12.6× and 2.2× lower storage overhead than SOTA mized for edge and CPU-based inference [19], across various
+prefetchers Bingo [9] and Berti [8]. sequence lengths. Models are decoder-only transformers [33],
+pre-trained with causal modeling, executed in PyTorch with
+IV. METHODOLOGY
+CPU-optimized backendlibraries [20].Tocollect self-attention
+Simulation Setup. We evaluate the performance of Zion using traces from the models, we use the Intel Pin dynamic binary
+theChampSimsimulator[26],whichhasbeenemployedinthe instrumentation tool [34]. For all simulations, the first 20% of
+2nd and 3rd Data Prefetching Championships [27], [28]. We instructions are used for warm-up, and the remaining 80% are
+simulate the Intel Alder Lake (GLC) [29] multi-core proces- used for evaluation.
+sor as the default microarchitecture, supporting configurations Compared Prefetchers. We compare Zion against four SOTA
+ranging from 1-core to 8-core systems. Table 2(A) outlines the hardware prefetchers: IPCP [7], Bingo [9], SPP [6], and
+system parameters. To explore architectural diversity, we also Berti [8]. For comparison, we employ a simple next-line
+simulatetheAppleA14Firestormprocessor,representingmod- prefetcher at the L1D cache, while each evaluated prefetcher
+ern mobile and edge platforms, in a single-core configuration. is deployed at the L2 cache. We report normalized weighted
+Its detailed parameters are listed in Table 2(B). speedup [7], [35] over a no-prefetch baseline.
+
+=== PAGE 6 ===
+(a) SPEC IPCP Bingo SPP Berti Zion
+1.40
+1.30
+1.20
+1.10
+1.00
+(b) Self-attention
+1.40
+1.30
+1.20
+1.10
+1.00
+1-core A14 1-core glc 2-core glc 4-core glc 8-core glc
+pudeepS
+dezilamroN
+Fig. 5: Performance improvements of prefetchers on (a) SPEC
+2006, SPEC 2017 and (b) self-attention workloads across
+varying core counts.
+100%
+90%
+80%
+70%
+60%
+50%
+SPEC06 SPEC17 LLM AVG
+fo
+noitcarF
+derevoC
+sessiM
+2.00
+1.80
+1.60
+1.40
+1.20
+1.00
+0 50 100 150 200 250 300 350 400 450 500
+IPCP Bingo SPP Berti Zion
+Fig. 6: Coverage of LLC cache misses achieved by various
+prefetchers in a 4-core configuration.
+V. EXPERIMENTALRESULTS
+A. Performance of SPEC workloads
+Figure 5(a) presents the normalized speedup of all evaluated
+prefetchers running 37 homogeneous SPEC workloads under
+various system configurations, including 1-core (Apple A14
+and GLC), as well as multi-core (2/4/8-core GLC). Across
+all configurations, Zion consistently outperforms all SOTA
+designs, achieves speedup of 25.5%, 38.5%, 40.9%, 43.2%
+and 32.5% over the baseline, respectively. In particular, under
+the optimal 4-core configuration, Zion surpasses IPCP, Bingo,
+SPP,andBertiby18.2%,10.1%,8.0%,and5.1%,respectively.
+Moreover, the memory subsystem saturation, at a higher core
+count degrades the performance at 8-core for all prefetchers.
+At the other end, on 1-core A14, the 6.4× smaller L2 cache
+capacity limits the gains of SPP, Berti, and Zion, resulting in
+a small performance gap.
+B. Performance of Self-Attention workloads
+Figure 5(b) illustrates the geometric mean speedup across
+various prefetchers on homogeneous self-attention workloads.
+Zion achieves 31.7%, 37.6%, 41.3%, 43.0%, and 42.2%
+speedup on A14 (1-core) and GLC (1-core, 2-core, 4-core,
+and 8-core). These results demonstrate that LLMs with equiv-
+alent internal architectures achieve consistent speedups in self-
+attention mechanisms. Notably, in all multi-core configura-
+tions, Zion outperforms other prefetchers in every workload.
+As the core count increases, pattern interference increases
+and prefetcher adaptability becomes increasingly important.
+As a result, Zion in the 8-core configuration outperforms
+IPCP, Bingo, SPP, and Berti by 11.8%, 10.0%, 4.4%, and
+5.1%, respectively. Notably, the marginal improvement over
+the strongest competing prefetcher in any given workload is
+between 1.54% and 5.9%.
+pudeepS
+dezilamroN
+IPCP Bingo SPP Berti Zion
+Fig. 7: Weighted speedup of prefetchers on heterogeneous
+SPEC workload mixes in a 4-core system.
+C. Homogeneous Pattern Coverage
+We evaluate prefetch coverage, defined as the ratio of cache
+misses eliminated by the prefetcher to the number of misses
+in the baseline (no prefetching). Each prefetcher is trained
+using L1-cache misses, while predicted lines are inserted into
+the L2 and LLC. In the 4-core homogeneous configuration,
+Figure 6 shows that Zion achieves LLC coverage rates of
+73.6%, 84.0%, and 90.5% on SPEC 2006, SPEC 2017, and
+self-attentionworkloads,respectively.Thenextbestprefetcher,
+Berti, achieves coverage rates of 69.8%, 75.8%, and 86.6% on
+the same workloads.
+D. Heterogeneous Workloads in 4-Core Systems
+To comprehensively evaluate the performance, we gener-
+ate 500 heterogeneous 4-core mixes by randomly selecting
+tracesfromtheevaluatedSPECandself-attentionbenchmarks,
+assigning a distinct trace to each core. Figure 7 shows the
+weighted speedup over the no-prefetch baseline, with mixes
+sorted in ascending order of Zion’s performance. Overall,
+Zion achieves an average speedup of 63.8% over the baseline,
+outperforming IPCP, Bingo, SPP, and Berti by 22.3%, 15.0%,
+9.9%, and 5.5%, respectively.
+VI. CONCLUSION
+This paper presents a Zion prefetcher, a comprehensive and
+adaptive hardware prefetcher. By integrating ITSM with five
+specialized prediction modules, Zion achieves comprehensive
+coverage across diverse memory access patterns. Addition-
+ally, Zion dynamically tunes prefetching behavior based on
+runtime feedback to mitigate memory pressure and enhance
+performance, while remaining lightweight. Evaluations show
+that Zion consistently outperforms state-of-the-art prefetchers
+across both SPEC and self-attention workloads. Overall, Zion
+provides a practical and extensible foundation for future CPU-
+based systems targeting efficient memory-intensive computing
+and on-device LLM inference.
+ACKNOWLEDGEMENTS
+We thank the anonymous reviewers for their constructive
+and insightful feedback. This research is supported in part by
+the National Science Foundation under Grants CNS-2310422,
+CNS-2152497, CNS-2431516 and NSF 2450524. Results pre-
+sentedinthispaperwereobtainedusingtheChameleontestbed
+supported by the National Science Foundation.

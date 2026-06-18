@@ -1,0 +1,6 @@
+403.gcc-48B.champsimtrace.xz
+429.mcf-22B.champsimtrace.xz
+482.sphinx3-1100B.champsimtrace.xz
+482.sphinx3-1297B.champsimtrace.xz
+482.sphinx3-1522B.champsimtrace.xz
+482.sphinx3-234B.champsimtrace.xz

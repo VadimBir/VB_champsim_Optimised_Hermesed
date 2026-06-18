@@ -1,0 +1,37 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 1400 — CAREcontrib — L2
+
+inline bool l2_bypass_init_1400[NUM_CPUS] = {};
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init_1400[cpu]) return;
+    cout << "L2 Bypass [1400-CAREcontrib]: µ×κ miss contribution + MLP overlap check" << endl;
+    l2_bypass_init_1400[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    auto& bws = lpm[cpu][LPM_L2C].bkt[BKT_WS];
+    double mu  = bws.µ_missCyFracOfActiveCy();
+    double kap = bws.κ_pureMissFracOfMissCy();
+    double miss_contrib = mu * kap;
+
+    if (miss_contrib < 0.15) return false;
+
+    uint64_t omega = bws.ω_activeMemCy();
+    if (omega == 0) return false;
+    double overlap_frac = (double)bws.cy[CY_X] / (double)omega;
+    if (overlap_frac > 0.40) return false;
+
+    return true;
+}

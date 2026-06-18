@@ -1,0 +1,5 @@
+403.gcc-16B.champsimtrace.xz
+403.gcc-48B.champsimtrace.xz
+473.astar-153B.champsimtrace.xz
+483.xalancbmk-736B.champsimtrace.xz
+621.wrf_s-8100B.champsimtrace.xz

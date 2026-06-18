@@ -1,0 +1,54 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+inline bool l2_bypass_init[NUM_CPUS] = {};
+
+
+// ============================================================
+// METHOD 8 (Claude): φ FILL-REUSE vs MISS-GAIN BALANCE
+// bypass iff miss_gain > fill_value
+// fill_value = phi * h_cy_per_access
+// miss_gain  = w_mu * w_kappa * camat_next
+// [Eq13,27,35]
+// ============================================================
+
+// --- M8 L2C ---
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init[cpu]) return;
+        cout << "L2C Bypass [M8 phi Fill-Reuse vs Miss-Gain]:\n"
+             << "  fill_value = phi_L2C * (w_h_L2C / acc_L2C)  [Eq13,27]\n"
+             << "  miss_gain  = w_mu_L2C * w_kappa_L2C * camat_LLC  [Eq35]\n"
+             << "  bypass iff miss_gain > fill_value\n";
+    l2_bypass_init[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+    if (LLC->RQ.occupancy >= LLC->RQ.SIZE) return false;
+
+    const auto& t2 = lpm[cpu][L2C_type];
+    const auto& t3 = lpm[cpu][LLC_type];
+
+    double total = t2.w.h_pureHitCy + t2.w.m_pureMissCy + t2.w.x_overlapCy + t2.w.e_idleCy;
+    if (total <= 0.0) return false;
+    double phi = t2.w.h_pureHitCy / total;
+
+    double acc = t2.w.h_pureHitCy + t2.w.m_pureMissCy;
+    if (acc <= 0.0) return false;
+    double h_cy_per_acc = t2.w.h_pureHitCy / acc;
+
+    double fill_value = phi * h_cy_per_acc;
+
+    double camat_next = t3.gm.camat_activeMemCyDivAccesses;
+    double miss_gain  = t2.w.µ_missCyFracOfActiveCy()
+                      * t2.w.κ_pureMissFracOfMissCy()
+                      * camat_next;
+
+    return miss_gain > fill_value;
+}

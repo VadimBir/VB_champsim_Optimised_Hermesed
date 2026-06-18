@@ -1,0 +1,44 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// ============================================================
+// MODEL 205 — PureMissReduceOnTiming (L2 level)
+// Paper: Liu et al. JCST 36(1) 2021, Section 3–6
+//
+// Bypass L2 only if: lone at L2 (RQ==1) AND APC_L2 > MST_L2
+//
+// w_apc_val (L2) = windowed avg cycles between L2 accesses
+// w_mst_val (L2) = windowed avg pure miss service time at L2
+//
+// If APC_L2 <= MST_L2 → a new L2 request will likely arrive
+//   during the miss → overlap (x) cycle, not pure miss (m)
+//   → no bypass needed
+// If APC_L2 >  MST_L2 → miss completes before next L2 access
+//   → pure miss cycle guaranteed at L2 → bypass to DRAM
+// ============================================================
+
+inline bool l2_bypass_init[NUM_CPUS] = {};
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init[cpu]) return;
+    cout << "L2 Bypass [205-PureMissReduceOnTiming]:\n"
+         << "  bypass iff lone miss (RQ==1) AND w_apc > w_mst at L2\n"
+         << "  APC > MST: no future request will overlap the L2 miss → pure miss guaranteed" << endl;
+    l2_bypass_init[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+    if (L2C->RQ.occupancy != 1) return false;    // concurrent requests present at L2
+    double apc = lpm[cpu][L2C_type].wm.apc_accessesDivActiveMemCy;   // avg cycles between L2 accesses (windowed)
+    double mst = lpm[cpu][L2C_type].wm.mst_pureMissCyDivAccesses;   // avg pure miss service time at L2 (windowed)
+    if (mst <= 0.0) return false;                 // no miss history yet, don't bypass blindly
+    return (apc > mst);
+}

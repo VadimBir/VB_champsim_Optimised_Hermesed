@@ -1,0 +1,46 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// ============================================================
+// MODEL 300 — RecursiveGoldenRatio (L2 level)
+// Paper: Liu et al. JCST 36(1) 2021, eq. 41–42
+//
+// GoldenRatio_l = RQ.occupancy / (MSHR.occupancy + 1)
+//   GR_l < 1  ↔  hit supply < miss supply  ↔  pure-miss rising
+//
+// Bypass L2 iff GR_L2 < 1  OR  GR_LLC < 1
+//   — local L2 starved  OR  LLC is already starved and bypass
+//     injection there shrinks κ(LLC) in the recursive C-AMAT chain.
+//
+// NOTE: the L2 stall concern (10× worse than L1) is implicitly
+// handled by the OR: bypass L2 only when it already has too few
+// hits. If GR_L2 >= 1 but GR_LLC < 1, bypass injects into LLC
+// without creating extra L2 pressure (L2 has spare hit capacity).
+// ============================================================
+
+inline bool l2_bypass_init[NUM_CPUS] = {};
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init[cpu]) return;
+    cout << "L2 Bypass [300-RecursiveGoldenRatio]:\n"
+         << "  bypass iff (RQ_L2 < MSHR_L2+1) OR (RQ_LLC < MSHR_LLC+1)\n"
+         << "  GoldenRatio_l = RQ.occ/(MSHR.occ+1): ratio<1 means hit supply < miss supply\n"
+         << "  OR: local L2 starved OR LLC starved and bypass injection helps (eq 41/42)" << endl;
+    l2_bypass_init[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+    // GR_L2 < 1: hit supply at L2 insufficient to cover miss supply
+    bool gr_l2_low = (L2C->RQ.occupancy < L2C->MSHR.occupancy + 1);
+    // GR_LLC < 1: LLC miss supply exceeds hit supply; bypass injects hit overlap (eq 42)
+    bool gr_llc_low = (LLC->RQ.occupancy < LLC->MSHR.occupancy + 1);
+    return gr_l2_low || gr_llc_low;
+}

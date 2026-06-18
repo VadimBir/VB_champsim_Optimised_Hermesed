@@ -1,0 +1,58 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+// USEFUL VARS:  usage example
+//  * Cached metrics available without sim_access:
+//  *   lpm[cpu][IS_L1D].c_amat_val   ← ω(L1D)/α(L1D)
+//  *   lpm[cpu][IS_L1D].apc_val      ← α(L1D)/ω(L1D)
+//  *   lpm[cpu][IS_L1D].lpmr_val     ← ω(L1D)/(IC×CPIexe)
+//  *   lpm[cpu][IS_L2C].mu()         ← miss-cycle fraction
+//  *   lpm[cpu][IS_L2C].kappa()      ← pure-miss fraction
+//  *
+//  * Also raw counters:
+//  *   lpm[cpu][IS_L1D].h, .m, .x, .e
+//  *   lpm[cpu][IS_L1D].omega()
+
+// L1D->MSHR.occupancy      L1D->MSHR.SIZE
+// L1D->RQ.occupancy        L1D->RQ.SIZE
+// L1D->PQ.occupancy        L1D->PQ.SIZE
+// L2C->MSHR.occupancy      L2C->MSHR.SIZE
+// L2C->RQ.occupancy        L2C->RQ.SIZE
+// L2C->PQ.occupancy        L2C->PQ.SIZE
+
+// CACHE TYPEs
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+
+static bool ByP_model_init = false;
+
+inline bool shall_L1D_Bypass_OnCacheMissedMSHRcap(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (ByP_model_init == false){
+        cout << "Bypass on: Clean APC LPM score: bypass when L1 pressure times L2 free supply times layer mismatch exceeds one." << endl;
+        ByP_model_init = true;
+    }
+
+
+if (L2C->MSHR.occupancy >= L2C->MSHR.SIZE)
+    return false;
+
+double apc_l2  = lpm[cpu][L2C_type].w_apc_val;
+double lpmr_l1 = lpm[cpu][L1D_type].w_lpmr_val;
+double lpmr_l2 = lpm[cpu][L2C_type].w_lpmr_val;
+
+if (apc_l2  < 1e-6) apc_l2  = lpm[cpu][L2C_type].apc_val;
+if (lpmr_l1 < 1e-6) lpmr_l1 = lpm[cpu][L1D_type].lpmr_val;
+if (lpmr_l2 < 1e-6) lpmr_l2 = lpm[cpu][L2C_type].lpmr_val;
+
+if (apc_l2  < 1e-6) apc_l2  = 1e-6;
+if (lpmr_l1 < 1e-6) lpmr_l1 = 1e-6;
+if (lpmr_l2 < 1e-6) lpmr_l2 = 1e-6;
+
+double l1_util = (double)L1D->MSHR.occupancy / (double)L1D->MSHR.SIZE;
+double free_l2 = (double)(L2C->MSHR.SIZE - L2C->MSHR.occupancy);
+
+double score = l1_util * free_l2 * apc_l2 * (lpmr_l1 / lpmr_l2);
+
+return score > 1.0;
+}

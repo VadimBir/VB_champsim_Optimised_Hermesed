@@ -1,0 +1,40 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+inline bool l2_bypass_init[NUM_CPUS] = {};
+
+
+// ============================================================
+// METHOD 2: C-AMAT SERIALIZATION
+// bypass iff current level more serialized than next level
+// C-AMAT(current) > C-AMAT(next)  [Eq31: C-AMAT=AMAT/C, more serial=higher C-AMAT]
+// + MSHR ceiling at current level [Eq26: Cm ceiling]
+// + RQ gate at next level
+// ============================================================
+
+// --- M2 L2C ---
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init[cpu]) return;
+        cout << "L2C Bypass [M2 C-AMAT Serialization]:\n"
+             << "  P1: L2C MSHR full         [Eq26]\n"
+             << "  P2: LLC RQ not full       [physical routing]\n"
+             << "  P3: camat(L2C) > camat(LLC) [Eq31: L2C more serialized]\n";
+    l2_bypass_init[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+    if (L2C->MSHR.occupancy < L2C->MSHR.SIZE) return false;
+    if (LLC->RQ.occupancy   >= LLC->RQ.SIZE)  return false;
+
+    const auto& t2 = lpm[cpu][L2C_type];
+    const auto& t3 = lpm[cpu][LLC_type];
+
+    return t2.gm.camat_activeMemCyDivAccesses > t3.gm.camat_activeMemCyDivAccesses;
+}

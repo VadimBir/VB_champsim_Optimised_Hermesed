@@ -1,0 +1,46 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 2110 — ByPw — L2 (CAMATxCPA union prediction)
+
+inline bool l2_bypass_init_2110[NUM_CPUS] = {};
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init_2110[cpu]) return;
+    cout << "L2 Bypass [2110-ByPw-CAMATxCPA-Union]\n";
+    l2_bypass_init_2110[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    double camat_s = lpm[cpu][LPM_L2C].met[MET_WS].camat_activeMemCyDivAccesses;
+    double cpa_s   = lpm[cpu][LPM_L2C].met[MET_WS].cpa_totalCyDivAccesses;
+    if (camat_s < 1.0 || cpa_s < 1.0) return false;
+
+    double non_mem_s = cpa_s - camat_s;
+    double overlap_in_camat = camat_s - non_mem_s;
+    if (overlap_in_camat < 0.0) overlap_in_camat = 0.0;
+    double pure_s = camat_s - overlap_in_camat;
+
+    double access_kappa = pure_s / camat_s;
+    double window_kappa = get_kappa_long(cpu, LPM_L2C);
+    if (window_kappa < 1e-6) return false;
+    if (access_kappa <= window_kappa) return false;
+
+    double llc_camat = lpm[cpu][LPM_LLC].met[MET_WL].camat_activeMemCyDivAccesses;
+    double llc_cpa   = lpm[cpu][LPM_LLC].met[MET_WL].cpa_totalCyDivAccesses;
+    if (llc_cpa < 1.0) return false;
+    double llc_pressure = llc_camat / llc_cpa;
+    if (llc_pressure > 1.0) llc_pressure = 1.0;
+
+    double k_reduce_pct = access_kappa / window_kappa;
+    return (k_reduce_pct >= llc_pressure);
+}
