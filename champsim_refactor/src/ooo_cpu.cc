@@ -10,7 +10,7 @@
 namespace knob { extern bool enable_ddrp; extern bool offchip_pred_mark_merged_load; extern uint32_t ddrp_req_latency; extern bool enable_ddrp_monitor; }
 #endif 
 
-#include "ooo_cpu_helper.h"   // PURE code motion: file-local SANITY macros + print_core_config moved here (same TU); placed at top so later datapath uses see the macros
+#include "ooo_cpu_helper.cc"   // PURE code motion: file-local SANITY macros + print_core_config moved here (same TU); placed at top so later datapath uses see the macros
 
 // === PASTE THIS MACRO AT TOP OF ooo_cpu.cc ===
 // #define TRACK_MEMOPS(rob_idx, source_label) \

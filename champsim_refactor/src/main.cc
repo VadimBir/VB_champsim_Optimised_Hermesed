@@ -110,7 +110,7 @@ queue <uint64_t > page_queue;
 ankerl::unordered_dense::map <uint64_t, uint64_t> page_table, inverse_table, recent_page, unique_cl[NUM_CPUS];
 uint64_t previous_ppage, num_adjacent_page, num_cl[NUM_CPUS], allocated_pages, num_page[NUM_CPUS], minor_fault[NUM_CPUS], major_fault[NUM_CPUS];
 
-#include "main_stats.h"
+#include "main_helper.cc"
 
 void signal_handler(int signal)
 {
@@ -124,8 +124,8 @@ void signal_handler(int signal)
 
 
 RANDOM champsim_rand(champsim_seed);
-#include "main_paging.h"
-#include "main_loop.h"
+#include "main_paging.cc"
+#include "main_loop.cc"
 #define ROB_MASK (ROB_SIZE - 1)
 // static char zero_arena[1024*1024*1024] = {0};
 int main(int argc, char** argv)

@@ -24,6 +24,7 @@ SRCS := $(wildcard src/*.cc) $(wildcard src/hermes/*.cc) \
         $(wildcard branch/*.cc) $(wildcard replacement/*.cc) \
         $(wildcard prefetcher/*.cc)
 SRCS := $(filter-out replacement/hawkeye.cc replacement/hawkeye_crc2.cc,$(SRCS))
+SRCS := $(filter-out src/main_helper.cc src/cache_helper.cc src/ooo_cpu_helper.cc src/dram_helper.cc src/main_loop.cc src/main_paging.cc,$(SRCS))
 OBJS := $(patsubst %.cc,$(OBJDIR)/%.o,$(SRCS)) $(OBJDIR)/sqlite3.o
 
 .PHONY: all clean

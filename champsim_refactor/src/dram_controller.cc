@@ -6,7 +6,7 @@
 #endif
 IF_HERMES( namespace knob { extern bool enable_ddrp; extern bool dram_cntlr_enable_ddrp_buffer; } )
 
-#include "dram_helper.h"
+#include "dram_helper.cc"
 
 // initialized in main.cc
 uint32_t DRAM_MTPS, DRAM_DBUS_RETURN_TIME,

@@ -1,6 +1,6 @@
 #ifndef OOO_CPU_HELPER_H
 #define OOO_CPU_HELPER_H
-// ooo_cpu_helper.h — behavior-preserving offload from ooo_cpu.cc (PURE code motion).
+// ooo_cpu_helper.cc — behavior-preserving offload from ooo_cpu.cc (PURE code motion).
 // Same-TU include from ooo_cpu.cc. Contains: file-local SANITY macro block + print_core_config.
 
 // ==== TRUE_SANITY_CHECK macros (ooo_cpu.cc local) ====

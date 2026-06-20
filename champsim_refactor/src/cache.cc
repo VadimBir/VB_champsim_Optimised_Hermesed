@@ -27,7 +27,7 @@ uint32_t g_crossmlp_load_peak[NUM_CPUS] = {};
 uint32_t g_crossmlp_all_peak[NUM_CPUS] = {};
 #endif
 
-#include "cache_debug.h"
+#include "cache_helper.cc"
 
 // ---- Composite body-macros (built on IF_BYP_* wrappers from champsim.h) ----
 // Live in cache.cc because they reference file-local globals (g_l1_byplat[] etc.).

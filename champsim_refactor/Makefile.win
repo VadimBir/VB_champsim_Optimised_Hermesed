@@ -36,6 +36,7 @@ SRCS := $(wildcard src/*.cc) $(wildcard src/hermes/*.cc) \
 # USE_HERMES (off) + a knobs file that isn't present: folded_xor/HashZoo/knob::hawkeye_*.
 # Active replacement policy here is lru (llc_replacement.cc), so Hawkeye is unused.
 SRCS := $(filter-out replacement/hawkeye.cc replacement/hawkeye_crc2.cc,$(SRCS))
+SRCS := $(filter-out src/main_helper.cc src/cache_helper.cc src/ooo_cpu_helper.cc src/dram_helper.cc src/main_loop.cc src/main_paging.cc,$(SRCS))
 OBJS := $(patsubst %.cc,$(OBJDIR)/%.o,$(SRCS)) $(OBJDIR)/sqlite3.o
 
 .PHONY: all clean
