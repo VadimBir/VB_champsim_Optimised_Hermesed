@@ -54,7 +54,7 @@ avg → still worse → DISCARD, re-dup prior checkpoint, log FAIL) → every 5 
 | **Opt-B** | idle-batch fast-path (`dram_idle_accumulator`/`has_work`) | `dram_controller.{h,cc}` | ~0.6% | LOW | DEPENDS on Opt-A. `has_work` clears in add_rq/add_wq/process(); needs `lpm_tracker.h:301 advance_idle(N)` (present v18). |
 | **P11** | O3 hoists/prefetch in exec_mem/sched_mem/update_rob | `ooo_cpu.cc` | ~1% | MED | `execute_load const auto& lqe` (11 reloads), `add_load_queue const auto& rob` (8), reg_dependency src_reg, add_rq/check_hit/check_mshr const-params, complete_execution `const bool has_raw`. Conflicts P15/P21/P24 region. |
 | **W3-E/R3** | num_mem_ops recount → 8-bit mask + ctz | `ooo_cpu.cc` | ~0.3% | LOW | popcount/ctz on a packed ready-mask vs recount loop. |
-| **W3-E/V2** | `sched_mem` lambda `always_inline` | `ooo_cpu.cc` | low | LOW | force-inline hot scheduling lambda. |
+| ~~W3-E/V2~~ | ~~`always_inline` on do_scheduling~~ | `ooo_cpu.cc` | — | — | 🚫 FAILED (v18_0004): +1.2% (×5 median 211.6 vs 209.1), checksum-exact but i-cache bloat. → DO-NOT. |
 | **W3-E/R8** | reload elimination (cache `ready[w]`) | `ooo_cpu.cc` | low | LOW | hoist repeated `ready[w]` loads. |
 | **DRAM-GAP-D** | check_dram_queue lookup → `emhash7::HashMap` | `dram_controller.{h,cc}` | 1.5–2% | LOW | emhash7 already in tree. NOT std::unordered_map. Pure host-side lookup, no timing change. |
 | **DRAM-GAP-E** | free-index bitmap for bank_request slots | `dram_controller.{h,cc}` | part of GAP | LOW | bitmap+ctz vs linear free-slot scan; selection-order PRESERVED. |
@@ -106,6 +106,7 @@ all the sizes so a narrowing can be reverted by one `#define` flip.
 - `event_cycle` u64→u32 — PCYCLE wrap deadlock (value-range, NOT a sentinel — unfixable by migration).
 - (`open_row`→u16 and `lq/sq_index`→u8 are NO LONGER hard-DO-NOT — moved to CONDITIONAL via sentinel-migration; see SENTINELS table + M8.)
 - P-FASTSET (FAIL-design), P20 (deadlock), P22, P27 (+23.7%), P17/P26/P23/P16 (slower), P3/P4/P5/P13 (slower), OpenMP cores (non-equiv), DRAM min-heap (fragile), schedule-merge (RAW release).
+- `always_inline` on per-cycle `do_scheduling` (W3-E/V2) — FAILED v18_0004, +1.2% i-cache bloat (×5 median 211.6 vs 209.1).
 
 ## SENTINELS — the BLOCKER is the in-band sentinel, NOT the field (and sentinels are MIGRATABLE)
 **Corrected rule (user, 2026-06-20):** a field can't be narrowed while code uses the *narrowed
