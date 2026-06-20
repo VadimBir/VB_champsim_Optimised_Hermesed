@@ -88,6 +88,23 @@
 #else
   #define IF_LLC_BYPASS(...)
 #endif
+#ifdef SANITY_CHECK
+  #define IF_SANITY_CHECK(...) __VA_ARGS__
+#else
+  #define IF_SANITY_CHECK(...)
+#endif
+#ifdef USE_TRACE_HELPER
+  #define IF_TRACE_HELPER(...) __VA_ARGS__
+#else
+  #define IF_TRACE_HELPER(...)
+#endif
+#ifdef LPM_LONG_SHORT_WIN
+  #define IF_LPM_LONG_SHORT_WIN(...) __VA_ARGS__
+#else
+  #define IF_LPM_LONG_SHORT_WIN(...)
+#endif
+// NOTE: IF_DEBUG_PRINT is defined later (after the DEBUG_PRINT toggle below), since
+// DEBUG_PRINT is not known at this point in the header.
 
 // ---- Hermes (off-chip predictor + DDRP) ----
 // #define USE_HERMES
@@ -141,6 +158,16 @@
     #define DP(x)
     #define DP_GATE(cy, cpu_val) (false)
     #define DP_GATE_I(cy, cpu_val, iid, addr) (false)
+#endif
+
+// Guard wrapper for DEBUG_PRINT — defined here (not in the wrapper block above)
+// because DEBUG_PRINT is only known after the toggle just above. IF_DEBUG_PRINT(...)
+// expands to its argument when DEBUG_PRINT is defined, to nothing otherwise —
+// TOKEN-IDENTICAL to the old #ifdef DEBUG_PRINT ... #endif.
+#ifdef DEBUG_PRINT
+  #define IF_DEBUG_PRINT(...) __VA_ARGS__
+#else
+  #define IF_DEBUG_PRINT(...)
 #endif
 
 // ============================================================

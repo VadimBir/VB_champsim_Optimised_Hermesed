@@ -110,249 +110,14 @@ queue <uint64_t > page_queue;
 ankerl::unordered_dense::map <uint64_t, uint64_t> page_table, inverse_table, recent_page, unique_cl[NUM_CPUS];
 uint64_t previous_ppage, num_adjacent_page, num_cl[NUM_CPUS], allocated_pages, num_page[NUM_CPUS], minor_fault[NUM_CPUS], major_fault[NUM_CPUS];
 
-/******************************************************************************************
- * 1) DEFINE THE CLASS EXACTLY WITH THE SAME NAMES USED IN print_roi_stats / print_sim_stats
- ******************************************************************************************/
-
-// Place these lines BEFORE int main(...), e.g. line ~25:
-class FinalStatsCollector {
-public:
-    // Dictionary of all stats: string -> double
-    // std::map<std::string, double> data;
-    ankerl::unordered_dense::map<std::string, double> data;
-
-    // Collect ROI stats (from print_roi_stats)
-    // EXACT variable names: TOTAL_ACCESS, TOTAL_HIT, TOTAL_MISS, roi_access, roi_hit, roi_miss, pf_requested, pf_issued, pf_useful, pf_useless, pf_late, average_miss_latency
-    void collectROIStats(uint16_t cpu, CACHE *cache,
-                         uint64_t TOTAL_ACCESS, uint64_t TOTAL_HIT, uint64_t TOTAL_MISS,
-                         uint64_t loads, uint64_t load_hit, uint64_t load_miss,
-                         uint64_t RFOs, uint64_t RFO_hit, uint64_t RFO_miss,
-                         uint64_t prefetches, uint64_t prefetch_hit, uint64_t prefetch_miss,
-                         uint64_t writebacks, uint64_t writeback_hit, uint64_t writeback_miss,
-                         uint64_t pf_requested, uint64_t pf_issued,
-                         uint64_t pf_useful, uint64_t pf_useless, uint64_t pf_late,
-                         double average_miss_latency)
-    {
-        // Use the same printed keys:  "Core_{cpu}_{cache->NAME}_total_access", etc.
-        std::string coreCachePrefix = "Core_" + std::to_string(cpu) + "_" + cache->NAME + "_";
-        data[coreCachePrefix + "total_access"]        = (double)TOTAL_ACCESS;
-        data[coreCachePrefix + "total_hit"]           = (double)TOTAL_HIT;
-        data[coreCachePrefix + "total_miss"]          = (double)TOTAL_MISS;
-        data[coreCachePrefix + "loads"]               = (double)loads;
-        data[coreCachePrefix + "load_hit"]            = (double)load_hit;
-        data[coreCachePrefix + "load_miss"]           = (double)load_miss;
-        data[coreCachePrefix + "RFOs"]                = (double)RFOs;
-        data[coreCachePrefix + "RFO_hit"]             = (double)RFO_hit;
-        data[coreCachePrefix + "RFO_miss"]            = (double)RFO_miss;
-        data[coreCachePrefix + "prefetches"]          = (double)prefetches;
-        data[coreCachePrefix + "prefetch_hit"]        = (double)prefetch_hit;
-        data[coreCachePrefix + "prefetch_miss"]       = (double)prefetch_miss;
-        data[coreCachePrefix + "writebacks"]          = (double)writebacks;
-        data[coreCachePrefix + "writeback_hit"]       = (double)writeback_hit;
-        data[coreCachePrefix + "writeback_miss"]      = (double)writeback_miss;
-        data[coreCachePrefix + "prefetch_requested"]  = (double)pf_requested;
-        data[coreCachePrefix + "prefetch_issued"]     = (double)pf_issued;
-        data[coreCachePrefix + "prefetch_useful"]     = (double)pf_useful;
-        data[coreCachePrefix + "prefetch_useless"]    = (double)pf_useless;
-        data[coreCachePrefix + "prefetch_late"]       = (double)pf_late;
-        data[coreCachePrefix + "average_miss_latency"] = average_miss_latency;
-    }
-
-    // Collect SIM stats (from print_sim_stats)
-    // EXACT variable names: TOTAL_ACCESS, TOTAL_HIT, TOTAL_MISS, sim_access, sim_hit, sim_miss
-    void collectSimStats(uint16_t cpu, CACHE *cache,
-                         uint64_t TOTAL_ACCESS, uint64_t TOTAL_HIT, uint64_t TOTAL_MISS,
-                         uint64_t loads, uint64_t load_hit, uint64_t load_miss,
-                         uint64_t RFOs, uint64_t RFO_hit, uint64_t RFO_miss,
-                         uint64_t prefetches, uint64_t prefetch_hit, uint64_t prefetch_miss,
-                         uint64_t writebacks, uint64_t writeback_hit, uint64_t writeback_miss)
-    {
-        std::string coreCachePrefix = "Core_" + std::to_string(cpu) + "_" + cache->NAME + "_";
-        data[coreCachePrefix + "total_access"]   = (double)TOTAL_ACCESS;
-        data[coreCachePrefix + "total_hit"]      = (double)TOTAL_HIT;
-        data[coreCachePrefix + "total_miss"]     = (double)TOTAL_MISS;
-        data[coreCachePrefix + "loads"]          = (double)loads;
-        data[coreCachePrefix + "load_hit"]       = (double)load_hit;
-        data[coreCachePrefix + "load_miss"]      = (double)load_miss;
-        data[coreCachePrefix + "RFOs"]           = (double)RFOs;
-        data[coreCachePrefix + "RFO_hit"]        = (double)RFO_hit;
-        data[coreCachePrefix + "RFO_miss"]       = (double)RFO_miss;
-        data[coreCachePrefix + "prefetches"]     = (double)prefetches;
-        data[coreCachePrefix + "prefetch_hit"]   = (double)prefetch_hit;
-        data[coreCachePrefix + "prefetch_miss"]  = (double)prefetch_miss;
-        data[coreCachePrefix + "writebacks"]     = (double)writebacks;
-        data[coreCachePrefix + "writeback_hit"]  = (double)writeback_hit;
-        data[coreCachePrefix + "writeback_miss"] = (double)writeback_miss;
-    }
-
-    // Collect branch stats (from print_branch_stats)
-    void collectBranchStats(uint16_t cpu, double prediction_accuracy,
-                            double branch_MPKI, double avg_ROB_occ_mispredict)
-    {
-        std::string corePrefix = "Core_" + std::to_string(cpu) + "_";
-        data[corePrefix + "branch_prediction_accuracy"]          = prediction_accuracy;
-        data[corePrefix + "branch_MPKI"]                         = branch_MPKI;
-        data[corePrefix + "average_ROB_occupancy_at_mispredict"] = avg_ROB_occ_mispredict;
-    }
-
-    // Collect DRAM stats (from print_dram_stats)
-    // Each channel uses: "Channel_i_RQ_row_buffer_hit", etc.
-    void collectDRAMStats(uint32_t channel,
-                          uint64_t RQ_row_buffer_hit,
-                          uint64_t RQ_row_buffer_miss,
-                          uint64_t WQ_row_buffer_hit,
-                          uint64_t WQ_row_buffer_miss,
-                          uint64_t WQ_full,
-                          uint64_t dbus_congested)
-    {
-        std::string chPrefix = "Channel_" + std::to_string(channel) + "_";
-        data[chPrefix + "RQ_row_buffer_hit"]   = (double)RQ_row_buffer_hit;
-        data[chPrefix + "RQ_row_buffer_miss"]  = (double)RQ_row_buffer_miss;
-        data[chPrefix + "WQ_row_buffer_hit"]   = (double)WQ_row_buffer_hit;
-        data[chPrefix + "WQ_row_buffer_miss"]  = (double)WQ_row_buffer_miss;
-        data[chPrefix + "WQ_full"]             = (double)WQ_full;
-        data[chPrefix + "dbus_congested"]      = (double)dbus_congested;
-    }
-
-    // Collect final page faults or other CPU-level stats
-    // e.g. "Core_i_major_page_fault", "Core_i_minor_page_fault"
-    void collectPageFaultStats(uint16_t cpu, uint64_t major_fault_val, uint64_t minor_fault_val) {
-        std::string corePrefix = "Core_" + std::to_string(cpu) + "_";
-        data[corePrefix + "major_page_fault"] = (double)major_fault_val;
-        data[corePrefix + "minor_page_fault"] = (double)minor_fault_val;
-    }
-
-    // Collect instructions, cycles, IPC from ROI block
-    // "Core_i_instructions", "Core_i_cycles", "Core_i_IPC"
-    void collectCoreROIStats(uint16_t cpu,
-                             uint64_t finish_sim_instr,
-                             uint64_t finish_sim_cycle,
-                             double finalIPC)
-    {
-        std::string corePrefix = "Core_" + std::to_string(cpu) + "_";
-        data[corePrefix + "instructions"] = (double)finish_sim_instr;
-        data[corePrefix + "cycles"]       = (double)finish_sim_cycle;
-        data[corePrefix + "IPC"]          = finalIPC;
-    }
-
-    // Print the entire dictionary as JSON-like string: {"key": value, "key2": value2, ...}
-
-
-    std::string dumpAllAsString() const {
-        std::ostringstream oss;
-        oss << std::fixed << std::setprecision(5) << "{";
-        bool first = true;
-        for (const auto& kv : data) {
-            if (!first) oss << ", ";
-            oss << "\"" << kv.first << "\": " << kv.second;
-            first = false;
-        }
-        oss << "}";
-        return oss.str();
-    }
-};
-
-
-/***************************************************************************************************
- * 2) CREATE THE OBJECT IN main(), THEN AFTER EACH PRINT_ FUNCTION, CALL THE COLLECTOR WITH MATCHING NAMES
- ***************************************************************************************************/
-
-// Somewhere near line ~90, before int main returns:
-FinalStatsCollector statsCollector;  // global or local inside main
-
-
-/*
- * Example usage:
- *   - After "cout<< ..." lines in print_roi_stats or print_sim_stats,
- *     you can do something like:
- *
- *     statsCollector.collectROIStats(cpu, cache,
- *         TOTAL_ACCESS, TOTAL_HIT, TOTAL_MISS,
- *         cache->roi_access[cpu][0], cache->roi_hit[cpu][0], cache->roi_miss[cpu][0],
- *         cache->roi_access[cpu][1], cache->roi_hit[cpu][1], cache->roi_miss[cpu][1],
- *         ...
- *         cache->pf_requested, cache->pf_issued,
- *         cache->pf_useful, cache->pf_useless, cache->pf_late,
- *         (1.0*(cache->total_miss_latency))/TOTAL_MISS
- *     );
- *
- *   - Do similarly in print_sim_stats(...) calling collectSimStats(...).
- *   - Then at the END of main():
- *
- *       cout << statsCollector.dumpAllAsString() << endl;
- *
- * That gives a final JSON-like dict of all stats with the EXACT same names.
- */
-
-
-
-
 #include "main_stats.h"
-
-void finish_warmup()
-{
-    uint64_t elapsed_second = (uint64_t)(time(NULL) - start_time),
-             elapsed_minute = elapsed_second / 60,
-             elapsed_hour = elapsed_minute / 60;
-    elapsed_minute -= elapsed_hour*60;
-    elapsed_second -= (elapsed_hour*3600 + elapsed_minute*60);
-
-    // reset core latency
-    SCHEDULING_LATENCY = 6;
-    EXEC_LATENCY = 1;
-    PAGE_TABLE_LATENCY = 100;
-    SWAP_LATENCY = 100000;
-
-    cout << endl;
-    for (uint32_t i=0; i<NUM_CPUS; i++) {
-        cout << "Warmup done CPU " << setw(2) << i << " instr: " << setw(10) << ooo_cpu[i].num_retired << " cycles: " << setw(10) << current_core_cycle[i];
-        cout << " (Sim time: " << elapsed_hour << " hr " << elapsed_minute << " min " << elapsed_second << " sec) " <<"TPMI:"<<round(((double)(elapsed_hour*3600ULL + elapsed_minute*60ULL + elapsed_second) / (ooo_cpu[i].num_retired / 1000000.0)) * 100) / 100<< endl;
-
-        ooo_cpu[i].begin_sim_cycle = current_core_cycle[i]; 
-        ooo_cpu[i].begin_sim_instr = ooo_cpu[i].num_retired;
-
-        // reset branch stats
-        ooo_cpu[i].num_branch = 0;
-        ooo_cpu[i].branch_mispredictions = 0;
-	ooo_cpu[i].total_rob_occupancy_at_branch_mispredict = 0;
-
-        reset_cache_stats(i, &ooo_cpu[i].L1I);
-        reset_cache_stats(i, &ooo_cpu[i].L1D);
-        reset_cache_stats(i, &ooo_cpu[i].L2C);
-        reset_cache_stats(i, &uncore.LLC);
-        lpm_reset_sim(i);
-    }
-    cout << endl;
-
-    // reset DRAM stats
-    for (uint32_t i=0; i<DRAM_CHANNELS; i++) {
-        uncore.DRAM.RQ[i].ROW_BUFFER_HIT = 0;
-        uncore.DRAM.RQ[i].ROW_BUFFER_MISS = 0;
-        uncore.DRAM.WQ[i].ROW_BUFFER_HIT = 0;
-        uncore.DRAM.WQ[i].ROW_BUFFER_MISS = 0;
-    }
-
-    // set actual cache latency
-    for (uint32_t i=0; i<NUM_CPUS; i++) {
-        ooo_cpu[i].ITLB.LATENCY = ITLB_LATENCY;
-        ooo_cpu[i].DTLB.LATENCY = DTLB_LATENCY;
-        ooo_cpu[i].STLB.LATENCY = STLB_LATENCY;
-        ooo_cpu[i].L1I.LATENCY  = L1I_LATENCY;
-        ooo_cpu[i].L1D.LATENCY  = L1D_LATENCY;
-        ooo_cpu[i].L2C.LATENCY  = L2C_LATENCY;
-    }
-    uncore.LLC.LATENCY = LLC_LATENCY;
-}
-alignas(64) rob_events_soa rob_events = {};
-alignas(64) MemIndexRing mem_index_ring = {};
-#include "main_deadlock.h"
 
 void signal_handler(int signal)
 {
 	cout << "Caught signal: " << signal << endl;
-#ifdef USE_TRACE_HELPER
+	IF_TRACE_HELPER(
 	trace_helper.stop();
-#endif
+	)
 	exit(1);
 }
 
@@ -361,7 +126,6 @@ void signal_handler(int signal)
 RANDOM champsim_rand(champsim_seed);
 #include "main_paging.h"
 #include "main_loop.h"
-#include "main_report.h"
 #define ROB_MASK (ROB_SIZE - 1)
 // static char zero_arena[1024*1024*1024] = {0};
 int main(int argc, char** argv)
@@ -657,14 +421,14 @@ if (num_instr_dest == 2) {
 
         // BRANCH PREDICTOR
         ooo_cpu[i].initialize_branch_predictor();
-#ifdef USE_HERMES
+        IF_HERMES(
         ooo_cpu[i].offchip_pred = NULL;
         ooo_cpu[i].ddrp_monitor = NULL;
         ooo_cpu[i].initialize_offchip_predictor(i);
         ooo_cpu[i].initialize_ddrp_monitor();
         memset(&ooo_cpu[i].stats, 0, sizeof(ooo_cpu[i].stats));
         if (i == 0) cout << HERMES_LABEL << endl;
-#endif
+        )
 
         // TLBs
         ooo_cpu[i].ITLB.cpu = i;
@@ -700,9 +464,9 @@ if (num_instr_dest == 2) {
         ooo_cpu[i].L1D.fill_level = FILL_L1;
         ooo_cpu[i].L1D.lower_level = &ooo_cpu[i].L2C;
         ooo_cpu[i].L1D.l1d_prefetcher_initialize();
-#ifdef BYPASS_L1_LOGIC
+        IF_BYP_L1(
         l1d_bypass_initialize(i, &ooo_cpu[i].L1D, &ooo_cpu[i].L2C, &uncore.LLC);
-#endif
+        )
         // ooo_cpu[i].L1D.MSHR.occupancy
 
         ooo_cpu[i].L2C.cpu = i;
@@ -712,9 +476,9 @@ if (num_instr_dest == 2) {
         ooo_cpu[i].L2C.upper_level_dcache[i] = &ooo_cpu[i].L1D;
         ooo_cpu[i].L2C.lower_level = &uncore.LLC;
         ooo_cpu[i].L2C.l2c_prefetcher_initialize();
-#ifdef BYPASS_L2_LOGIC
+        IF_BYP_L2(
         l2c_bypass_initialize(i, &ooo_cpu[i].L1D, &ooo_cpu[i].L2C, &uncore.LLC);
-#endif
+        )
 
         // SHARED CACHE
         uncore.LLC.cache_type = IS_LLC;
@@ -763,9 +527,9 @@ if (num_instr_dest == 2) {
 
     uncore.LLC.llc_initialize_replacement();
     uncore.LLC.llc_prefetcher_initialize();
-#ifdef BYPASS_LLC_LOGIC
+    IF_BYP_LLC(
     llc_bypass_initialize(0, &ooo_cpu[0].L1D, &ooo_cpu[0].L2C, &uncore.LLC);
-#endif
+    )
 
     if (false){
         cout << "MAIN.cc ln 788 stats print" << endl;

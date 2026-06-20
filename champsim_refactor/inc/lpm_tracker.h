@@ -456,10 +456,10 @@ struct LPM_Tracker {
         mb.compute_pre(bkt[BKT_W2DB], inv_α[BKT_W2DB], inv_ω[BKT_W2DB], inv_id[BKT_W2DB]);
         met[MET_W2D].average(ma, mb);
 
-#ifdef LPM_LONG_SHORT_WIN
+        IF_LPM_LONG_SHORT_WIN(
         met[MET_WS].compute_pre(bkt[BKT_WS], inv_α[BKT_WS], inv_ω[BKT_WS], inv_id[BKT_WS]);
         met[MET_WL].compute_pre(bkt[BKT_WL], inv_α[BKT_WL], inv_ω[BKT_WL], inv_id[BKT_WL]);
-#endif
+        )
     }
 
     /* ── DEPRECATED wrapper kept for legacy callers ── */

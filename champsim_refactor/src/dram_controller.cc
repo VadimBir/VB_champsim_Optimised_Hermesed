@@ -4,9 +4,7 @@
 #ifdef BYP_DERFILL_ACTIVE
 #include "cache.h"  // needed for CACHE* cast in derivative fill
 #endif
-#ifdef USE_HERMES
-namespace knob { extern bool enable_ddrp; extern bool dram_cntlr_enable_ddrp_buffer; }
-#endif
+IF_HERMES( namespace knob { extern bool enable_ddrp; extern bool dram_cntlr_enable_ddrp_buffer; } )
 
 // ==== DRAM_SANITY_CHECK macros (dram_controller.cc local) ====
 #ifdef DRAM_SANITY_CHECK
@@ -145,7 +143,7 @@ void MEMORY_CONTROLLER::reset_remain_requests(PACKET_QUEUE *queue, uint32_t chan
     update_process_cycle(&RQ[channel]);
     update_process_cycle(&WQ[channel]);
 
-#ifdef SANITY_CHECK
+    IF_SANITY_CHECK(
     if (queue->is_WQ) {
         if (scheduled_writes[channel] != 0)
             assert(0);
@@ -154,7 +152,7 @@ void MEMORY_CONTROLLER::reset_remain_requests(PACKET_QUEUE *queue, uint32_t chan
         if (scheduled_reads[channel] != 0)
             assert(0);
     }
-#endif
+    )
 }
 
 void MEMORY_CONTROLLER::operate()
@@ -477,10 +475,10 @@ void MEMORY_CONTROLLER::schedule(PACKET_QUEUE *queue, uint32_t channel)
                  op_rank = dram_get_rank(op_addr),
                  op_bank = dram_get_bank(op_addr),
                  op_row = dram_get_row(op_addr);
-#ifdef DEBUG_PRINT
+        IF_DEBUG_PRINT(
         uint32_t op_column = dram_get_column(op_addr);
         (void)op_column;
-#endif
+        )
 
         DRAM_FULL_DP("SCH_DISPATCH_PRE", current_core_cycle[op_cpu], op_cpu, op_channel, op_rank, op_bank,
                      queue->entry[oldest_index],
@@ -535,11 +533,11 @@ void MEMORY_CONTROLLER::process(PACKET_QUEUE *queue)
              op_channel = dram_get_channel(op_addr),
              op_rank = dram_get_rank(op_addr),
              op_bank = dram_get_bank(op_addr);
-#ifdef DEBUG_PRINT
+    IF_DEBUG_PRINT(
     uint32_t op_row = dram_get_row(op_addr),
              op_column = dram_get_column(op_addr);
     (void)op_row; (void)op_column;
-#endif
+    )
 
     DRAM_FULL_DP("PROC_TOP", current_core_cycle[op_cpu], op_cpu, op_channel, op_rank, op_bank,
                  queue->entry[request_index],
@@ -829,10 +827,10 @@ int MEMORY_CONTROLLER::add_rq(PACKET *packet)
 
     // simply return read requests with dummy response before the warmup
     if (all_warmup_complete < NUM_CPUS) {
-#ifdef USE_HERMES
+        IF_HERMES(
         if (knob::enable_ddrp && packet->fill_level >= FILL_DDRP)
             return -1; // silently drop DDRP during warmup
-#endif
+        )
 #ifdef BYPASS_LLC_LOGIC
         if (packet->llc_bypassed) {
                 DP( if (DP_GATE_WW(current_core_cycle[packet->cpu], packet->cpu, packet->address, packet->instr_id)) {
@@ -912,13 +910,13 @@ int MEMORY_CONTROLLER::add_rq(PACKET *packet)
         //if (packet->fill_level < fill_level) {
 
             packet->data = WQ[channel].entry[wq_index].data;
-#ifdef USE_HERMES
+            IF_HERMES(
             if (knob::enable_ddrp && packet->fill_level >= FILL_DDRP) {
                 if (knob::dram_cntlr_enable_ddrp_buffer)
                     insert_ddrp_buffer(packet->address);
                 return 1; // WQ hit for DDRP — don't return data up
             }
-#endif
+            )
 #ifdef BYPASS_LLC_LOGIC
             if (packet->llc_bypassed) {
                     upper_level_dcache[packet->cpu]->upper_level_dcache[packet->cpu]->return_data(packet);
@@ -998,7 +996,7 @@ int MEMORY_CONTROLLER::add_rq(PACKET *packet)
     // check for duplicates in the read queue
     int index = check_dram_queue(&RQ[channel], packet);
     if (index != -1) {
-#ifdef USE_HERMES
+        IF_HERMES(
         // [HERMES_CONFLICT_FIX] Drop incoming HMP probe when existing entry is a real demand.
         // HMP is redundant (demand already going to DRAM). Prevents fall-through into the
         // bypass-flag reconcile block below — that would clear existing demand's bypass flags
@@ -1038,12 +1036,12 @@ int MEMORY_CONTROLLER::add_rq(PACKET *packet)
                          channel, dram_get_rank(packet->address), dram_get_bank(packet->address),
                          RQ[channel].entry[index], "DEMAND_OVERWROTE_DDRP_SCHED_EVCY_PRESERVED");
         }
-#endif
+        )
 #ifdef DO_LVL_BYPASS_ON_FULL_MSHR // ARTIFACT OF PAST???
         cerr << "AM I ARTIFACT ??? "
         RQ[channel].entry[index].bypassed_levels &= packet->bypassed_levels;
 #endif
-#ifdef BYPASS_LLC_LOGIC
+        IF_BYP_LLC(
         // I3-DRAM: non-bypassed PF merges into bypassed demand → clear bypass
         // so DRAM returns via normal LLC path → LLC handle_fill → MSHR cleaned
         if (RQ[channel].entry[index].llc_bypassed && !packet->llc_bypassed) {
@@ -1080,7 +1078,7 @@ int MEMORY_CONTROLLER::add_rq(PACKET *packet)
              << " existing ByP " << (int)RQ[channel].entry[index].l1_bypassed << " " << (int)RQ[channel].entry[index].l2_bypassed << " " << (int)RQ[channel].entry[index].llc_bypassed
              << " incoming ByP " << (int)packet->l1_bypassed << " " << (int)packet->l2_bypassed << " " << (int)packet->llc_bypassed
              << " cy: " << current_core_cycle[packet->cpu] << endl; });
-#endif
+        )
         DP( if (DP_GATE_WW(current_core_cycle[packet->cpu], packet->cpu, packet->address, packet->instr_id)) {
             cout << "[DRAM_RQ_MERGE] addr: 0x" << hex << packet->address << dec
                  << " existing_addr: 0x" << hex << RQ[channel].entry[index].address << dec
@@ -1133,13 +1131,13 @@ int MEMORY_CONTROLLER::add_rq(PACKET *packet)
             RQ[channel].occupancy++;
             rw_occ[packet->cpu].rq++;
 
-#ifdef DEBUG_PRINT
+            IF_DEBUG_PRINT(
             uint32_t channel = dram_get_channel(packet->address),
                      rank = dram_get_rank(packet->address),
                      bank = dram_get_bank(packet->address),
                      row = dram_get_row(packet->address),
-                     column = dram_get_column(packet->address); 
-#endif
+                     column = dram_get_column(packet->address);
+            )
 
             DRAM_FULL_DP("ADD_RQ_NEW_PRE_UPSCHED", current_core_cycle[packet->cpu], packet->cpu,
                          channel, rank, bank, RQ[channel].entry[index], "EMPTY_SLOT_FILLED");
@@ -1242,14 +1240,14 @@ int MEMORY_CONTROLLER::add_wq(PACKET *packet)
             WQ[channel].occupancy++;
             rw_occ[packet->cpu].wq++;
 
-#ifdef DEBUG_PRINT
+            IF_DEBUG_PRINT(
             uint32_t channel = dram_get_channel(packet->address),
                      rank = dram_get_rank(packet->address),
                      bank = dram_get_bank(packet->address),
                      row = dram_get_row(packet->address),
                      column = dram_get_column(packet->address);
             (void)row; (void)column;
-#endif
+            )
 
             DRAM_FULL_DP("ADD_WQ_NEW_PRE_UPSCHED", current_core_cycle[packet->cpu], packet->cpu,
                          channel, rank, bank, WQ[channel].entry[index], "EMPTY_WQ_SLOT_FILLED");

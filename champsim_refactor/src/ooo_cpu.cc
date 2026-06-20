@@ -1265,12 +1265,12 @@ void O3_CPU::add_load_queue(const uint16_t rob_index, const uint32_t data_index)
     lqe.event_cycle = PACK_CYCLE(current_core_cycle[cpu] + SCHEDULING_LATENCY);
     LQ.occupancy++;
 
-#ifdef USE_HERMES
+    IF_HERMES(
     lqe.rob_position = compute_rob_position(rob_index, ROB.head);
     lqe.rob_part_type = rob_pos_get_part_type(lqe.rob_position);
     if (offchip_pred && robe.source_memory[data_index] != 0)
         lqe.went_offchip_pred = offchip_pred->predict(&robe, data_index, &lqe);
-#endif
+    )
 
     // RAW dependency check
     if (rob_index != ROB.head) {
@@ -1917,10 +1917,10 @@ void O3_CPU::complete_data_fetch(PACKET_QUEUE *queue, uint8_t is_it_tlb)
             RTL1_tail++;
             if (RTL1_tail == LQ_SIZE)
                 RTL1_tail = 0;
-#ifdef USE_HERMES
+            IF_HERMES(
             if (lqe.went_offchip_pred && knob::enable_ddrp)
                 issue_ddrp_request(lq_index, 0);
-#endif
+            )
 
             handle_merged_translation(&queue->entry[index]);
         }
@@ -1948,7 +1948,7 @@ void O3_CPU::complete_data_fetch(PACKET_QUEUE *queue, uint8_t is_it_tlb)
             if (robe.num_mem_ops == 0)
                 inflight_mem_executions++;
 
-#ifdef DEBUG_PRINT
+            IF_DEBUG_PRINT(
             if (DP_GATE_WW(current_core_cycle[cpu], cpu, queue->entry[index].address, queue->entry[index].instr_id)) {
                 cout << "[CDF_PRE_HML] cpu:" << cpu
                      << " iid:" << queue->entry[index].instr_id
@@ -1961,7 +1961,7 @@ void O3_CPU::complete_data_fetch(PACKET_QUEUE *queue, uint8_t is_it_tlb)
                      << " bits[3]:0x" << queue->entry[index].lq_index_depend_on_me.data.bits[3] << dec
                      << endl;
             }
-#endif
+            )
             release_load_queue(lq_index);
             handle_merged_load(&queue->entry[index]);
         }
@@ -2061,10 +2061,10 @@ void O3_CPU::handle_merged_translation(PACKET *provider)
             RTL1_tail++;
             if (RTL1_tail == LQ_SIZE)
                 RTL1_tail = 0;
-#ifdef USE_HERMES
+            IF_HERMES(
             if (lqe.went_offchip_pred && knob::enable_ddrp)
                 issue_ddrp_request(merged, 1);
-#endif
+            )
 
         }
     }
@@ -2072,7 +2072,7 @@ void O3_CPU::handle_merged_translation(PACKET *provider)
 
 void O3_CPU::handle_merged_load(PACKET *provider)
 {
-#ifdef DEBUG_PRINT
+    IF_DEBUG_PRINT(
     if (DP_GATE_WW(current_core_cycle[cpu], cpu, provider->address, provider->instr_id)) {
         cout << "[HML_ENTRY] cpu:" << cpu
              << " iid:" << provider->instr_id
@@ -2084,7 +2084,7 @@ void O3_CPU::handle_merged_load(PACKET *provider)
              << " bits[3]:0x" << provider->lq_index_depend_on_me.data.bits[3] << dec
              << endl;
     }
-#endif
+    )
     ITERATE_SET(merged, provider->lq_index_depend_on_me, LQ_SIZE) {
         auto& lqe = LQ.entry[merged];
         // VB fix to prevent leak.
@@ -2096,7 +2096,7 @@ void O3_CPU::handle_merged_load(PACKET *provider)
         lqe.fetched = COMPLETED;
         lqe.event_cycle = PACK_CYCLE(current_core_cycle[cpu]);
         ROB.entry[merged_rob_index].num_mem_ops--;
-#ifdef DEBUG_PRINT
+        IF_DEBUG_PRINT(
         if (DP_GATE_WW(current_core_cycle[cpu], cpu, provider->address, provider->instr_id)) {
             cout << "[MEMOP HML] lq:" << merged
                  << " lq_instr:" << lqe.instr_id
@@ -2107,7 +2107,7 @@ void O3_CPU::handle_merged_load(PACKET *provider)
                  << " prov_addr:" << hex << provider->address << dec
                  << endl;
         }
-#endif
+        )
         rob_events.per_cpu[cpu].event_cycle[merged_rob_index] = PACK_CYCLE(current_core_cycle[cpu]);
 
         SANITY_ROB_NUM_MEM_OPS_AT_MERGE(merged_rob_index);
@@ -2121,13 +2121,13 @@ void O3_CPU::handle_merged_load(PACKET *provider)
 
 void O3_CPU::release_load_queue(uint16_t lq_index) {
     auto& lqe = LQ.entry[lq_index];
-#ifdef USE_HERMES
+    IF_HERMES(
     offchip_pred_stats_and_train(lq_index);
     if (lqe.ocp_feature) {
         delete lqe.ocp_feature;
         lqe.ocp_feature = NULL;
     }
-#endif
+    )
     // release LQ entries
     if (lqe.producer_id != UINT64_MAX) {
         lq_pending_loads.remove_pending_load(cpu, lqe.virtual_address, lq_index);
