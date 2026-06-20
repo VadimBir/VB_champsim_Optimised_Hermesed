@@ -544,7 +544,13 @@ uint32_t O3_CPU::add_to_rob(ooo_model_instr *arch_instr) {
 
 
 
+#ifdef TRUE_SANITY_CHECK
+    // rob_maps is WRITE-ONLY in production: its only reader is check_rob(), called solely from
+    // SANITY_CHECK_ROB_MATCH/_RFO which are #ifdef TRUE_SANITY_CHECK. Register-dep tracking uses
+    // the flat reg_producers[256] (B2'); rob_index is carried directly in packets/LQ/SQ. So this
+    // per-instruction hashmap insert is dead work unless sanity checks are compiled in.
     rob_hash_table.add_rob_idx(cpu, instr_unique_id, index);
+#endif
     ROB.entry[index].instr_id = instr_unique_id;
     ROB.entry[index].rob_index = index;  // Set correct index
     BS_CLR(rob_events.per_cpu[cpu].fetched_inflight, index);
@@ -2079,7 +2085,9 @@ void O3_CPU::retire_rob() {
         //     cout << " CATCH RETIRE OF BUG instrID: " << ROB.entry[ROB.head].instr_id << " head: " << ROB.head <<  endl;
 #endif
 
-        rob_hash_table.retire_rob_idx(cpu, rhe.instr_id);
+#ifdef TRUE_SANITY_CHECK
+        rob_hash_table.retire_rob_idx(cpu, rhe.instr_id);  // paired with add_rob_idx; sanity-only (see add)
+#endif
         mem_dependencies.remove_producer(ROB.head, &rhe);
 
         rob_memory_count[cpu] -= BS_TST(rob_events.per_cpu[cpu].is_mem, ROB.head);
