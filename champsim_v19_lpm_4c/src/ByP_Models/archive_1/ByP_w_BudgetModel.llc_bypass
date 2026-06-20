@@ -1,0 +1,101 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+
+
+// USEFUL VARS:  usage example
+//  * Cached metrics available without sim_access:
+//  *   lpm[cpu][IS_L1D].gm.camat_activeMemCyDivAccesses   ← ω(L1D)/α(L1D)
+//  *   lpm[cpu][IS_L1D].gm.apc_accessesDivActiveMemCy      ← α(L1D)/ω(L1D)
+//  *   lpm[cpu][IS_L1D].gm.lpmr_activeMemCyDivIdealCy     ← ω(L1D)/(IC×CPIexe)
+//  *   lpm[cpu][IS_L2C].g.µ_missCyFracOfActiveCy()         ← miss-cycle fraction
+//  *   lpm[cpu][IS_L2C].g.κ_pureMissFracOfMissCy()      ← pure-miss fraction
+//  *
+//  * Also raw counters:
+//  *   lpm[cpu][IS_L1D].h, .m, .x, .e
+//  *   lpm[cpu][IS_L1D].g.ω_activeMemCy()
+
+// LLC->MSHR.occupancy      LLC->MSHR.SIZE
+// LLC->RQ.occupancy        LLC->RQ.SIZE
+// LLC->PQ.occupancy        LLC->PQ.SIZE
+// LLC->MSHR.occupancy      LLC->MSHR.SIZE
+// LLC->RQ.occupancy        LLC->RQ.SIZE
+// LLC->PQ.occupancy        LLC->PQ.SIZE
+
+// CACHE TYPEs
+
+
+
+
+inline bool llc_bypass_init[NUM_CPUS] = {};
+
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init[cpu]) return;
+    cout << "LLC Bypass: \nWindow-based Budget Model\nAvailable = MSHRfree * w_C-AMAT(L2C)\nImmediate = RQ_cost + PQ_cost\nFuture = APC(L1D) * (1-LPMR_L2C/LPMR_L1D) * w_C-AMAT + w_C-AMAT" << endl;
+    llc_bypass_init[cpu] = true;
+}
+
+
+#define SHALL_LLC_BYPASS_DEFINED
+inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    llc_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    // L1D MSHR not sufficiently occupied → no need to bypass
+    if (LLC->MSHR.occupancy * 2 < LLC->MSHR.SIZE)
+        return false;
+
+    uint32_t free = LLC->MSHR.SIZE - LLC->MSHR.occupancy;
+    if (free == 0)
+        return false;
+
+    // Use WINDOW-based metrics for more responsive decisions
+    double w_camat_l2c = lpm[cpu][LLC_type].wm.camat_activeMemCyDivAccesses;
+    double w_apc_l1d   = lpm[cpu][L2C_type].wm.apc_accessesDivActiveMemCy;
+    double w_lpmr_l1d  = lpm[cpu][L2C_type].wm.lpmr_activeMemCyDivIdealCy;
+    double w_lpmr_l2c  = lpm[cpu][LLC_type].wm.lpmr_activeMemCyDivIdealCy;
+    double w_lpmr_llc  = lpm[cpu][LLC_type].wm.lpmr_activeMemCyDivIdealCy;
+
+    // Fallback to cumulative if windowed not ready
+    if (w_camat_l2c < 0.001) w_camat_l2c = lpm[cpu][LLC_type].gm.camat_activeMemCyDivAccesses;
+    if (w_apc_l1d < 0.001)   w_apc_l1d   = lpm[cpu][L2C_type].gm.apc_accessesDivActiveMemCy;
+    if (w_lpmr_l1d < 0.001)  w_lpmr_l1d  = lpm[cpu][L2C_type].gm.lpmr_activeMemCyDivIdealCy;
+    if (w_lpmr_l2c < 0.001)  w_lpmr_l2c  = lpm[cpu][LLC_type].gm.lpmr_activeMemCyDivIdealCy;
+    if (w_lpmr_llc < 0.001)  w_lpmr_llc  = lpm[cpu][LLC_type].gm.lpmr_activeMemCyDivIdealCy;
+
+    // Clamp very small values
+    if (w_lpmr_l1d < 0.001) w_lpmr_l1d = 0.001;
+    if (w_lpmr_l2c < 0.001) w_lpmr_l2c = 0.001;
+    if (w_lpmr_llc < 0.001) w_lpmr_llc = 0.001;
+
+    // Available Resource = MSHRfree * C-AMAT(L2C)
+    // This represents the total "service cycles" available in L2C MSHR
+    double available = (double)free * w_camat_l2c;
+
+    // Immediate Cost = RQ_cost + PQ_cost
+    // RQ unmatch: demand/supply gap between L1D and L2C
+    double rq_unmatch = 1.0 - (w_lpmr_l2c / w_lpmr_l1d);
+    if (rq_unmatch < 0) rq_unmatch = 0;
+
+    // PQ unmatch: demand/supply gap between L2C and LLC
+    double pq_unmatch = 1.0 - (w_lpmr_llc / w_lpmr_l2c);
+    if (pq_unmatch < 0) pq_unmatch = 0;
+
+    // RQ cost: if L2 RQ is full, must process before bypass
+    // Scale by unmatch and 0.5x factor (empirically optimal)
+    double rq_cost = (double)LLC->RQ.occupancy * rq_unmatch * 0.5 * w_camat_l2c;
+    double pq_cost = (double)LLC->PQ.occupancy * pq_unmatch * w_camat_l2c;
+    double immediate = rq_cost + pq_cost;
+
+    // Future Cost: L1D misses arriving after bypass
+    // Future = APC(L1D) * (1 - LPMR_L2C/LPMR_L1D) * C-AMAT + C-AMAT
+    double future = w_apc_l1d * rq_unmatch * w_camat_l2c + w_camat_l2c;
+
+    // Decision: Available > Immediate + Future
+    return available > (immediate + future);
+}

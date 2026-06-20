@@ -1,0 +1,21 @@
+I agree that paper is hard, I think the comprehension is not trivial. I believe the updown and downup path flow chart with explanation is the key to understand the paper. 
+For the question on "If reader can understand it". Honestly, to understand this, reader only needs the Cache hierarchy (which is explained), and the sequential nature of MSHR (which is introduced and mechanism is explained) 
+I tried my best to smoothen the design part using the hierarchy and MSHR terms to explain the forwarding. (Removal of RQ should have simplified it).
+Some writing I had to decide, either explain the simpler to understand path without noise (if X is hit then Y otherwise its a miss Z ...). But that way was causing too many gaps in the flow needing to be covered at some point to mitigate reviewer questioning. 
+
+With writing, I agree, the flow was ... not the best ... ... there are two issues I think I have difficulty: 
+1. On the first pass of writing, I may have nice flow, but because I do not see a final picture of the paper, I end up over adding/extending details which breaks the flow. 
+2. I dont fully know the details which can be voided from the paper (such as, cycle category transition), I found it important for reviewer to understand impact of design. 
+Not an excuse, this paper writing was overdelayed then originally planned due to results issues without which the paper is meaningless. I spent endless nights resolving issues. By the time of writing I was over exhausted and began pannicing because to be back on track I was overrushing the paper 
+
+
+Since L1 is the closest to the core, stalls at this level directly delay demand requests and are therefore performance critical. In contrast, lower cache levels (with higher MSHR capacity) receive a filtered stream of misses and may still have available miss-handling capacity when the upper-level is saturated.
+
+Background: either "Replacement Policies" => Replacement Policy || "Off-chip Predictor" => Off-chip Predictors
+
+Miss Handlign Concurrency: 
+"where ML+1 is the miss ratio of forwarded requests at level L+1". => where ML+1 is the miss ratio of (-) requests at level L+1
+- We actually do not care if request forwarded or not. The miss ratio is any L+1 request. (Actually had a long argument with AI on this)
+- Matters because the L+1 traffic does not change respective to it. 
+
+Can the reviwer raise issue on the TTP being same ref as the Hermes? 

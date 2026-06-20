@@ -1,0 +1,40 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+inline bool llc_bypass_init[NUM_CPUS] = {};
+
+
+// ============================================================
+// METHOD 7: STRUCTURAL OVERLAP HEADROOM (no prediction)
+// headroom = w_x / w_m
+// bypass iff headroom < 1.0  (pure-miss > overlap => saturated)
+// [Eq15,18,19]
+// ============================================================
+
+// --- M7 LLC ---
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init[cpu]) return;
+        cout << "LLC Bypass [ng][M7 Structural Overlap Headroom]:\n"
+             << "  headroom = w_x(LLC) / w_m(LLC)\n"
+             << "  bypass iff headroom < 1.0\n";
+    llc_bypass_init[cpu] = true;
+}
+
+#define SHALL_LLC_BYPASS_DEFINED
+inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    llc_bypass_initialize(cpu, L1D, L2C, LLC);
+    if (LLC->RQ.occupancy >= LLC->RQ.SIZE) return false;
+
+    const auto& t3 = lpm[cpu][LLC_type];
+
+    if (t3.w.m_pureMissCy <= 0.0) return false;
+
+    double headroom = t3.w.x_overlapCy / t3.w.m_pureMissCy;
+    return headroom < 1.0;
+}

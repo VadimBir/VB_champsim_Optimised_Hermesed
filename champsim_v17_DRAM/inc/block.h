@@ -10,11 +10,15 @@
  
 // extra
 #include <ostream>
-#include <execinfo.h>
+#ifndef _WIN32
+#include <execinfo.h>   // Linux only (Windows shim; backtrace use is commented out below)
+#endif
 #include <stdlib.h>
 
-#include <execinfo.h>
-#include <dlfcn.h>
+#ifndef _WIN32
+#include <execinfo.h>   // Linux only
+#include <dlfcn.h>      // Linux only
+#endif
 #include <cxxabi.h>
 #include <cstdio>
 #include <cstdlib>

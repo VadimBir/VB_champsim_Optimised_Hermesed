@@ -1,0 +1,13 @@
+--- /c/Users/vasum/VB_champsim_Optimised_Hermesed/champsim_v17/src/ooo_cpu.cc	2026-06-16 23:25:19.641162900 +0900
++++ /c/Users/vasum/VB_champsim_Optimised_Hermesed/champsim_v17_A8/src/ooo_cpu.cc	2026-06-19 02:16:04.739183300 +0900
+@@ -1360,8 +1360,8 @@
+ }();
+ void O3_CPU::operate_lsq()
+ {
+-    if (RTS0[RTS0_head] >= SQ_SIZE && RTS1[RTS1_head] >= SQ_SIZE &&
+-        RTL0[RTL0_head] >= LQ_SIZE && RTL1[RTL1_head] >= LQ_SIZE)
++    if (__builtin_expect( (RTS0[RTS0_head] >= SQ_SIZE && RTS1[RTS1_head] >= SQ_SIZE &&
++        RTL0[RTL0_head] >= LQ_SIZE && RTL1[RTL1_head] >= LQ_SIZE), 0 ))
+         return;
+ 
+     const uint64_t curr_cy = current_core_cycle[cpu];

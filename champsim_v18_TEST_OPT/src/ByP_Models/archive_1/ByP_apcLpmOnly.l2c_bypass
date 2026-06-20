@@ -1,0 +1,91 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+
+
+// USEFUL VARS:  usage example
+//  * Cached metrics available without sim_access:
+//  *   lpm[cpu][IS_L1D].gm.camat_activeMemCyDivAccesses   ← ω(L1D)/α(L1D)
+//  *   lpm[cpu][IS_L1D].gm.apc_accessesDivActiveMemCy      ← α(L1D)/ω(L1D)
+//  *   lpm[cpu][IS_L1D].gm.lpmr_activeMemCyDivIdealCy     ← ω(L1D)/(IC×CPIexe)
+//  *   lpm[cpu][IS_L2C].g.µ_missCyFracOfActiveCy()         ← miss-cycle fraction
+//  *   lpm[cpu][IS_L2C].g.κ_pureMissFracOfMissCy()      ← pure-miss fraction
+//  *
+//  * Also raw counters:
+//  *   lpm[cpu][IS_L1D].h, .m, .x, .e
+//  *   lpm[cpu][IS_L1D].g.ω_activeMemCy()
+
+// L2C->MSHR.occupancy      L2C->MSHR.SIZE
+// L2C->RQ.occupancy        L2C->RQ.SIZE
+// L2C->PQ.occupancy        L2C->PQ.SIZE
+// L2C->MSHR.occupancy      L2C->MSHR.SIZE
+// L2C->RQ.occupancy        L2C->RQ.SIZE
+// L2C->PQ.occupancy        L2C->PQ.SIZE
+
+// CACHE TYPEs
+
+
+
+
+inline bool l2_bypass_init[NUM_CPUS] = {};
+
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init[cpu]) return;
+    cout << "Bypass on: \nAPC+LPM Only Model (Window-based)\nCost = (1/LPMR_L1D) * (LPMR_L2C/w_APC_L2C)\nDecision: L2C_MSHR_util < (1 - Cost_threshold)" << endl;
+    l2_bypass_init[cpu] = true;
+}
+
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    // L1D MSHR not sufficiently occupied → no need to bypass
+    if (L2C->MSHR.occupancy * 2 < L2C->MSHR.SIZE)
+        return false;
+
+    // No room in L2C MSHR → cannot bypass
+    if (L2C->MSHR.occupancy >= L2C->MSHR.SIZE)
+        return false;
+
+    // Use WINDOW-based APC and LPMR only
+    double w_apc_l1d  = lpm[cpu][L1D_type].wm.apc_accessesDivActiveMemCy;
+    double w_apc_l2c  = lpm[cpu][L2C_type].wm.apc_accessesDivActiveMemCy;
+    double w_lpmr_l1d = lpm[cpu][L1D_type].wm.lpmr_activeMemCyDivIdealCy;
+    double w_lpmr_l2c = lpm[cpu][L2C_type].wm.lpmr_activeMemCyDivIdealCy;
+
+    // Fallback to cumulative if windowed not ready
+    if (w_apc_l1d < 0.001)  w_apc_l1d  = lpm[cpu][L1D_type].gm.apc_accessesDivActiveMemCy;
+    if (w_apc_l2c < 0.001)  w_apc_l2c  = lpm[cpu][L2C_type].gm.apc_accessesDivActiveMemCy;
+    if (w_lpmr_l1d < 0.001) w_lpmr_l1d = lpm[cpu][L1D_type].gm.lpmr_activeMemCyDivIdealCy;
+    if (w_lpmr_l2c < 0.001) w_lpmr_l2c = lpm[cpu][L2C_type].gm.lpmr_activeMemCyDivIdealCy;
+
+    // Clamp to avoid division issues
+    if (w_lpmr_l1d < 0.001) w_lpmr_l1d = 0.001;
+    if (w_apc_l2c < 0.001)  w_apc_l2c = 0.001;
+
+    double lpmr_ratio = w_lpmr_l2c / w_lpmr_l1d;
+    if (lpmr_ratio > 1.0) lpmr_ratio = 1.0;
+
+    // Cost in terms of L2C C-AMAT units
+    double cost = lpmr_ratio / w_apc_l2c;
+
+    // Normalize cost to 0-1 range for threshold comparison
+    // Typical C-AMAT_L2C ~ 10-15, APC_L2C ~ 0.05-0.1
+    // So cost typically 0.5-1.5, we clamp and normalize
+    double normalized_cost = cost / 20.0;  // Scale by expected max
+    if (normalized_cost > 1.0) normalized_cost = 1.0;
+
+    // Decision: bypass if L2C MSHR has room proportional to cost
+    // Lower cost = more room for bypass
+    double l2c_mshr_util = (double)L2C->MSHR.occupancy / L2C->MSHR.SIZE;
+    double threshold = 1.0 - normalized_cost * 0.5;  // 0.5x scaling factor
+
+    return l2c_mshr_util < threshold;
+}

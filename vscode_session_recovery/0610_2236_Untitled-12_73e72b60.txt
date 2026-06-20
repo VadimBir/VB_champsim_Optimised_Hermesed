@@ -1,0 +1,325 @@
+# REFACTOR_CACHE_SPLIT_PLAN — champsim_v19 src/cache.cc + inc/cache.h
+
+Status: DESIGN ONLY — zero source edits in this pass. Executor follows mechanically AFTER v20 merge of sibling branches P-BLOOM and P-FASTSET (both currently editing cache.cc/cache.h).
+
+Date: 2026-06-10
+
+------------------------------------------------------------
+0. SEQUENCING & RE-LOCATE NOTE
+------------------------------------------------------------
+- Sibling branches P-BLOOM and P-FASTSET concurrently edit /home/cc/champsim_VB/champsim_v19/src/cache.cc and /home/cc/champsim_VB/champsim_v19/inc/cache.h. Line numbers in this plan are SNAPSHOTS as of 2026-06-10.
+- Executor MUST re-locate every entry by NAME + SIGNATURE using:
+  `/usr/bin/grep -n -E "^[a-zA-Z_].*\bCACHE::<name>\(" src/cache.cc inc/cache.h`
+  before each move.
+- Build sanity: `Makefile` line 338 uses `sources := $(shell find $(srcDir) -name '*.$(srcExt))` — new .cc files are auto-discovered, no Makefile edit needed.
+- LTO: `CFlags += -flto=thin` (Makefile line 249) and `LDFlags += -fuse-ld=lld -flto=thin` (line 233) — CROSS-TU INLINING ACTIVE. File-split cost is largely mitigated; hot bodies that move to .cc retain inline behavior under -flto=thin. Functions that we still classify "stay-inline" are kept inline as a defence against future builds where someone toggles LTO off.
+
+------------------------------------------------------------
+1. PROPOSED FILE MAP
+------------------------------------------------------------
+Per-queue split (recommended split granularity = the queue domain, NOT the function family):
+
+| File | Contents | Rationale |
+|---|---|---|
+| src/cache.cc | constructor, operate(), set_force_all_hits, dump_req* family, get_way, fill_cache, get_set, invalidate_entry, get_occupancy, get_size, prefetcher_feedback, increment_WQ_FULL, probe_mshr, add_mshr, check_mshr, check_mshr_hashmap, update_fill_cycle, return_data, merge_with_prefetch — i.e. shared/core | Touched by all queues; keep in core to avoid cross-TU explosion. |
+| src/cache_rq.cc | add_rq, handle_read, handle_read_miss_bypass, all handle_read_hit_* and handle_read_miss_* helpers presently inlined in cache.h | RQ domain. Largest single domain. |
+| src/cache_wq.cc | add_wq, handle_writeback, all handle_writeback_* helpers presently inlined in cache.h | WQ domain. Self-contained. |
+| src/cache_pq.cc | add_pq, handle_prefetch, prefetch_line | PQ domain. Smallest domain. |
+| src/cache_fill.cc | handle_fill, all handle_fill_* helpers presently inlined in cache.h | FILL domain. |
+| inc/cache_macro.h | ALL #defines currently scattered across cache.cc + cache.h (see §3) | Single macro home. Included from cache.h FIRST so visibility unchanged. |
+| inc/cache.h | class CACHE declaration only — NO function bodies (except `stay-inline` ones in §2) — plus #include "cache_macro.h" | Header reverts to a class header. |
+
+VERDICT on FILL: KEEP AS SEPARATE FILE (cache_fill.cc). Reason: handle_fill is 157 lines + 9 helpers (handle_fill_find_victim, _evict_dirty, _pf_fill, _replacement, _stats, _cache_and_dirty, _return, _processed_and_bypass_return, _remove) totalling ~310 lines header-side. Folding into core re-bloats cache.cc; folding into RQ breaks domain symmetry (fill services WQ + PQ + RQ).
+
+Total new .cc files: 4 (cache_rq.cc, cache_wq.cc, cache_pq.cc, cache_fill.cc).
+Total new .h files:  1 (cache_macro.h).
+
+------------------------------------------------------------
+2. FUNCTION-BY-FUNCTION MOVE TABLE
+------------------------------------------------------------
+Format: NAME | SIG | CURRENT LOC | DEST | INLINE VERDICT (reason).
+
+Hot/cold classification source: cc_perf_specs/PROFILE_v18_1core.md (perf hotpath = handle_read, add_rq, check_hit, check_mshr, return_data, handle_fill on miss-heavy traces). ACCEL_A_execmem_v19.md + ACCEL_D_lpm_cache_v19.md flag check_mshr_hashmap and add_mshr as memory-stall sensitive.
+
+A. CURRENTLY IN src/cache.cc (move table — most stay in cache.cc, only RQ/WQ/PQ/FILL functions move out):
+
+| Function | Sig | cache.cc line | Dest | Verdict |
+|---|---|---|---|---|
+| set_force_all_hits | void CACHE::set_force_all_hits(bool) | 103 | cache.cc | cold — move not needed |
+| dump_req(PACKET&) | void CACHE::dump_req(PACKET&) | 114 | cache.cc | cold debug |
+| dump_req(PACKET*) | void CACHE::dump_req(PACKET*) | 149 | cache.cc | cold debug |
+| dump_req_min_read/write/mshr/ret/pq/fill (& and *) | 12 overloads | 219-230 | cache.cc | cold — already 1-line glue |
+| handle_fill | void CACHE::handle_fill() | 308 | cache_fill.cc | HOT (operate-tier) → place near top of cache_fill.cc; `-flto=thin` preserves inline across TU |
+| merge_with_prefetch | void CACHE::merge_with_prefetch(PACKET&,PACKET&) | 465 | cache.cc | shared — RQ + FILL both call; keep core |
+| handle_writeback | void CACHE::handle_writeback() | 497 | cache_wq.cc | mid-hot; move |
+| handle_read_miss_bypass | bool CACHE::handle_read_miss_bypass(uint16_t,int,int) | 576 | cache_rq.cc | bypass forwarding path; HOT under L1/L2/LLC bypass configs |
+| handle_read | void CACHE::handle_read() | 638 | cache_rq.cc | HOT — see §4 (split candidate) |
+| handle_prefetch | void CACHE::handle_prefetch() | 727 | cache_pq.cc | mid-hot; move |
+| operate | void CACHE::operate() | 904 | cache.cc | core dispatcher — stays |
+| get_way | uint32_t CACHE::get_way(const uint64_t,const uint32_t) const | 1047 | cache.cc | HOT but already short; stays in core |
+| fill_cache | void CACHE::fill_cache(const uint32_t,const uint32_t,PACKET*) | 1056 | cache.cc | HOT shared (FILL/RQ/WQ all path through); core |
+| check_hit | int CACHE::check_hit(const PACKET*) | 1110 | cache.cc | HOT shared; core |
+| invalidate_entry | int CACHE::invalidate_entry(uint64_t) | 1138 | cache.cc | cold |
+| add_rq | int CACHE::add_rq(PACKET*) | 1154 | cache_rq.cc | HOT — see §4 (split candidate, 210 lines) |
+| add_wq | int CACHE::add_wq(PACKET*) | 1364 | cache_wq.cc | mid; move |
+| prefetch_line | int CACHE::prefetch_line(...) | 1398 | cache_pq.cc | mid; move |
+| add_pq | int CACHE::add_pq(PACKET*) | 1426 | cache_pq.cc | mid; move |
+| return_data | void CACHE::return_data(PACKET*) | 1493 | cache.cc | HOT, shared across all queues — core |
+| update_fill_cycle | void CACHE::update_fill_cycle() | 1661 | cache.cc | mid; core |
+| probe_mshr | int CACHE::probe_mshr(PACKET*) const | 1738 | cache.cc | HOT short; core |
+| check_mshr | int CACHE::check_mshr(const PACKET*) | 1746 | cache.cc | HOT (143 lines) — core; stay-inline via `static inline` is NOT possible (member fn, large); rely on -flto=thin |
+| check_mshr_hashmap | int CACHE::check_mshr_hashmap(PACKET*) | 1889 | cache.cc | HOT (LLC path); core |
+| add_mshr | inline void CACHE::add_mshr(PACKET*) | 2001 | cache.cc | HOT; KEEP `inline` keyword — currently declared inline at definition site |
+| get_occupancy | uint32_t CACHE::get_occupancy(uint8_t,uint64_t) const | 2051 | cache.cc | cold |
+| get_size | uint32_t CACHE::get_size(uint8_t,uint64_t) const | 2061 | cache.cc | cold |
+| increment_WQ_FULL | void CACHE::increment_WQ_FULL(uint64_t) | 2072 | cache.cc | cold |
+| prefetcher_feedback | void CACHE::prefetcher_feedback(...) | 2077 | cache.cc | cold |
+
+B. CURRENTLY IN inc/cache.h (member function BODIES inside class body — move to .cc). All declared with leading `inline` keyword today. Verdict column: KEEP-INLINE (stay in header as inline body) vs MOVE-TO-CC (de-inline; LTO preserves perf).
+
+| Function | cache.h line | Dest | Verdict (reason) |
+|---|---|---|---|
+| return_to_upper_level(PACKET&) | 541 | cache_rq.cc | MOVE-TO-CC. Called only on hit-return; warm not hot. |
+| handle_read_hit_processed(int,uint32_t,uint32_t) | 559 | cache_rq.cc | MOVE-TO-CC. Warm. |
+| handle_read_hit_bypass_return(uint16_t,int) | 603 | cache_rq.cc | MOVE-TO-CC. Bypass path. |
+| handle_read_hit_pf_operate(uint16_t,int,uint32_t,uint32_t) | 632 | cache_rq.cc | MOVE-TO-CC. |
+| handle_read_hit_replacement(uint16_t,int,uint32_t,uint32_t) | 647 | cache_rq.cc | MOVE-TO-CC. |
+| handle_read_hit_stats(uint16_t,int) | 656 | cache_rq.cc | MOVE-TO-CC. |
+| handle_read_hit_return(int) | 669 | cache_rq.cc | MOVE-TO-CC. |
+| handle_read_hit_pf_useful_and_remove(int,uint32_t,uint32_t) | 681 | cache_rq.cc | MOVE-TO-CC. |
+| handle_read_miss_new_llc(int,uint8_t&) | 707 | cache_rq.cc | MOVE-TO-CC. |
+| handle_read_miss_new_other(uint16_t,int,uint8_t&) | 726 | cache_rq.cc | MOVE-TO-CC. |
+| handle_read_miss_mshr_full(int,uint8_t&) | 751 | cache_rq.cc | MOVE-TO-CC. |
+| handle_read_miss_inflight_merge_deps(int,int) | 760 | cache_rq.cc | MOVE-TO-CC. |
+| handle_read_miss_inflight_fill_level(int,int) | 796 | cache_rq.cc | MOVE-TO-CC. |
+| handle_read_miss_inflight_bypass_l1_mismatch(int,int) | 805 | cache_rq.cc | KEEP-INLINE (header). REASON: heavy ifdef-chained bypass-forwarding wiring; called only when bypass active; inlining lets the compiler fold dead branches per build config. Single call site (handle_read). |
+| handle_read_miss_inflight_bypass_l2_mismatch(int,int) | 869 | cache_rq.cc | KEEP-INLINE (same as above). |
+| handle_read_miss_inflight_prefetch_takeover(int,int) | 940 | cache_rq.cc | MOVE-TO-CC. |
+| handle_read_miss_inflight_non_prefetch_merge(int,int) | 960 | cache_rq.cc | MOVE-TO-CC. |
+| handle_read_miss_handled_pf_operate(uint16_t,int) | 975 | cache_rq.cc | MOVE-TO-CC. |
+| handle_read_miss_handled_stats_remove(int) | 991 | cache_rq.cc | MOVE-TO-CC. |
+| handle_writeback_hit(uint16_t,int,uint32_t,uint32_t) | 1005 | cache_wq.cc | MOVE-TO-CC. |
+| handle_writeback_miss_new(int,uint8_t&) | 1036 | cache_wq.cc | MOVE-TO-CC. |
+| handle_writeback_miss_mshr_full(int,uint8_t&) | 1060 | cache_wq.cc | MOVE-TO-CC. |
+| handle_writeback_miss_inflight(int,int) | 1066 | cache_wq.cc | MOVE-TO-CC. |
+| handle_writeback_miss_handled_stats_remove(int) | 1077 | cache_wq.cc | MOVE-TO-CC. |
+| handle_writeback_find_victim(uint32_t,int,uint32_t) | 1088 | cache_wq.cc | MOVE-TO-CC. |
+| handle_writeback_evict_dirty(uint32_t,int,uint32_t,uint32_t,uint8_t&) | 1096 | cache_wq.cc | MOVE-TO-CC. |
+| handle_writeback_do_fill(uint32_t,int,uint32_t,uint32_t) | 1120 | cache_wq.cc | MOVE-TO-CC. |
+| handle_fill_find_victim(uint16_t,uint16_t,uint32_t) | 1154 | cache_fill.cc | MOVE-TO-CC. |
+| handle_fill_evict_dirty(uint16_t,uint16_t,uint32_t,uint32_t,uint8_t&) | 1162 | cache_fill.cc | MOVE-TO-CC. |
+| handle_fill_pf_fill(uint16_t,uint16_t,uint32_t,uint32_t) | 1195 | cache_fill.cc | MOVE-TO-CC. |
+| handle_fill_replacement(uint16_t,uint16_t,uint32_t,uint32_t) | 1208 | cache_fill.cc | MOVE-TO-CC. |
+| handle_fill_stats(uint16_t,uint16_t) | 1217 | cache_fill.cc | MOVE-TO-CC. |
+| handle_fill_cache_and_dirty(uint16_t,uint32_t,uint32_t) | 1232 | cache_fill.cc | MOVE-TO-CC. |
+| handle_fill_return(uint16_t) | 1240 | cache_fill.cc | MOVE-TO-CC. |
+| handle_fill_processed_and_bypass_return(uint16_t,uint16_t,uint32_t,uint32_t) | 1263 | cache_fill.cc | KEEP-INLINE. REASON: huge ifdef-chained DERFILL forwarding block (lines 1299..1375). Inlining lets the compiler eliminate entire #ifdef-gated branches at the call site (handle_fill). |
+| handle_fill_remove(uint16_t,uint16_t) | 1461 | cache_fill.cc | MOVE-TO-CC. |
+| get_set(uint64_t) const | 1498 | cache.h | KEEP-INLINE. REASON: trivial bit-ops, called from every queue add path; classic inline-by-default. |
+| bloom_rebuild_mshr() | 190 | cache.h | KEEP-INLINE. Member of inline-friendly Bloom helper. |
+| lpm_shadow_inc(...) | 224 | cache.h | KEEP-INLINE. Single-instruction stat bump. |
+| Bloom helpers hash_a/hash_b/reset/insert/maybe_contains | 34..39 | cache.h | KEEP-INLINE. static inline + 1-3 instr. |
+| llc_mshr_*::hash/find/insert/erase/clear | 74..121 | cache.h | KEEP-INLINE. Direct-map LLC MSHR — hot path. |
+| llc_mshr_next_pow2 | 54 | cache.h | KEEP-INLINE. constexpr-style. |
+| l1d_bypass_fill / l2c_bypass_fill / llc_bypass_fill (default stubs at 272/275/278) | 272/275/278 | cache.h | KEEP-INLINE. Default no-op stubs; real impls live in ooo_*_byp_model.cc. |
+
+COUNT: cache.h has 47 member function bodies (incl. helpers + stubs). Plan moves 40 to .cc files; 7 KEEP-INLINE in header.
+cache.cc has 32 CACHE:: function bodies + 12 dump_req_min* overloads (44 total). Plan moves 9 out to cache_rq/_wq/_pq/_fill.cc; 35 stay in cache.cc.
+
+------------------------------------------------------------
+3. MACRO INVENTORY → cache_macro.h
+------------------------------------------------------------
+Single new header inc/cache_macro.h. ORDER MATTERS — see groups below. cache.h must `#include "cache_macro.h"` BEFORE class CACHE declaration. Source .cc files include cache.h transitively.
+
+Group A — cache-level enums (must precede everything, used inside class):
+- IS_ITLB IS_DTLB IS_STLB IS_L1I IS_L1D IS_L2C IS_LLC  (cache.h:12-18)
+- CACHE_LVL_BASE                                       (cache.h:21; redefined in cache.cc:107 — DEDUPE; keep header copy only)
+- BLOOM_QTYPE_MSHR BLOOM_QTYPE_COUNT                   (cache.h:26-27)
+
+Group B — bypass bit encoding / pkt accessors (used by class members):
+- BYP_L1_BIT BYP_L2_BIT BYP_LLC_BIT                    (cache.h:256-258)
+- BYPASS_L1/L2/LLC + UNBYPASS_* + isBYPASSING_*        (cache.h:261-269)
+- SHALL_L1D_BYPASS_FILL_DEFINED / L2C / LLC guards     (cache.h:271-279)
+
+Group C — LLC hashmap MSHR cap:
+- USE_LLC_HASHMAP_MSHR + LLC_MSHR_DIRECT_MAP_CAP + CHECK_MSHR(pkt) (cache.h:45-59,126-128)
+
+Group D — DP (debug print) family (depends on `cache_type` member; expand at call site so MUST live as macros, not functions):
+- _DP_LVL_OK _DPH                                       (cache.h:287,290)
+- DP_RQ / DP_RQ_HIT / DP_RQ_MERGE                      (cache.h:293-295)
+- DP_WQ DP_PQ DP_PQ_FULL                               (cache.h:300-302)
+- DP_HIT DP_MISS DP_INVAL DP_BYP DP_FWD                (cache.h:305-321)
+- DP_MSHR_ADD DP_MSHR_MERGE DP_MSHR_NEW_ADDR           (cache.h:326-334)
+- GUARDED_ADD_RQ GUARDED_ADD_MSHR                       (cache.h:342-348)
+- DP_RET DP_RET_AFTER DP_FILL                          (cache.h:354-360)
+- Empty-fallback no-op variants under #ifndef DEBUG_PRINT (cache.h:366-382)
+
+Group E — TRUE_SANITY_CHECK family (cache.cc:32-99):
+- SANITY_MSHR_IDX_BOUND, SANITY_FILL_TLB_DATA, SANITY_SET_BOUND_PKT, SANITY_SET_BOUND_INV, SANITY_NO_LOWER_FOR_TLB_L1I, SANITY_QENTRY_EMPTY, SANITY_PKT_ADDR_NZ, SANITY_WQ_OCCUPANCY, SANITY_WQENTRY_EMPTY, SANITY_PKT_ADDR_NZ_OR_FAH, SANITY_MSHR_FOUND, SANITY_MSHR_EMPTY_FOUND
+- Plus the #ifdef/#else no-op fallbacks (cache.cc:88-100)
+
+Group F — cache-level existence helpers (cache.cc:107-110):
+- CACHE_LVL_BASE (already in Group A; remove duplicate)
+- get_cache_lvl_bit, set_this_lvl_existance, check_upper_has_entry
+
+Group G — dump_req_min helpers (cache.cc:192-216):
+- _DRMIN_SET_ROB, _DRMIN_SET_LQ, _DRMIN_SET_SQ, _DRMIN_CORE, _DRMIN_TAIL
+
+CONFIG-GATED (must be wrapped in original #ifdef chain when moved):
+- All SANITY_* gated by #ifdef TRUE_SANITY_CHECK (cache.cc:31/87/100).
+- All DP_* gated by #ifdef DEBUG_PRINT (cache.h:286/364, fallback #ifndef DEBUG_PRINT 365/383).
+- USE_LLC_HASHMAP_MSHR block gated by #ifdef USE_LLC_HASHMAP_MSHR (cache.h:46/128).
+
+ORDER DEPENDENCIES:
+1. Group A first (enums used by class declarations).
+2. Group C (USE_LLC_HASHMAP_MSHR) — defines CHECK_MSHR macro that the class declaration may reference.
+3. Group F (CACHE_LVL_BASE etc.) — must precede Group B usage since BYP_*_BIT are not derived from it, but downstream callers may interleave.
+4. Group B (BYPASS_*/isBYPASSING_*) — depends on PACKET fields; pure expression macros, order-flex within file.
+5. Group D (DP_*) — depends on `cache_type` member access; emitted last; #ifdef DEBUG_PRINT split.
+6. Group E (SANITY_*) — independent #ifdef TRUE_SANITY_CHECK section; place last.
+7. Group G (_DRMIN_*) — independent; consumed only by dump_req_min_* overloads which stay in cache.cc; safe to place last with Group E.
+
+COUNT: 65+ macros consolidated (12 sanity + 5 drmin + 7 enums + 3 bloom-qtype + 6 byp-bit/pkt + 3 fill-guards + 1 USE_LLC + 1 CAP + 1 CHECK_MSHR + 16 DP + 16 DP-noop + 3 cache-lvl-bit helpers = ~74).
+
+DEDUP REQUIRED: CACHE_LVL_BASE defined twice (cache.h:21, cache.cc:107) — keep header copy only.
+
+------------------------------------------------------------
+4. LONG FUNCTION SPLIT CANDIDATES (~200+ lines, 2+ major branches)
+------------------------------------------------------------
+
+| Function | Lines (now) | Span | Justification | Proposed subs | De-inline risk |
+|---|---|---|---|---|---|
+| add_rq | ~210 | 1154-1364 | 2 major branches: WQ-forwarding-hit branch + MSHR-merge branch + new-entry branch. Multiple #ifdef BYPASS_L1/L2/LLC blocks at 1194-1281 lengthen each branch. | add_rq_wq_forward_hit(), add_rq_mshr_merge(), add_rq_new_entry(), add_rq core dispatcher | LOW. add_rq is hot but each sub-branch is taken at most once per call. Mark subs `static inline` in cache_rq.cc — same TU, -flto=thin preserves intra-TU inlining trivially. |
+| check_mshr | 143 | 1746-1889 | 1 major hot path; not 200+. SKIP split. | — | — |
+| handle_read | 89 | 638-727 | NOT 200+. The original user-cited targets (handle_read_hit / handle_read_miss / handle_read_miss_forward) ARE ALREADY SPLIT — see all the handle_read_hit_* / handle_read_miss_* helpers in cache.h §2.B. SKIP further split. | — | — |
+| handle_fill | 157 | 308-465 | Below 200 line floor; also already heavily helper-split (handle_fill_evict_dirty/_pf_fill/_replacement/_stats/_cache_and_dirty/_return/_processed_and_bypass_return/_remove). SKIP. | — | — |
+| handle_writeback | 79 | 497-576 | Below floor. SKIP. | — | — |
+| return_data | 168 | 1493-1661 | Borderline (<200). 2 major branches: bypass-forwarding return path + standard MSHR-fill path. If executor agrees borderline qualifies, split into return_data_bypass_forward() + return_data_mshr_complete() + return_data core. | return_data_bypass_forward(), return_data_mshr_complete() | LOW. Single TU, static inline. |
+| handle_prefetch | 177 | 727-904 | Borderline. 2 major branches: prefetch-hit-merge + prefetch-miss-issue. | handle_prefetch_hit(), handle_prefetch_miss_issue() | LOW. |
+| add_pq | 67 | 1426-1493 | Below floor. SKIP. | — | — |
+
+EXECUTOR DECISION: HARD-SPLIT add_rq (>200). OPTIONAL split return_data and handle_prefetch (borderline 168 & 177; recommended for symmetry but defer if any IPC delta observed in gate §6).
+
+------------------------------------------------------------
+5. ByP → Fwd RENAME MAP
+------------------------------------------------------------
+Scheme: Fwd (PascalCase ident segments) / fwd (snake_case parts) / FWD (macro/uppercase). EXCEPTION codes: KEEP-AS-IS, CLI-DO-NOT-RENAME.
+
+Concept distinction (user explicit):
+- BYPASS-FORWARDING (cross-level packet forwarding when a level is bypassed by the predictor) → RENAME to Fwd.
+- TRUE replacement-policy bypass (no-fill / way==LLC_WAY victim) → KEEP-AS-IS.
+
+KEEP-AS-IS — TRUE replacement-policy bypass: `LLC_BYPASS` define, gated regions cache.cc:345 + cache.cc:555. Cite (cache.cc:347): `if ((cache_type == IS_LLC) && (way == LLC_WAY)) { // this is a bypass that does not fill the LLC` — replacement-policy concept, independent of forwarding predictor.
+
+CLI-DO-NOT-RENAME (user-facing flags/strings/dirs):
+- CLI flag stems: `--l1byp`, `--l2byp`, `--llcbyp`, `-bypca` (and any quick_v14.sh args carrying `byp`).
+- Filename stems used by orchestrator scripts: `ooo_l1_byp_model.cc`, `ooo_l2_byp_model.cc`, `ooo_llc_byp_model.cc`, `byplat_tracker.h`, directory `src/ByP_Models/` — DO-NOT-RENAME (regression risk on every bulk shell script).
+- Result/log column tags: `wByP`, `roi_*_wByP`, `sim_*_wByP`, `ByP_issued`, `ByP_req` — DO-NOT-RENAME (Excel aggregator parses these literally; see ~/vault MEMORY: project_ipc_restructure.md, project_paper_figures_build.md).
+- ENV/build defines `BYPASS_L1_LOGIC`, `BYPASS_L2_LOGIC`, `BYPASS_LLC_LOGIC`, `BYPASS_DEBUG`, `BYPASS_SANITY_CHECK`, `BYPASS_L1D_OnNewMiss`, `BYPASS_L1_LOGIC_EQUIVALENCY_ON_ADDR_AND_BYPASS` — DO-NOT-RENAME (build orchestrator quick_v14.sh + bulk scripts pass these literally).
+- `BYP_DERFILL_ACTIVE`, `BYP_DERFILL_IMMEDIATE`, `BYP_DERFILL_SEQUENTIAL` — DO-NOT-RENAME (build-time gates used by quickByP_v14-7_bulk.sh).
+- `LLC_BYPASS` define — KEEP (see above, different concept).
+
+RENAME table (INTERNAL identifiers only — pure forwarding-mechanism symbols):
+
+| Old | New | Reason |
+|---|---|---|
+| handle_bypass | handle_fwd | internal forwarding routine |
+| handle_read_miss_bypass | handle_read_miss_fwd | RQ forwarding helper |
+| handle_read_hit_bypass_return | handle_read_hit_fwd_return | RQ fwd return |
+| handle_read_miss_inflight_bypass_l1_mismatch | handle_read_miss_inflight_fwd_l1_mismatch | fwd-mismatch helper |
+| handle_read_miss_inflight_bypass_l2_mismatch | handle_read_miss_inflight_fwd_l2_mismatch | fwd-mismatch helper |
+| handle_fill_processed_and_bypass_return | handle_fill_processed_and_fwd_return | fill→fwd return |
+| return_data_bypass_do_forward | return_data_fwd_do_forward | fwd helper |
+| return_data_bypass_forward_destination | return_data_fwd_destination | fwd helper |
+| forward_bypassed_data | forward_fwd_data → KEEP "forward_data" | cleaner; both halves were "forward" |
+| should_bypass_current_level | should_fwd_current_level | predictor query |
+| should_bypass_to_lower | should_fwd_to_lower | predictor query |
+| get_bypass_destination | get_fwd_destination | predictor query |
+| get_bypass_bit | get_fwd_bit | accessor |
+| bypass_destination (field) | fwd_destination | PACKET field |
+| is_bypassing (field) | is_fwding | PACKET field |
+| BYP_MISMATCH (internal stat tag) | FWD_MISMATCH | internal-only |
+| BYP_TAKEN (internal stat tag) | FWD_TAKEN | internal-only |
+| STAGE_FILL_PROCESSED_BYPRET | STAGE_FILL_PROCESSED_FWDRET | DP stage tag, internal |
+| STAGE_FILL_RETURN_LLCBYP | KEEP (LLC replacement-bypass) | replacement-policy concept |
+| STAGE_HIT_BYP_RETURN | STAGE_HIT_FWD_RETURN | fwd path |
+| STAGE_MISS_BYPASS_TAKEN | STAGE_MISS_FWD_TAKEN | fwd path |
+| DP_BYP macro | DP_FWD (already exists at cache.h:321) | DEDUPE: remove DP_BYP, replace call sites with DP_FWD |
+| _ByPassed_DATA, ByPassed_DATA | _FwdedData, FwdedData | internal payload tag |
+
+KEEP / SKIP under RENAME (internal but semantically replacement-bypass or LLC-fill-bypass concept):
+- `LLC_BYP_FILL_PATH` (cache.cc:347 DP tag) — KEEP, replacement-policy.
+- `UNBYPASS_LLC` / `BYPASS_LLC` / `isBYPASSING_LLC` macros (cache.h:263-269) — KEEP. These set/read PACKET bits that mark predictor-decided level bypass. Borderline; user explicit instructions cite "ByP/byp/BYP" forwarding rename. Recommendation: KEEP because they are predictor-side state queried by code paths that retain "bypass" in CLI; renaming forces CLI alignment which is excluded. Re-evaluate in a follow-up pass once predictor is also renamed.
+- `llc_bypass_fill` (cache.h:278), `l1d_bypass_fill` (272), `l2c_bypass_fill` (275) — KEEP. Stub names are the externally-defined interface of `ooo_*_byp_model.cc` (CLI-DO-NOT-RENAME territory).
+- `byplat_tracker`, `ByPLatTracker`, `g_llc_byplat`, `llcByP` — KEEP (latency tracker tied to byp predictor; not the forwarding mechanism itself).
+
+Re-locate-by-grep step for executor: for each row above run
+`/usr/bin/grep -rIn -wE "<old>" /home/cc/champsim_VB/champsim_v19/src/ /home/cc/champsim_VB/champsim_v19/inc/`
+record line counts, then sed-rename inside the 5 cache files ONLY (cache.cc, cache_rq/_wq/_pq/_fill.cc, cache.h, cache_macro.h). Skip src/ByP_Models/ and src/ooo_*_byp_model.cc files.
+
+COUNT: 23 RENAMES, 12 KEEP-AS-IS, 8 CLI-DO-NOT-RENAME categories.
+
+------------------------------------------------------------
+6. PERFORMANCE GATE (TWO-TIER)
+------------------------------------------------------------
+Gate is run AFTER the executor lands every change above and the tree builds.
+
+T1 — 1c gate (single core determinism):
+- Config: stock SPEC trace set, 1 warmup MI + 50 sim MI (project standard `quick_v14.sh -1c`).
+- ACCEPT iff: IPC == 0.55145 (exact, per user-provided baseline).
+- Checksum: log SHA256 must match base build; LPM diff = 0 vs pre-refactor.
+
+T2 — 16c gate (multicore):
+- Config: 16c standard hetero workload (project standard `quick_v14.sh -16c`).
+- ACCEPT iff: IPC == 0.51803 (exact). Checksum match; LPM diff = 0.
+
+T3 — Timing comparison (sequential 16c):
+- Run base (pre-refactor) 16c sim sequentially 3x → median wall time = T_base.
+- Run refactor 16c sim sequentially 3x → median wall time = T_new.
+- ACCEPT iff: T_new <= T_base * 1.015 (1.5% noise). REJECT if regression > 1.5%.
+
+LTO note re-cited: build uses `-flto=thin` (Makefile:233,249). File-split overhead is bounded; expectation: T_new within noise. If T_new exceeds threshold, investigate by:
+1. Confirm -flto=thin actually applied to new TUs (`ld --verbose` / inspect .o LTO bitcode flag).
+2. Re-mark any MOVE-TO-CC function as KEEP-INLINE in cache.h, rebuild, re-gate.
+
+PRE-REFACTOR BACKUPS (mandatory before any edit):
+- `cp src/cache.cc src/cache.cc.PFS_BK_<date>`
+- `cp inc/cache.h  inc/cache.h.PFS_BK_<date>`
+(reference per project convention seen in worklog 12:36:43 "PFS_BK backups").
+
+------------------------------------------------------------
+7. RISK REGISTER
+------------------------------------------------------------
+R1 — Merge collision with P-BLOOM + P-FASTSET. SEVERITY HIGH. Mitigation: do not start until both branches merged into v20; use NAME-based re-location step §0.
+
+R2 — De-inlining hot RQ/FILL paths. SEVERITY MED. Mitigation: -flto=thin + explicit KEEP-INLINE list (§2.B) + T3 timing gate.
+
+R3 — Macro re-ordering in cache_macro.h breaks visibility. SEVERITY MED. Mitigation: strict ordering Groups A→G in §3; rebuild + run T1 first.
+
+R4 — ByP→Fwd rename touches log column tags / Excel aggregator. SEVERITY HIGH if rename leaks to wByP / roi_*_wByP. Mitigation: rename limited to 5 cache files (§5 re-locate-by-grep restricts paths). T1 LPM diff = 0 catches log changes.
+
+R5 — TRUE LLC_BYPASS define accidentally renamed. SEVERITY HIGH. Mitigation: explicit KEEP-AS-IS list with cited line (cache.cc:347 comment).
+
+R6 — CACHE_LVL_BASE double-define removal regresses. SEVERITY LOW. Mitigation: dedupe header-only; T1 build catches.
+
+R7 — add_rq sub-functions de-inlined and shared between TUs. SEVERITY LOW. Mitigation: declare `static inline` inside cache_rq.cc.
+
+R8 — handle_read_miss_inflight_bypass_l*_mismatch becomes non-inline and IPC regresses on bypass-active configs. SEVERITY MED. Mitigation: §2.B explicitly KEEP-INLINE; do not move.
+
+R9 — DP_BYP→DP_FWD dedupe breaks any external macro caller. SEVERITY LOW. Mitigation: grep src/ inc/ for DP_BYP before deletion.
+
+R10 — CLI-facing byp filenames accidentally renamed. SEVERITY HIGH. Mitigation: §5 enumerated DO-NOT-RENAME path list; executor diff-checks src/ByP_Models/ and ooo_*_byp_model.cc untouched.
+
+End of plan.
+
+## ADDENDUM — USER CONSTRAINTS (2026-06-10, binding on executor)
+1. CLASS STRUCTURE FROZEN: no member/field/signature changes to CACHE or any struct. File placement only.
+2. SHARED METHODS (used by 2+ of rq/wq/pq/fill): do NOT duplicate; keep in core cache.cc, or if hot, keep as inline in header. Decide per profile-hotness; record per function.
+3. ALL long-function splits MUST be `inline` (static inline / inline member in same TU or header) — zero codegen change goal; verify hot symbols still inlined via objdump after build.
+4. POST-SPLIT CONST AUDIT: pass over the new sub-functions — add `const` to methods that don't mutate state, const-qualify locals/params/pointers where provable; goal = help compiler eliminate redundant loads. Bit-exact by construction; gate anyway.
+
+## ADDENDUM 2 — SCOPE EXTENSION (2026-06-10, user order)
+5. BLOAT LOCATION: user believes true cache.cc logic = ~lines 300-1700 (~1400 lines); trailing getters + print/dump functions = bloat. Executor must inventory the actual line distribution and report where the 2k+ lines sit.
+6. NEW FILE cache_helper.cc: ALL getters + print/dump/stat functions from cache.cc/cache.h go here (cold; no inline requirement). cache_macro.h still separate for macros.
+7. SAME TREATMENT for DRAM controller: dram_helper.cc for its getters/print/stat bloat (inventory dram_controller.cc the same way).
+8. ooo_cpu SPLIT (new): ooo_cpu_fetch.cc / ooo_cpu_decode.cc / ooo_cpu_schedule.cc / ooo_cpu_execute.cc — stage methods by _postfix; core ooo_cpu.cc keeps handle_branch, add_rob, update_rob, retire (+ shared). Same frozen-structure / inline-split / const-audit / gate rules as cache (Addendum 1 applies to ALL files).

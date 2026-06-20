@@ -1,0 +1,20 @@
+  \begin{table}[t]  \centering
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.15}
+  \caption{Evaluated workloads. SPEC entries give the benchmark trace prefix; each is
+  evaluated over multiple SimPoint regions, totaling 30 SPEC traces. GAP entries list
+  all 20 input traces.}
+  \label{tab:eval_workloads_traces}
+  \begin{tabularx}{\columnwidth}{|l|X|}
+  \hline
+  \textbf{Suite} & \textbf{Workload (trace)}\\ \hline
+  \textbf{SPEC} & \textbf{2006}: 429.mcf, 433.milc, 437.leslie3d, 450.soplex,
+  459.GemsFDTD, 473.astar, 481.wrf, 482.sphinx3;
+  \textbf{2017}: 603.bwaves, 605.mcf, 607.cactuBSSN, 620.omnetpp,
+  621.wrf, 623.xalancbmk, 649.fotonik3d, 654.roms\\ \hline
+  \textbf{GAP} & bc-0, bc-3, bc-5, bc-12, bfs-3, bfs-8, bfs-10, bfs-14,
+  cc-5, cc-6, cc-13, cc-14, pr-3, pr-5, pr-10, pr-14,
+  sssp-3, sssp-5, sssp-10, sssp-14\\ \hline
+  \end{tabularx}
+  \vspace{-10pt}
+  \end{table}

@@ -1,0 +1,81 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type 4
+#define L2C_type 5
+#define LLC_type 6
+#endif
+
+// MODEL 2200 — TableHitGate — L2
+// Same table + 433a-style gate on L2 metrics (overlap collapsing: ov_short < ov_long)
+
+#define TBL_2200_BITS  8
+#define TBL_2200_SIZE  (1 << TBL_2200_BITS)
+#define TBL_2200_AGE   128
+
+#ifndef ZION_HASH
+#define ZION_HASH(x, bits) (((x >> 1) ^ (x >> 4)) & ((1ULL << (bits)) - 1))
+#endif
+
+struct lat_entry_2200_l2 {
+    uint16_t byp_lat;
+    uint16_t nonbyp_lat;
+    uint8_t  byp_cnt;
+    uint8_t  nonbyp_cnt;
+};
+
+inline lat_entry_2200_l2 lat_tbl_2200_l2[NUM_CPUS][TBL_2200_SIZE] = {};
+inline bool l2_init_2200[NUM_CPUS] = {};
+
+static inline uint8_t hash_2200_l2(uint64_t ip, uint64_t addr) {
+    uint64_t page = addr >> 12;
+    return (uint8_t)((((ip >> 1) ^ (ip >> 4)) ^ ((page >> 1) ^ (page >> 4))) & (TBL_2200_SIZE - 1));
+}
+
+#define SHALL_L2C_BYPASS_FILL_DEFINED
+inline void l2c_bypass_fill(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC, PACKET &pkt) {
+    uint64_t lat = current_core_cycle[cpu] - pkt.cycle_enqueued;
+    if (lat > 0xFFFF) lat = 0xFFFF;
+    uint8_t idx = hash_2200_l2(pkt.ip, pkt.full_addr);
+    auto &e = lat_tbl_2200_l2[cpu][idx];
+    if (e.byp_cnt >= TBL_2200_AGE) { e.byp_cnt >>= 1; e.byp_lat = (e.byp_lat+1)>>1; }
+    if (e.nonbyp_cnt >= TBL_2200_AGE) { e.nonbyp_cnt >>= 1; e.nonbyp_lat = (e.nonbyp_lat+1)>>1; }
+    if (pkt.l2_bypassed) {
+        if (e.byp_cnt == 0) e.byp_lat = (uint16_t)lat;
+        else e.byp_lat = (uint16_t)((e.byp_lat * (uint32_t)e.byp_cnt + lat) / (e.byp_cnt + 1));
+        if (e.byp_cnt < 255) e.byp_cnt++;
+    } else {
+        if (e.nonbyp_cnt == 0) e.nonbyp_lat = (uint16_t)lat;
+        else e.nonbyp_lat = (uint16_t)((e.nonbyp_lat * (uint32_t)e.nonbyp_cnt + lat) / (e.nonbyp_cnt + 1));
+        if (e.nonbyp_cnt < 255) e.nonbyp_cnt++;
+    }
+}
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_init_2200[cpu]) return;
+    cout << "L2 Bypass [2200-TableHitGate]: 256-entry lat table + overlap gate" << endl;
+    l2_init_2200[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    double k_s = get_kappa_short(cpu, LPM_L2C);
+    double k_l = get_kappa_long(cpu, LPM_L2C);
+    double ov_s = 1.0 - k_s;
+    double ov_l = 1.0 - k_l;
+
+    if (!(ov_s < ov_l)) return false;
+
+    uint64_t ip   = L2C->RQ.entry[L2C->RQ.head].ip;
+    uint64_t addr = L2C->RQ.entry[L2C->RQ.head].full_addr;
+    uint8_t idx = hash_2200_l2(ip, addr);
+    auto &e = lat_tbl_2200_l2[cpu][idx];
+
+    if (e.byp_cnt > 0 && e.nonbyp_cnt > 0)
+        return e.byp_lat < e.nonbyp_lat;
+
+    return true;
+}

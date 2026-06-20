@@ -1,0 +1,86 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 830 — Perceptron at L2
+// Perceptron(5feat) online CAMAT-guided
+
+#define DBG_830 1
+
+inline bool l2_bypass_init_830[NUM_CPUS] = {};
+inline uint64_t l2_dbg_counter_830[NUM_CPUS] = {};
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init_830[cpu]) return;
+    cout << "L2 Bypass [830-Perceptron]: Perceptron(5feat) online CAMAT-guided" << endl;
+    l2_bypass_init_830[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+
+static constexpr int N_FEAT_830 = 5;
+static constexpr int W_MAX_830 = 127;
+static constexpr int W_MIN_830 = -128;
+static constexpr uint32_t TRAIN_INT_830 = 2048;
+static int16_t w830[NUM_CPUS][N_FEAT_830];
+static bool    wi830[NUM_CPUS];
+static uint32_t cc830[NUM_CPUS];
+static double  pc830[NUM_CPUS];
+static int32_t ps830[NUM_CPUS];
+static double  pf830[NUM_CPUS][N_FEAT_830];
+if (!wi830[cpu]) {
+    for (int i = 0; i < N_FEAT_830; i++) w830[cpu][i] = 0;
+    pc830[cpu] = 0.0; ps830[cpu] = 0; cc830[cpu] = 0;
+    wi830[cpu] = true;
+}
+double feat[N_FEAT_830];
+double camat_t = lpm[cpu][LPM_L2C].wsm.camat_activeMemCyDivAccesses;
+double camat_n = lpm[cpu][LPM_LLC].wsm.camat_activeMemCyDivAccesses;
+feat[0] = lpm[cpu][LPM_L2C].ws.µ_missCyFracOfActiveCy() * lpm[cpu][LPM_L2C].ws.κ_pureMissFracOfMissCy();
+feat[1] = lpm[cpu][LPM_LLC].ws.µ_missCyFracOfActiveCy() * lpm[cpu][LPM_LLC].ws.κ_pureMissFracOfMissCy();
+feat[2] = (double)L2C->MSHR.occupancy / L2C->MSHR.SIZE;
+feat[3] = (camat_n > 1e-6) ? (camat_t / camat_n) : 0.0;
+feat[4] = lpm[cpu][LPM_L2C].ws.φ_hitCyFracOfActiveCy();
+int32_t sum = 0;
+for (int i = 0; i < N_FEAT_830; i++) {
+    int32_t x = (int32_t)(feat[i] * 128.0 - 64.0);
+    sum += w830[cpu][i] * x;
+}
+bool byp = (sum > 0);
+cc830[cpu]++;
+if (cc830[cpu] >= TRAIN_INT_830) {
+    double cur = lpm[cpu][LPM_L2C].wsm.camat_activeMemCyDivAccesses;
+    if (pc830[cpu] > 1e-9) {
+        int8_t label = (cur < pc830[cpu]) ? +1 : -1;
+        bool last_byp = (ps830[cpu] > 0);
+        int8_t pred_sign = last_byp ? +1 : -1;
+        if (pred_sign != label || (ps830[cpu] < 0 ? -ps830[cpu] : ps830[cpu]) < 48) {
+            for (int i = 0; i < N_FEAT_830; i++) {
+                int32_t x = (int32_t)(pf830[cpu][i] * 128.0 - 64.0);
+                int32_t nw = w830[cpu][i] + label * (x > 0 ? 1 : -1);
+                if (nw > W_MAX_830) nw = W_MAX_830;
+                if (nw < W_MIN_830) nw = W_MIN_830;
+                w830[cpu][i] = (int16_t)nw;
+            }
+        }
+    }
+    pc830[cpu] = cur; ps830[cpu] = sum;
+    for (int i = 0; i < N_FEAT_830; i++) pf830[cpu][i] = feat[i];
+    cc830[cpu] = 0;
+}
+
+#if DBG_830
+    if ((++l2_dbg_counter_830[cpu] & 0xFFFF) == 0) {
+        printf("  [830-L2] -> %s\n", byp ? "BYP" : "---");
+    }
+#endif
+
+    return byp;
+}

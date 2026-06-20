@@ -1,0 +1,51 @@
+V. EXPERIMENTAL RESULTS
+A. Performance of SPEC workloads
+Figure 5(a) presents the normalized speedup of all evaluated
+prefetchers running 37 homogeneous SPEC workloads under
+various system configurations, including 1-core (Apple A14
+and GLC), as well as multi-core (2/4/8-core GLC). Across
+all configurations, Zion consistently outperforms all SOTA
+designs, achieves speedup of 25.5%, 38.5%, 40.9%, 43.2%
+and 32.5% over the baseline, respectively. In particular, under
+the optimal 4-core configuration, Zion surpasses IPCP, Bingo,
+SPP, and Berti by 18.2%, 10.1%, 8.0%, and 5.1%, respectively.
+Moreover, the memory subsystem saturation, at a higher core
+count degrades the performance at 8-core for all prefetchers.
+At the other end, on 1-core A14, the 6.4× smaller L2 cache
+capacity limits the gains of SPP, Berti, and Zion, resulting in
+a small performance gap.
+B. Performance of Self-Attention workloads
+Figure 5(b) illustrates the geometric mean speedup across
+various prefetchers on homogeneous self-attention workloads.
+Zion achieves 31.7%, 37.6%, 41.3%, 43.0%, and 42.2%
+speedup on A14 (1-core) and GLC (1-core, 2-core, 4-core,
+and 8-core). These results demonstrate that LLMs with equivalent internal architectures achieve consistent speedups in selfattention mechanisms. Notably, in all multi-core configurations, Zion outperforms other prefetchers in every workload.
+As the core count increases, pattern interference increases
+and prefetcher adaptability becomes increasingly important.
+As a result, Zion in the 8-core configuration outperforms
+IPCP, Bingo, SPP, and Berti by 11.8%, 10.0%, 4.4%, and
+5.1%, respectively. Notably, the marginal improvement over
+the strongest competing prefetcher in any given workload is
+between 1.54% and 5.9%.
+
+
+C. Homogeneous Pattern Coverage
+We evaluate prefetch coverage, defined as the ratio of cache
+misses eliminated by the prefetcher to the number of misses
+in the baseline (no prefetching). Each prefetcher is trained
+using L1-cache misses, while predicted lines are inserted into
+the L2 and LLC. In the 4-core homogeneous configuration,
+Figure 6 shows that Zion achieves LLC coverage rates of
+73.6%, 84.0%, and 90.5% on SPEC 2006, SPEC 2017, and
+self-attention workloads, respectively. The next best prefetcher,
+Berti, achieves coverage rates of 69.8%, 75.8%, and 86.6% on
+the same workloads.
+D. Heterogeneous Workloads in 4-Core Systems
+To comprehensively evaluate the performance, we generate 500 heterogeneous 4-core mixes by randomly selecting
+traces from the evaluated SPEC and self-attention benchmarks,
+assigning a distinct trace to each core. Figure 7 shows the
+weighted speedup over the no-prefetch baseline, with mixes
+sorted in ascending order of Zion’s performance. Overall,
+Zion achieves an average speedup of 63.8% over the baseline,
+outperforming IPCP, Bingo, SPP, and Berti by 22.3%, 15.0%,
+9.9%, and 5.5%, respectively.

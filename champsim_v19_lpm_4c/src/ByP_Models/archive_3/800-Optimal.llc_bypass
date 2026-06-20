@@ -1,0 +1,47 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 800 — Optimal at LLC
+// Phi*R - beta*S DRAM-aware, dyn_thr=camat_t*0.25
+
+#define DBG_800 1
+
+inline bool llc_bypass_init_800[NUM_CPUS] = {};
+inline uint64_t llc_dbg_counter_800[NUM_CPUS] = {};
+
+#define SHALL_LLC_BYPASS_DEFINED
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init_800[cpu]) return;
+    cout << "LLC Bypass [800-Optimal]: Phi*R - beta*S DRAM-aware, dyn_thr=camat_t*0.25" << endl;
+    llc_bypass_init_800[cpu] = true;
+}
+
+inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    llc_bypass_initialize(cpu, L1D, L2C, LLC);
+
+double kappa_t   = lpm[cpu][LPM_LLC].wsm.mst_pureMissCyDivAccesses;
+double camat_n   = lpm[cpu][LPM_DRAM].wsm.camat_activeMemCyDivAccesses;
+double Phi       = kappa_t * camat_n;
+uint64_t w_next      = lpm[cpu][LPM_DRAM].ws.ω_activeMemCy();
+double mu_kappa_next = w_next ? (double)lpm[cpu][LPM_DRAM].ws.m_pureMissCy / w_next : 0.0;
+double R_proxy       = 1.0 - mu_kappa_next;
+int    this_free = LLC->MSHR.SIZE - LLC->MSHR.occupancy;
+double S         = 1.0 - (double)this_free / (double)LLC->MSHR.SIZE;
+double camat_t   = lpm[cpu][LPM_LLC].wsm.camat_activeMemCyDivAccesses;
+double dyn_thr   = camat_t * 0.25;
+bool byp = (R_proxy * Phi > dyn_thr) || (S > 0.7);
+
+#if DBG_800
+    if ((++llc_dbg_counter_800[cpu] & 0xFFFF) == 0) {
+        printf("    [800-LLC] -> %s\n", byp ? "BYP" : "---");
+    }
+#endif
+
+    return byp;
+}

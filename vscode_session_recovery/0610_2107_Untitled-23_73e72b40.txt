@@ -1,0 +1,59 @@
+-   31.39%     8.49%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::execute_memory_instruction()
+   - 22.90% O3_CPU::execute_memory_instruction()
+      - 12.20% CACHE::handle_read()
+         + 4.00% CACHE::l2c_prefetcher_operate(unsigned long, unsigned long, unsigned char, unsigned char, unsigned int)
+           1.03% LPM_Tracker::demandCompute(unsigned long const*)
+           0.85% PACKET_QUEUE::add_queue(PACKET*)
+      - 5.19% lpm_operate(int, unsigned char, bool, bool, unsigned long, bool, unsigned long, unsigned long)
+           1.00% LPM_Tracker::advance_class(unsigned char, unsigned char, unsigned int)
+      - 1.78% CACHE::add_rq(PACKET*)
+           0.56% PACKET_QUEUE::check_queue(PACKET*) const
+        1.51% CACHE::handle_fill()
+        0.80% CACHE::handle_prefetch()
+        0.80% CACHE::handle_writeback()
+   + 8.49% _start
+-   14.49%     0.61%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::schedule_instruction()
+   - 13.88% O3_CPU::schedule_instruction()
+      - 13.87% O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const
+           5.08% O3_CPU::reg_dependency(unsigned short)
+   + 0.61% _start
+-   13.98%     6.36%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::update_rob()
+   - 7.63% O3_CPU::update_rob()
+        3.06% AddrDependencyTracker::remove_producer(unsigned short, ooo_model_instr const*)
+        2.95% O3_CPU::reg_RAW_release(unsigned short)
+        1.01% O3_CPU::complete_data_fetch(PACKET_QUEUE*, unsigned char)
+        0.59% O3_CPU::complete_instr_fetch(PACKET_QUEUE*, unsigned char)
+   + 6.36% _start
+-   13.95%     8.86%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const
+   - 8.86% _start
+        __libc_start_main
+        0x74932ec2a1ca
+      - main
+         - 8.78% O3_CPU::schedule_instruction()
+              O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const
+   - 5.09% O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const
+        5.08% O3_CPU::reg_dependency(unsigned short)
+-   12.61%     6.01%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] CACHE::handle_read()
+   + 6.60% CACHE::handle_read()
+   + 6.01% _start
++    9.30%     0.98%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::schedule_memory_instruction()
+-    8.34%     7.47%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::schedule_memory_instruction()::$_0::operator()(unsigned int, unsigned int) const
+   - 7.47% _start
+        __libc_start_main
+        0x74932ec2a1ca
+      - main
+         - 7.44% O3_CPU::schedule_memory_instruction()
+              O3_CPU::schedule_memory_instruction()::$_0::operator()(unsigned int, unsigned int) const
+   - 0.86% O3_CPU::schedule_memory_instruction()::$_0::operator()(unsigned int, unsigned int) const
+        0.85% O3_CPU::add_load_queue(unsigned short, unsigned int)
++    8.31%     3.49%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::fetch_instruction()
++    6.42%     2.50%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] CACHE::add_rq(PACKET*)
++    6.12%     4.70%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] lpm_operate(int, unsigned char, bool, bool, unsigned long, bool, unsigned long, unsigned long)
+-    5.10%     5.04%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::reg_dependency(unsigned short)
+     5.04% _start
+        __libc_start_main
+        0x74932ec2a1ca
+        main
+      - O3_CPU::schedule_instruction()
+         - 5.03% O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const
+              O3_CPU::reg_dependency(unsigned short)  

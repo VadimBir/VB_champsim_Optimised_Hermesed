@@ -1,0 +1,646 @@
+#include "cache.h"
+#include <vector>
+#include <string>
+#include <unordered_map>
+#include <algorithm>
+#include <iostream>
+#include <map>
+#include <iomanip>
+#include <numeric>
+#include <queue>
+
+struct AccessPattern {
+    uint64_t addr_block;
+    uint64_t ip;
+};
+
+vector<AccessPattern> access_sequence;
+
+void CACHE::l1d_prefetcher_initialize() {
+    access_sequence.clear();
+}
+
+void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type) {
+    access_sequence.push_back({addr >> 6, ip}); // block-aligned
+    uint64_t block_addr = addr >> LOG2_BLOCK_SIZE;
+    prefetch_line(ip, addr, block_addr+1<<LOG2_BLOCK_SIZE, FILL_L1, 0);
+}
+
+// Rabin-Karp for stride patterns
+void rabin_karp_patterns(const vector<AccessPattern>& seq) {
+    const int MOD = 1e9 + 7, BASE = 31;
+    unordered_map<int, vector<int>> hash_positions;
+    
+    for (int len = 2; len <= min(10, (int)seq.size()); len++) {
+        hash_positions.clear();
+        int hash = 0, pow_base = 1;
+        
+        for (int i = 0; i < len; i++) {
+            hash = (hash * BASE + seq[i].addr_block) % MOD;
+            if (i < len - 1) pow_base = (pow_base * BASE) % MOD;
+        }
+        hash_positions[hash].push_back(0);
+        
+        for (int i = len; i < seq.size(); i++) {
+            hash = (hash - (seq[i-len].addr_block * pow_base) % MOD + MOD) % MOD;
+            hash = (hash * BASE + seq[i].addr_block) % MOD;
+            hash_positions[hash].push_back(i - len + 1);
+        }
+        
+        for (auto& [h, positions] : hash_positions) {
+            if (positions.size() > 1) {
+                cout << "RK Pattern len=" << len << " positions:";
+                for (int pos : positions) cout << " " << pos;
+                cout << endl;
+            }
+        }
+    }
+}
+
+// KMP pattern matching
+vector<int> compute_lps(const vector<uint64_t>& pattern) {
+    vector<int> lps(pattern.size(), 0);
+    int len = 0, i = 1;
+    
+    while (i < pattern.size()) {
+        if (pattern[i] == pattern[len]) lps[i++] = ++len;
+        else if (len) len = lps[len - 1];
+        else lps[i++] = 0;
+    }
+    return lps;
+}
+
+void kmp_patterns(const vector<AccessPattern>& seq) {
+    if (seq.size() < 4) return;
+    
+    for (int plen = 2; plen <= min(8, (int)seq.size()/2); plen++) {
+        vector<uint64_t> pattern(plen);
+        for (int i = 0; i < plen; i++) pattern[i] = seq[i].addr_block;
+        
+        vector<int> lps = compute_lps(pattern);
+        int i = 0, j = 0;
+        vector<int> matches;
+        
+        while (i < seq.size()) {
+            if (pattern[j] == seq[i].addr_block) i++, j++;
+            
+            if (j == plen) {
+                matches.push_back(i - j);
+                j = lps[j - 1];
+            } else if (i < seq.size() && pattern[j] != seq[i].addr_block) {
+                j ? j = lps[j - 1] : i++;
+            }
+        }
+        
+        if (matches.size() > 1) {
+            cout << "KMP Pattern len=" << plen << " matches:";
+            for (int m : matches) cout << " " << m;
+            cout << endl;
+        }
+    }
+}
+
+// Z-algorithm for prefix matching
+void z_algorithm_patterns(const vector<AccessPattern>& seq) {
+    if (seq.size() < 2) return;
+    
+    vector<uint64_t> addr_seq(seq.size());
+    for (size_t i = 0; i < seq.size(); i++) addr_seq[i] = seq[i].addr_block;
+    
+    vector<int> z(seq.size(), 0);
+    int l = 0, r = 0;
+    
+    for (size_t i = 1; i < seq.size(); i++) {
+        if ((int)i <= r) z[i] = min(r - (int)i + 1, z[i - l]);
+        
+        while (i + z[i] < seq.size() && addr_seq[z[i]] == addr_seq[i + z[i]]) z[i]++;
+        
+        if ((int)i + z[i] - 1 > r) l = i, r = i + z[i] - 1;
+        
+        if (z[i] > 1) {
+            cout << "Z-algo: prefix len=" << z[i] << " at pos=" << i << endl;
+        }
+    }
+}
+
+// Boyer-Moore bad character heuristic
+void boyer_moore_patterns(const vector<AccessPattern>& seq) {
+    for (int plen = 2; plen <= min(6, (int)seq.size()); plen++) {
+        unordered_map<uint64_t, int> bad_char;
+        vector<uint64_t> pattern(plen);
+        
+        for (int i = 0; i < plen; i++) {
+            pattern[i] = seq[i].addr_block;
+            bad_char[pattern[i]] = i;
+        }
+        
+        vector<int> matches;
+        int shift = 0;
+        
+        while (shift <= (int)seq.size() - plen) {
+            int j = plen - 1;
+            
+            while (j >= 0 && pattern[j] == seq[shift + j].addr_block) j--;
+            
+            if (j < 0) {
+                matches.push_back(shift);
+                shift += (shift + plen < seq.size()) ? plen - bad_char[seq[shift + plen].addr_block] : 1;
+            } else {
+                shift += max(1, j - bad_char[seq[shift + j].addr_block]);
+            }
+        }
+        
+        if (matches.size() > 1) {
+            cout << "BM Pattern len=" << plen << " matches:";
+            for (int m : matches) cout << " " << m;
+            cout << endl;
+        }
+    }
+}
+
+// Suffix Array construction
+vector<int> build_suffix_array(const vector<uint64_t>& s) {
+    int n = s.size();
+    vector<int> sa(n), rank(n), tmp(n);
+    
+    for (int i = 0; i < n; i++) sa[i] = i, rank[i] = s[i];
+    
+    for (int k = 1; k < n; k <<= 1) {
+        sort(sa.begin(), sa.end(), [&](int i, int j) {
+            if (rank[i] != rank[j]) return rank[i] < rank[j];
+            int ri = (i + k < n) ? rank[i + k] : -1;
+            int rj = (j + k < n) ? rank[j + k] : -1;
+            return ri < rj;
+        });
+        
+        tmp[sa[0]] = 0;
+        for (int i = 1; i < n; i++) {
+            tmp[sa[i]] = tmp[sa[i-1]];
+            if (rank[sa[i-1]] < rank[sa[i]] || 
+                (rank[sa[i-1]] == rank[sa[i]] && 
+                 ((sa[i-1] + k < n ? rank[sa[i-1] + k] : -1) < 
+                  (sa[i] + k < n ? rank[sa[i] + k] : -1)))) {
+                tmp[sa[i]]++;
+            }
+        }
+        rank = tmp;
+    }
+    return sa;
+}
+
+// Kasai's LCP algorithm
+vector<int> kasai_lcp(const vector<uint64_t>& s, const vector<int>& sa) {
+    int n = s.size();
+    vector<int> lcp(n, 0), inv_sa(n);
+    
+    for (int i = 0; i < n; i++) inv_sa[sa[i]] = i;
+    
+    int k = 0;
+    for (int i = 0; i < n; i++) {
+        if (inv_sa[i] == n - 1) { k = 0; continue; }
+        
+        int j = sa[inv_sa[i] + 1];
+        while (i + k < n && j + k < n && s[i + k] == s[j + k]) k++;
+        
+        lcp[inv_sa[i]] = k;
+        if (k) k--;
+    }
+    return lcp;
+}
+
+void suffix_array_patterns(const vector<AccessPattern>& seq) {
+    if (seq.size() < 3) return;
+    
+    vector<uint64_t> addr_seq(seq.size());
+    for (size_t i = 0; i < seq.size(); i++) addr_seq[i] = seq[i].addr_block;
+    
+    vector<int> sa = build_suffix_array(addr_seq);
+    vector<int> lcp = kasai_lcp(addr_seq, sa);
+    
+    cout << "Suffix Array LCP Analysis:" << endl;
+    
+    // Collect meaningful LCP entries with actual pattern content
+    vector<tuple<int, int, int, vector<uint64_t>>> lcp_patterns; // length, pos1, pos2, pattern
+    
+    for (size_t i = 0; i < lcp.size() - 1; i++) {
+        if (lcp[i] > 1) {
+            int pos1 = sa[i], pos2 = sa[i+1];
+            vector<uint64_t> pattern(lcp[i]);
+            
+            for (int j = 0; j < lcp[i]; j++) {
+                pattern[j] = addr_seq[pos1 + j];
+            }
+            
+            lcp_patterns.push_back({lcp[i], pos1, pos2, pattern});
+        }
+    }
+    
+    // Sort by LCP length descending
+    sort(lcp_patterns.begin(), lcp_patterns.end(), 
+         [](const auto& a, const auto& b) { return get<0>(a) > get<0>(b); });
+    
+    cout << "Top LCP patterns (longest common prefixes):" << endl;
+    cout << "Len | Pos1 | Pos2 | Pattern" << endl;
+    cout << "----|------|------|--------" << endl;
+    
+    for (size_t i = 0; i < min(size_t(15), lcp_patterns.size()); i++) {
+        auto& [len, pos1, pos2, pattern] = lcp_patterns[i];
+        cout << setw(3) << len << " | " 
+             << setw(4) << pos1 << " | "
+             << setw(4) << pos2 << " | ";
+        
+        for (size_t j = 0; j < min(size_t(8), pattern.size()); j++) {
+            cout << hex << pattern[j] << " ";
+        }
+        if (pattern.size() > 8) cout << "...";
+        cout << dec << endl;
+    }
+    
+    // Statistical analysis
+    if (!lcp_patterns.empty()) {
+        int max_lcp = get<0>(lcp_patterns[0]);
+        double avg_lcp = 0;
+        for (const auto& p : lcp_patterns) avg_lcp += get<0>(p);
+        avg_lcp /= lcp_patterns.size();
+        
+        cout << "LCP Statistics: max=" << max_lcp 
+             << " avg=" << fixed << setprecision(2) << avg_lcp
+             << " count=" << lcp_patterns.size() << endl;
+             
+        // Find patterns that appear at multiple suffix positions
+        map<vector<uint64_t>, vector<pair<int, int>>> pattern_positions;
+        for (const auto& p : lcp_patterns) {
+            pattern_positions[get<3>(p)].push_back({get<1>(p), get<2>(p)});
+        }
+        
+        cout << "Multi-occurrence LCP patterns:" << endl;
+        for (const auto& [pattern, positions] : pattern_positions) {
+            if (positions.size() > 1) {
+                cout << "Pattern len=" << pattern.size() << " occurrences=" << positions.size() << ": ";
+                for (size_t j = 0; j < min(size_t(6), pattern.size()); j++) {
+                    cout << hex << pattern[j] << " ";
+                }
+                cout << dec << endl;
+            }
+        }
+    }
+}
+
+// Manacher's algorithm for palindromic patterns
+void manacher_patterns(const vector<AccessPattern>& seq) {
+    if (seq.size() < 3) return;
+    
+    vector<uint64_t> addr_seq;
+    for (int i = 0; i < seq.size(); i++) {
+        addr_seq.push_back(seq[i].addr_block);
+        if (i < seq.size() - 1) addr_seq.push_back(UINT64_MAX); // separator
+    }
+    
+    int n = addr_seq.size();
+    vector<int> p(n, 0);
+    int center = 0, right = 0;
+    
+    for (int i = 0; i < n; i++) {
+        int mirror = 2 * center - i;
+        
+        if (i < right) p[i] = min(right - i, p[mirror]);
+        
+        while (i + p[i] + 1 < n && i - p[i] - 1 >= 0 && 
+               addr_seq[i + p[i] + 1] == addr_seq[i - p[i] - 1]) {
+            p[i]++;
+        }
+        
+        if (i + p[i] > right) {
+            center = i;
+            right = i + p[i];
+        }
+        
+        if (p[i] > 2) {
+            cout << "Palindrome center=" << i/2 << " radius=" << p[i]/2 << endl;
+        }
+    }
+}
+
+// Online palindrome checking (simplified)
+void online_palindrome_patterns(const vector<AccessPattern>& seq) {
+    cout << "Online palindrome detection:" << endl;
+    
+    for (int i = 1; i < seq.size() - 1; i++) {
+        // Check odd length palindromes
+        int l = i - 1, r = i + 1;
+        while (l >= 0 && r < seq.size() && seq[l].addr_block == seq[r].addr_block) {
+            if (r - l + 1 >= 3) {
+                cout << "Palindrome [" << l << "," << r << "] len=" << r-l+1 << endl;
+            }
+            l--; r++;
+        }
+        
+        // Check even length palindromes
+        l = i; r = i + 1;
+        while (l >= 0 && r < seq.size() && seq[l].addr_block == seq[r].addr_block) {
+            if (r - l + 1 >= 4) {
+                cout << "Palindrome [" << l << "," << r << "] len=" << r-l+1 << endl;
+            }
+            l--; r++;
+        }
+    }
+}
+
+// Finite Automata pattern matching
+void finite_automata_patterns(const vector<AccessPattern>& seq) {
+    for (int plen = 2; plen <= min(5, (int)seq.size()); plen++) {
+        vector<uint64_t> pattern(plen);
+        for (int i = 0; i < plen; i++) pattern[i] = seq[i].addr_block;
+        
+        // Build transition table
+        vector<vector<int>> dfa(plen + 1, vector<int>(256, 0));
+        
+        for (int state = 0; state <= plen; state++) {
+            for (int c = 0; c < 256; c++) {
+                if (state < plen && c == pattern[state]) {
+                    dfa[state][c] = state + 1;
+                } else {
+                    int next_state = state;
+                    while (next_state > 0 && pattern[next_state] != c) {
+                        next_state--;
+                    }
+                    dfa[state][c] = (pattern[next_state] == c) ? next_state + 1 : 0;
+                }
+            }
+        }
+        
+        // Pattern matching
+        int state = 0;
+        vector<int> matches;
+        
+        for (int i = 0; i < seq.size(); i++) {
+            state = dfa[state][seq[i].addr_block & 0xFF];
+            if (state == plen) {
+                matches.push_back(i - plen + 1);
+            }
+        }
+        
+        if (matches.size() > 1) {
+            cout << "FA Pattern len=" << plen << " matches:";
+            for (int m : matches) cout << " " << m;
+            cout << endl;
+        }
+    }
+}
+
+// Aho-Corasick for multiple pattern matching
+void aho_corasick_patterns(const vector<AccessPattern>& seq) {
+    struct TrieNode {
+        unordered_map<uint64_t, TrieNode*> children;
+        TrieNode* failure = nullptr;
+        vector<int> output;
+    };
+    
+    TrieNode* root = new TrieNode();
+    vector<vector<uint64_t>> patterns;
+    
+    // Build patterns
+    for (int len = 2; len <= min(4, (int)seq.size()); len++) {
+        if (len <= seq.size()) {
+            vector<uint64_t> pattern(len);
+            for (int i = 0; i < len; i++) pattern[i] = seq[i].addr_block;
+            patterns.push_back(pattern);
+        }
+    }
+    
+    // Build trie
+    for (int i = 0; i < patterns.size(); i++) {
+        TrieNode* curr = root;
+        for (uint64_t c : patterns[i]) {
+            if (!curr->children[c]) curr->children[c] = new TrieNode();
+            curr = curr->children[c];
+        }
+        curr->output.push_back(i);
+    }
+    
+    // Build failure function (simplified)
+    queue<TrieNode*> q;
+    for (auto& [c, child] : root->children) {
+        child->failure = root;
+        q.push(child);
+    }
+    
+    cout << "AC: Built automaton with " << patterns.size() << " patterns" << endl;
+}
+
+// Ukkonen's Suffix Tree Construction
+struct SuffixTreeNode {
+    unordered_map<uint64_t, SuffixTreeNode*> children;
+    int start, end;
+    SuffixTreeNode* suffix_link = nullptr;
+    SuffixTreeNode(int s, int e) : start(s), end(e) {}
+};
+
+void ukkonen_suffix_tree_patterns(const vector<AccessPattern>& seq) {
+    if (seq.size() < 3) return;
+    
+    vector<uint64_t> text(seq.size());
+    for (size_t i = 0; i < seq.size(); i++) text[i] = seq[i].addr_block;
+    
+    SuffixTreeNode* root = new SuffixTreeNode(-1, -1);
+    SuffixTreeNode* active_node = root;
+    int active_edge = -1, active_length = 0;
+    int remaining = 0, leaf_end = -1;
+    
+    // Simplified Ukkonen construction core
+    for (size_t i = 0; i < text.size(); i++) {
+        leaf_end = i;
+        remaining++;
+        SuffixTreeNode* last_new_node = nullptr;
+        
+        while (remaining > 0) {
+            if (active_length == 0) active_edge = i;
+            
+            if (active_node->children.find(text[active_edge]) == active_node->children.end()) {
+                active_node->children[text[active_edge]] = new SuffixTreeNode(i, leaf_end);
+                
+                if (last_new_node) {
+                    last_new_node->suffix_link = active_node;
+                    last_new_node = nullptr;
+                }
+            } else {
+                SuffixTreeNode* next = active_node->children[text[active_edge]];
+                int edge_length = min(next->end, leaf_end) - next->start + 1;
+                
+                if (active_length >= edge_length) {
+                    active_edge += edge_length;
+                    active_length -= edge_length;
+                    active_node = next;
+                    continue;
+                }
+                
+                if (text[next->start + active_length] == text[i]) {
+                    if (last_new_node && active_node != root) {
+                        last_new_node->suffix_link = active_node;
+                        last_new_node = nullptr;
+                    }
+                    active_length++;
+                    break;
+                }
+                
+                // Split edge
+                SuffixTreeNode* split = new SuffixTreeNode(next->start, next->start + active_length - 1);
+                active_node->children[text[active_edge]] = split;
+                split->children[text[i]] = new SuffixTreeNode(i, leaf_end);
+                next->start += active_length;
+                split->children[text[next->start]] = next;
+                
+                if (last_new_node) last_new_node->suffix_link = split;
+                last_new_node = split;
+            }
+            
+            remaining--;
+            if (active_node == root && active_length > 0) {
+                active_length--;
+                active_edge = i - remaining + 1;
+            } else if (active_node != root) {
+                active_node = active_node->suffix_link ? active_node->suffix_link : root;
+            }
+        }
+    }
+    
+    cout << "Ukkonen ST: Constructed suffix tree with " << text.size() << " suffixes" << endl;
+}
+
+// Generalized Suffix Tree for multiple sequences
+void generalized_suffix_tree_patterns(const vector<AccessPattern>& seq) {
+    if (seq.size() < 4) return;
+    
+    // Create multiple subsequences for GST
+    vector<vector<uint64_t>> sequences;
+    size_t chunk_size = seq.size() / 3;
+    
+    for (size_t i = 0; i < 3 && i * chunk_size < seq.size(); i++) {
+        vector<uint64_t> subseq;
+        size_t end = min((i + 1) * chunk_size, seq.size());
+        
+        for (size_t j = i * chunk_size; j < end; j++) {
+            subseq.push_back(seq[j].addr_block);
+        }
+        
+        if (subseq.size() > 1) sequences.push_back(subseq);
+    }
+    
+    // Build GST by concatenating sequences with unique separators
+    vector<uint64_t> combined;
+    vector<size_t> seq_boundaries;
+    
+    for (size_t i = 0; i < sequences.size(); i++) {
+        seq_boundaries.push_back(combined.size());
+        for (uint64_t val : sequences[i]) {
+            combined.push_back(val);
+        }
+        combined.push_back(UINT64_MAX - i); // unique separator
+    }
+    
+    // Find common substrings using suffix array on combined sequence
+    vector<int> sa = build_suffix_array(combined);
+    vector<int> lcp = kasai_lcp(combined, sa);
+    
+    cout << "GST Analysis (cross-sequence patterns):" << endl;
+    
+    vector<tuple<int, int, int, int, vector<uint64_t>>> cross_patterns; // length, seq1, seq2, pos1, pattern
+    
+    for (size_t i = 0; i < lcp.size() - 1; i++) {
+        if (lcp[i] > 1) {
+            // Check if LCP spans multiple original sequences
+            int seq1 = -1, seq2 = -1;
+            size_t pos1 = sa[i], pos2 = sa[i+1];
+            
+            for (size_t j = 0; j < seq_boundaries.size(); j++) {
+                if (pos1 >= seq_boundaries[j]) seq1 = j;
+                if (pos2 >= seq_boundaries[j]) seq2 = j;
+            }
+            
+            if (seq1 != seq2 && seq1 != -1 && seq2 != -1) {
+                vector<uint64_t> pattern(lcp[i]);
+                for (int k = 0; k < lcp[i]; k++) {
+                    pattern[k] = combined[pos1 + k];
+                }
+                
+                cross_patterns.push_back({lcp[i], seq1, seq2, (int)pos1, pattern});
+            }
+        }
+    }
+    
+    // Sort by pattern length descending
+    sort(cross_patterns.begin(), cross_patterns.end(),
+         [](const auto& a, const auto& b) { return get<0>(a) > get<0>(b); });
+    
+    cout << "Cross-sequence common patterns:" << endl;
+    cout << "Len | Seq1 | Seq2 | Pos | Pattern" << endl;
+    cout << "----|------|------|-----|--------" << endl;
+    
+    for (size_t i = 0; i < min(size_t(10), cross_patterns.size()); i++) {
+        auto& [len, seq1, seq2, pos, pattern] = cross_patterns[i];
+        cout << setw(3) << len << " | " 
+             << setw(4) << seq1 << " | "
+             << setw(4) << seq2 << " | "
+             << setw(3) << pos << " | ";
+        
+        for (size_t j = 0; j < min(size_t(6), pattern.size()); j++) {
+            cout << hex << pattern[j] << " ";
+        }
+        if (pattern.size() > 6) cout << "...";
+        cout << dec << endl;
+    }
+    
+    if (cross_patterns.empty()) {
+        cout << "No significant cross-sequence patterns found." << endl;
+    } else {
+        cout << "Total cross-sequence patterns: " << cross_patterns.size() << endl;
+    }
+}
+
+void CACHE::l1d_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in) {
+}
+
+void CACHE::l1d_prefetcher_final_stats() {
+    cout << "\n=== PATTERN SEARCH ANALYSIS ===" << endl;
+    cout << "Sequence length: " << access_sequence.size() << endl;
+    
+    if (access_sequence.size() < 2) {
+        cout << "Insufficient data for pattern analysis" << endl;
+        return;
+    }
+    
+    cout << "\n1. Rabin-Karp Analysis:" << endl;
+    rabin_karp_patterns(access_sequence);
+    
+    cout << "\n2. KMP Analysis:" << endl;
+    kmp_patterns(access_sequence);
+    
+    cout << "\n3. Z-Algorithm Analysis:" << endl;
+    z_algorithm_patterns(access_sequence);
+    
+    cout << "\n4. Boyer-Moore Analysis:" << endl;
+    boyer_moore_patterns(access_sequence);
+    
+    cout << "\n5. Suffix Array Analysis:" << endl;
+    suffix_array_patterns(access_sequence);
+    
+    // cout << "\n6. Manacher's Analysis:" << endl;
+    // manacher_patterns(access_sequence);
+    
+    // cout << "\n7. Online Palindrome Analysis:" << endl;
+    // online_palindrome_patterns(access_sequence);
+    
+    cout << "\n8. Finite Automata Analysis:" << endl;
+    finite_automata_patterns(access_sequence);
+    
+    cout << "\n9. Aho-Corasick Analysis:" << endl;
+    aho_corasick_patterns(access_sequence);
+    
+    cout << "\n10. Ukkonen's Suffix Tree Analysis:" << endl;
+    ukkonen_suffix_tree_patterns(access_sequence);
+    
+    cout << "\n11. Generalized Suffix Tree Analysis:" << endl;
+    generalized_suffix_tree_patterns(access_sequence);
+    
+    cout << "\n=== END ANALYSIS ===" << endl;
+}

@@ -1,0 +1,93 @@
+
+● Workflow complete. 20 agents, 1,648,059 tokens, 18 minutes. Here are the confirmed findings:
+
+  ---
+  Audit Results: 58 Real Issues, 40 False Positives Dismissed
+
+  THE MOST CRITICAL ISSUES (recurring across all 4 tasks)
+  Three author TODO notes are live in the paper body — P1 everywhere:
+  - Line 810 (Sec V-A): "pure-miss reduction or pure-miss cycle reduction?? I skipped this subsection"
+  - Line 961 (Sec V-C): "each paragraph should begin with an introductory sentence"
+  - Table II caption (line 608): "NEED SKINNIER"
+
+  These must be removed before ANY reviewer sees the paper.
+
+  ---
+  Task 1 — References (P1 items)
+
+  ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────────────────────────────────────────────────────┐
+  │                                                        Issue                                                         │                              Fix                              │
+  ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ TTP has [?] placeholder (line 751) AND wrongly shares [21] with Hermes (lines 146, 275)                              │ Add a unique bib entry for TTP; re-number everywhere          │
+  ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ Reference [5] (Kroft) listed as 1998 pp.195-201 — should be ISCA 1981 pp.81-87                                       │ Correct the bib entry                                         │
+  ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ ChampSim citation: text says "Data Prefetching Championships [30][31]" but [30][31] are Cache Replacement            │ Fix bib or fix text; also fix duplicated crc2 URL on [31]     │
+  │ Championships                                                                                                        │                                                               │
+  ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ Apple A14 Firestorm params in Table II — uncited                                                                     │ Cite or label as "assumed simulation values"                  │
+  ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ SPEC workload count: text says 30 (lines 730, 1027) but only 16 are named                                            │ Reconcile to actual count                                     │
+  ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ A14 SPEC regression undisclosed: MARS 22.61 vs no-prefetch baseline 26.16                                            │ Disclose honestly; verify Figure 11 bar is not drawn above    │
+  │                                                                                                                      │ 1.0                                                           │
+  └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────────────────────────────────────────────────────┘
+
+  ---
+  Task 2 — Consistency (P1 items)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬─────────────────────────────────────────────────────────────────────┐
+  │                                                     Issue                                                      │                                 Fix                                 │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+  │ Headline numbers not reproducible: 27.1%/31.7%/15.1%/23.5% disagree with MARS_results_ref.txt deltas in both   │ Recompute all four from raw sim outputs; document aggregation       │
+  │ directions                                                                                                     │ method                                                              │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+  │ Pure-miss metric definition conflict: Fig 7 y-axis says "pure-miss cycle reduction", Sec V methodology says    │ Pick one definition; apply consistently across Fig 7 axis, caption, │
+  │ "pure-miss fraction reduction"                                                                                 │  and Sec V-A prose                                                  │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+  │ Figure 7 caption baseline mismatch: caption says "over the maximum at the prefetcher", axis says "over TTP"    │ Align both to TTP (what the Metrics section defines)                │
+  └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴─────────────────────────────────────────────────────────────────────┘
+
+  ---
+  Task 3 — CAMAT Contradictions (P1 items)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬─────────────────────────────────────────────────────────┐
+  │                                                           Issue                                                            │                           Fix                           │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────┤
+  │ Pure-miss subsection is entirely missing (the author note says "I skipped this subsection") — every PM number hangs        │ Write the subsection; define PM as exactly one CAMAT    │
+  │ without a definition                                                                                                       │ quantity                                                │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────┤
+  │ The four headline improvements (SPEC 27.1%/31.7%, GAP 15.1%/23.5%) are irreconcilable with CAMAT reference deltas          │ Recompute from definition against individual-benchmark  │
+  │ (25.2/30.6/17.7/21.56pp)                                                                                                   │ data                                                    │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────┤
+  │ TTP — the primary normalization baseline for every MAS and PM number — is uncited                                          │ Add distinct TTP citation immediately                   │
+  └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴─────────────────────────────────────────────────────────┘
+
+  ---
+  Task 4 — Style (P1 items beyond the author notes)
+
+  ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────┬────────────────────────────────────────────────────────────────────────────┐
+  │                                                  Issue                                                  │                                    Fix                                     │
+  ├─────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────┤
+  │ Broken sentence Sec III-C: "causing the return to rather than routing past it" (line 548)               │ Rewrite: "so the return completes through this level's MSHR rather than    │
+  │                                                                                                         │ routing past it"                                                           │
+  ├─────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────┤
+  │ 40+ passive voice constructions throughout                                                              │ Convert to active                                                          │
+  ├─────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────┤
+  │ Sec V-A evaluation subsections lack Takeaway Synthesis (the explicit "what this means" sentence after   │ Add takeaway synthesis per evaluation checklist                            │
+  │ each result cluster)                                                                                    │                                                                            │
+  └─────────────────────────────────────────────────────────────────────────────────────────────────────────┴────────────────────────────────────────────────────────────────────────────┘
+
+  ---
+  What the adversarial agents killed (40 false positives)
+
+  The bullshit agents successfully defended against: concerns about MSHR utilization framing, most comparison methodology critiques (MARS's use of TTP as baseline was found legitimate once
+  TTP is properly cited), and several style concerns that turned out to be consistent with the ICCD venue format.
+
+  ---
+  Immediate action order:
+  1. Delete the 3 author notes (5 minutes)
+  2. Fix TTP citation — everything else depends on this baseline being defined
+  3. Recompute and reconcile the 4 headline numbers
+  4. Write the pure-miss subsection
+  5. Disclose the A14 SPEC regression

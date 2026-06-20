@@ -1,0 +1,63 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// ============================================================
+// MODEL 302 — IntensePressure-OrchAPC (LLC level)
+// Paper: Liu et al. JCST 36(1) 2021, eq. 13, 18, 30, 32, 41
+//
+// Designed for: intense MSHR pressure traces.
+//
+// Two-gate decision at LLC (no Gate 2 — DRAM has no MSHR cap):
+//
+//  Gate 1 — GoldenRatio: hit supply vs miss supply at LLC
+//    GR_LLC = RQ.occ / (MSHR.occ + 1) < 1
+//    (LLC hit supply insufficient → pure-miss rising at LLC)
+//
+//  Gate 3 — φ-proxy at LLC: future APC accesses are miss-type
+//    phi_proxy = (w_h + w_x) / (w_h + w_m + w_x) < 0.5 at LLC
+//    If LLC is hit-dominated (phi ≥ 0.5), future requests will
+//    overlap the DRAM latency → pure miss avoided naturally.
+//    If miss-dominated (phi < 0.5), bypassing prevents LLC pure miss.
+//
+//    Golden ratio interpretation: phi < 0.5 ↔ φ < 1/(1+1) = 0.5
+//    This is the exact golden threshold from paper eq. 13:
+//    APC accesses in MST window: phi is the fraction that will be
+//    hits → if < 0.5, predicted APC hits are "bad" → bypass.
+//
+// No Gate 2 here: DRAM accepts unlimited concurrent requests, so
+// "overloading DRAM" is not a concern in the same sense.
+// ============================================================
+
+inline bool llc_bypass_init[NUM_CPUS] = {};
+
+#define SHALL_LLC_BYPASS_DEFINED
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init[cpu]) return;
+    cout << "LLC Bypass [302-IntensePressure-OrchAPC]:\n"
+         << "  bypass iff (GR_LLC<1) AND (phi_proxy_LLC<0.5)\n"
+         << "  Gate1: LLC hit supply < miss supply (pure-miss rising at LLC)\n"
+         << "  Gate3: phi<0.5 → LLC future APC hits are miss-type → bypass to DRAM\n"
+         << "  No Gate2: DRAM has no MSHR saturation concern" << endl;
+    llc_bypass_init[cpu] = true;
+}
+
+inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    llc_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    // Gate 1: GoldenRatio_LLC < 1 — hit supply insufficient at LLC
+    if (LLC->RQ.occupancy >= LLC->MSHR.occupancy + 1) return false;
+
+    // Gate 3: phi_proxy_LLC < 0.5 — most LLC active cycles are miss-type
+    const LPM_Tracker& llct = lpm[cpu][LLC_type];
+    uint64_t active = llct.w.h_pureHitCy + llct.w.m_pureMissCy + llct.w.x_overlapCy;
+    if (active == 0) return false;  // no windowed history yet, don't bypass blindly
+    // phi = (h+x)/active: hit+overlap fraction; < 0.5 means miss-dominated
+    bool phi_low = ((llct.w.h_pureHitCy + llct.w.x_overlapCy) * 2 < active);
+    return phi_low;
+}

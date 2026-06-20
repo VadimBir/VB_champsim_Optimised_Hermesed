@@ -1,0 +1,66 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// KEY INSIGHT: MSHR tracks MISSES only. CAMAT = active_mem_cy / ALL_accesses (hits+misses).
+// camat_per_miss = camat * (h+m) / m  =>  pure miss penalty denominated over misses only.
+//
+// VARIANT B (active): available = free_LLC * camat_per_miss_L2C
+// VARIANT D gate: also check L1D MSHR — if L1D has free slots, miss may resolve there => no bypass
+
+inline bool l2_bypass_init[NUM_CPUS] = {};
+
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init[cpu]) return;
+    cout << "L2C Bypass [_3_derived VARIANT B: free_next * camat_per_miss_current]:\n"
+    << "  camat_per_miss_l2c = camat_L2C * (h2+m2)/max(m2,1)\n"
+    << "  available = free_LLC * camat_per_miss_l2c\n"
+    << "  immediate = (LLC.RQ+PQ).occ * camat_LLC\n"
+    << "  future    = (lpmr_llc/lpmr_l2c) * camat_LLC\n"
+    << "  entry     = camat_LLC\n"
+    << "  upper gate: bypass only if L1D MSHR also full\n";
+    l2_bypass_init[cpu] = true;
+}
+
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    if (L2C->MSHR.occupancy < L2C->MSHR.SIZE) return false;
+    // VARIANT D upper gate: if L1D still has room, miss pressure may resolve upstream
+    if (L1D->MSHR.occupancy < L1D->MSHR.SIZE) return false;
+
+    uint32_t free = LLC->MSHR.SIZE - LLC->MSHR.occupancy;
+    if (free == 0) return false;
+
+    double camat_cur  = lpm[cpu][L2C_type].gm.camat_activeMemCyDivAccesses;
+    double camat_next = lpm[cpu][LLC_type].gm.camat_activeMemCyDivAccesses;
+
+    double h2 = lpm[cpu][L2C_type].g.h_pureHitCy;
+    double m2 = lpm[cpu][L2C_type].g.m_pureMissCy;
+    if (m2 < 1.0) m2 = 1.0;
+    double camat_per_miss_cur = camat_cur * (h2 + m2) / m2;
+
+    double lpmr_l2c = lpm[cpu][L2C_type].gm.lpmr_activeMemCyDivIdealCy;
+    double lpmr_llc = lpm[cpu][LLC_type].gm.lpmr_activeMemCyDivIdealCy;
+    if (lpmr_l2c < 0.001) lpmr_l2c = 0.001;
+    if (lpmr_llc < 0.001) lpmr_llc = 0.001;
+
+    // VARIANT A (original ref — disabled):
+    // double available = (double)free * camat_next;
+
+    // VARIANT B (active):
+    double available = (double)free * camat_per_miss_cur;
+
+    double immediate = (double)(LLC->RQ.occupancy + LLC->PQ.occupancy) * camat_next;
+    double future    = (lpmr_llc / lpmr_l2c) * camat_next;
+    double entry     = camat_next;
+
+    return available > (immediate + future + entry);
+}

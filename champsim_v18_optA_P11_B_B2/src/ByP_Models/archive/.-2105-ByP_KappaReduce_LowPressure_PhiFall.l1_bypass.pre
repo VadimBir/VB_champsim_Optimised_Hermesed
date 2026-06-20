@@ -1,0 +1,44 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+#ifndef L1D_type
+#define L1D_type 4
+#define L2C_type 5
+#define LLC_type 6
+#endif
+/*
+ * MODEL 2105: KappaReduce + LowPressure + PhiFalling
+ * Bypass IFF κ_short < κ_long AND φ_short < φ_long AND next-level pressure LOW
+ */
+inline bool l1_bypass_init_2105[NUM_CPUS] = {};
+#define SHALL_L1D_BYPASS_DEFINED
+inline void l1d_bypass_initialize(int cpu, CACHE* L1D, CACHE* L2C, CACHE* LLC) {
+    if (l1_bypass_init_2105[cpu]) return;
+    printf("L1 Bypass [2105-KappaReduce-LowPressure-PhiFall]\n");
+    l1_bypass_init_2105[cpu] = true;
+}
+inline bool l1d_bypass_operate(int cpu, CACHE* L1D, CACHE* L2C, CACHE* LLC) {
+    l1d_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    /* Gate 1: κ reducing */
+    double k_now = get_kappa_short(cpu, LPM_L1D);
+    double k_long = get_kappa_long(cpu, LPM_L1D);
+    if (k_long < 1e-6) return false;
+    if (k_now <= k_long) return false;
+
+    /* Gate 2: φ falling (hit activity dropping) */
+    double p_s = get_phi_short(cpu, LPM_L1D);
+    double p_l = get_phi_long(cpu, LPM_L1D);
+    if (p_s >= p_l) return false;
+
+    /* Gate 3: next-level LOW pressure */
+    double l2_camat = lpm[cpu][LPM_L2C].met[MET_WL].camat_activeMemCyDivAccesses;
+    double l2_cpa   = lpm[cpu][LPM_L2C].met[MET_WL].cpa_totalCyDivAccesses;
+    if (l2_cpa < 1.0) return false;
+
+    double next_pressure = l2_camat / l2_cpa;
+    if (next_pressure > 1.0) next_pressure = 1.0;
+
+    double headroom = 1.0 - next_pressure;
+    double k_reduce_pct = k_now / k_long;
+    return (k_reduce_pct < headroom);
+}

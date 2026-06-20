@@ -1,0 +1,27 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+// 420a — paper formula: bypass if κ_short>κ_long AND φ_next×APC_next×MST_next > 1.0 (next level can absorb)
+inline bool l1_bypass_init_420a[NUM_CPUS] = {};
+#define SHALL_L1D_BYPASS_DEFINED
+inline void l1d_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l1_bypass_init_420a[cpu]) return;
+    cout << "L1 Bypass [420a-PhiApcMst]\n";
+    l1_bypass_init_420a[cpu] = true;
+}
+inline bool l1d_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l1d_bypass_initialize(cpu, L1D, L2C, LLC);
+    double k_now  = get_kappa_short(cpu, LPM_L1D);
+    double k_long = get_kappa_long(cpu, LPM_L1D);
+    if (k_long < 1e-6) return false;
+    if (k_now <= k_long) return false;
+    double phi = get_phi_long(cpu, LPM_L2C);
+    double apc = lpm[cpu][LPM_L2C].wlm.apc_accessesDivActiveMemCy;
+    double mst = get_mst_long(cpu, LPM_L2C);
+    double absorb = phi * apc * mst;
+    return (absorb > 1.0);
+}

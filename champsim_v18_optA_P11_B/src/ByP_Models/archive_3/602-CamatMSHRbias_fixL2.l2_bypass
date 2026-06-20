@@ -1,0 +1,49 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 602 — CamatMSHRbias_fixL2 at L2
+// L1:camat*apc ratio+bias L2:camat ratio+bias LLC:unconditional
+
+#define DBG_602 1
+
+inline bool l2_bypass_init_602[NUM_CPUS] = {};
+inline uint64_t l2_dbg_counter_602[NUM_CPUS] = {};
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init_602[cpu]) return;
+    cout << "L2 Bypass [602-CamatMSHRbias_fixL2]: L1:camat*apc ratio+bias L2:camat ratio+bias LLC:unconditional" << endl;
+    l2_bypass_init_602[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    double camat_this = lpm[cpu][LPM_L2C].wsm.camat_activeMemCyDivAccesses;
+    double camat_next = lpm[cpu][LPM_LLC].wsm.camat_activeMemCyDivAccesses;
+    if (camat_next < 1e-6) { bool byp = false; return byp; }
+    uint64_t w_next = lpm[cpu][LPM_LLC].ws.ω_activeMemCy();
+    double mu_kappa_next = w_next ? (double)lpm[cpu][LPM_LLC].ws.m_pureMissCy / w_next : 0.0;
+    double l2_hr   = 1.0 - mu_kappa_next;
+    int    l1_free = L2C->MSHR.SIZE - L2C->MSHR.occupancy;
+    int    l2_free = LLC->MSHR.SIZE - LLC->MSHR.occupancy;
+    double bias    = (l2_free * l2_hr) / (l1_free + 1.0);
+    if (bias < 0.5) bias = 0.5;
+    if (bias > 2.0) bias = 2.0;
+    double lat_ratio = (double)L2C->LATENCY / (double)LLC->LATENCY;
+    bool byp = (camat_this / camat_next * bias) < lat_ratio;
+
+#if DBG_602
+    if ((++l2_dbg_counter_602[cpu] & 0xFFFF) == 0) {
+        printf("  [602-L2] -> %s\n", byp ? "BYP" : "---");
+    }
+#endif
+
+    return byp;
+}

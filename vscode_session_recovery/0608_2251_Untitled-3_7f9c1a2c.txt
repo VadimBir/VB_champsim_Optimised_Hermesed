@@ -1,0 +1,79 @@
+  ITEM 4 (Introduction):
+  1. ORIGINAL: When a requested block is absent from a cache level, the resulting miss propagates downward through the hierarchy until the data is 
+  found or fetched from DRAM.
+  2. UPDATED: When a requested block is absent from a cache level, the resulting miss propagates downward through the hierarchy until the hierarchy   finds the data or fetches it from DRAM.
+  3. REASON: Passive hides the hierarchy as agent; Zion names the acting component explicitly.
+  ---
+  ITEM 10 (Background II-A):
+  1. ORIGINAL: Based on these categories, two performance factors, φ and κ, are introduced to characterize cache level concurrency behavior [27],
+  [28].
+  2. UPDATED: Based on these categories, prior work introduces two performance factors, φ and κ, to characterize cache level concurrency behavior
+  [27], [28].
+  3. REASON: Passive erases who introduced φ/κ — "prior work" assigns credit and signals these are inherited, not coined here.
+
+  ---
+  ITEM 21 (Background II-C):
+  1. ORIGINAL: Cache replacement policies [15]–[19] improve cache residency by selecting which cache lines should be retained or evicted.
+  2. UPDATED: Cache replacement policies [15]–[19] improve cache residency by selecting which cache lines to retain or evict.
+  3. REASON: Modal "should be retained" introduces hedging; infinitive states the decision as a direct mechanical act.
+
+  ---
+  ITEM 24 (Design III-C):
+  1. ORIGINAL: L2 returns the demand directly to the L1 requester without filling L1, because the miss is resolved by the L2 hit and no lower-level
+  return will later trigger a skipped-level fill.
+  2. UPDATED: L2 returns the demand directly to the L1 requester without filling L1, because the L2 hit resolves the miss and no lower-level return
+  will later trigger a skipped-level fill.
+  3. REASON: Passive buries the L2 hit as oblique agent; foregrounding it matches Zion's pattern of leading each clause with the acting hardware
+  component.
+
+  ---
+  ITEM 25 (Design III-C):
+  1. ORIGINAL: For a new L2 miss, when the L1skip bit is set, the L2 MSHR is allocated to anchor both the local L2 miss and the upstream L1 miss.
+  2. UPDATED: For a new L2 miss, when MARS sets the L1skip bit, L2 allocates an MSHR entry to anchor both the local L2 miss and the upstream L1
+  miss.
+  3. REASON: Two passives erase both actors — MARS (sets the bit) and L2 (allocates) — the rewrite makes the causal chain immediately readable.
+
+  ---
+  ITEM 26 (Design III-C):
+  1. ORIGINAL: When the L2skip bit is set, LLC instead creates an MSHR entry to avoid creating an upstream handling gap.
+  2. UPDATED: When MARS sets the L2skip bit, LLC instead creates an MSHR entry to avoid creating an upstream handling gap.
+  3. REASON: Passive opening hides MARS as the bit-setter; making MARS explicit signals the behavior is deliberate design, not incidental.
+
+  ---
+  ITEM 28 (Design III-C):
+  1. ORIGINAL: Before returning upward, LLC checks the L2skip bit (C); when it is set, the return is directed to L1, while L2 is concurrently
+  filled.
+  2. UPDATED: Before returning upward, LLC checks the L2skip bit (C); when LLC finds it set, LLC directs the return to L1 while concurrently filling  L2.
+  3. REASON: Two passives strip LLC of agency exactly where the sentence describes LLC's behavior; restoring LLC as subject maintains per-component
+  attribution.
+
+  ---
+  ITEM 31 (Design III-C):
+  1. ORIGINAL: Upwards, the return is governed by this level's own skip bit.
+  2. UPDATED: Upwards, this level's own skip bit governs the return.
+  3. REASON: Passive inverts mechanism→effect order; active delivers the control mechanism first, then its consequence — the claim-first pattern.
+
+  ---
+  ITEM 32 (Design III-C):
+  1. ORIGINAL: If the original request was resolved by a hit at the next level, no anchor MSHR exists; any subsequent demand is a fresh miss on the
+  standard path.
+  2. UPDATED: If a hit at the next level resolved the original request, no anchor MSHR exists; any subsequent demand is a fresh miss on the standard  path.
+  3. REASON: Passive promotes the wrong subject; active leads with the causal event (the hit), matching Zion's convention.
+
+  ---
+  ITEM 36 (Methodology IV):
+  1. ORIGINAL: For every SPEC benchmark, the cache warms up over 50M instructions, and statistics are collected over the next 200M instructions,
+  consistent with prior simulation methodologies [8], [19], [35], [36].
+  2. UPDATED: For every SPEC benchmark, the cache warms up over 50M instructions, and we collect statistics over the next 200M instructions,
+  consistent with prior simulation methodologies [8], [19], [35], [36].
+  3. REASON: "are collected" hides the authors' methodological choice; "we collect" matches Zion's active first-person methodology prose.
+
+  ---
+  ITEM 37 (Methodology IV — Metrics):
+  1. ORIGINAL: MSHR admission stall cycle reduction and pure-miss fraction reduction are reported as the fraction of the corresponding metric
+  eliminated relative to TTP under the same L2-prefetcher configuration; a negative value indicates that the mechanism increases the corresponding
+  metric compared with TTP.
+  2. UPDATED: We report MSHR admission stall cycle reduction and pure-miss fraction reduction as the fraction of the corresponding metric eliminated  relative to TTP under the same L2-prefetcher configuration; a negative value indicates that the mechanism increases the corresponding metric
+  compared with TTP.
+  3. REASON: "are reported" hides authorial framing in a metric definition; "We report" signals the convention is intentional and traceable — the
+  Zion standard for metric declarations.

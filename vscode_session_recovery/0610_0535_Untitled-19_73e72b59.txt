@@ -1,0 +1,23 @@
+-   49.05%    18.81%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::execute_memory_instruction()
+   - 30.24% O3_CPU::execute_memory_instruction()
+      - 14.06% CACHE::handle_read()
+         + 4.83% CACHE::l2c_prefetcher_operate(unsigned long, unsigned long, unsigned char, unsigned char, unsigned int)
+      - 7.71% lpm_operate(int, unsigned char, bool, bool, unsigned long, bool, unsigned long, unsigned long)
+           5.62% LPM_Tracker::tick(bool, bool)
+        3.49% CACHE::handle_fill()
+      + 3.28% CACHE::handle_prefetch()
+        1.11% CACHE::handle_writeback()
+   + 18.81% _start
++   15.41%     4.64%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] MEMORY_CONTROLLER::operate()
++   14.61%     8.15%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] CACHE::handle_read()
+-   10.71%    10.24%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const [clone .llvm.13894137683507152920]
+     10.24% _start
+        __libc_start_main
+      + 0x7070e522a1ca
++    9.10%     2.65%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] lpm_operate(int, unsigned char, bool, bool, unsigned long, bool, unsigned long, unsigned long)
+-    8.39%     8.38%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] MEMORY_CONTROLLER::schedule(PACKET_QUEUE*)
+     8.38% _start
+        __libc_start_main
+        0x7070e522a1ca
+      + main
++    8.08%     8.07%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] LPM_Tracker::tick(bool, bool)  

@@ -1,0 +1,561 @@
+/*
+ * lpm_tracker.h — Layered Performance Matching (LPM) cycle tracker
+ *
+ * Based on: Liu, Espina, Sun. "A Study on Modeling and Optimization
+ * of Memory Systems." JCST 36(1), 2021. DOI:10.1007/s11390-021-0771-8
+ *
+ * 3 tiers: Global (g), Windowed (w), Double-Overlap-Windowed (w2d)
+ * Each tier tracks: h/m/x/e cycle counters, α access count, load access/miss
+ * Each tier derives: C-AMAT, APC, LPMR, MST, CPA metrics
+ */
+
+#ifndef LPM_TRACKER_H
+#define LPM_TRACKER_H
+
+#include "memory_class.h"
+#include "cache.h"
+#include "defs.h"
+#include <cstdint>
+#include <cstdio>
+
+#define LPM_STRICT_MISS
+
+#define LPM_NUM_TYPES 8
+#define LPM_L1D       4
+#define LPM_L2C       5
+#define LPM_LLC       6
+#define LPM_DRAM      7
+
+#define LPM_CLASS_E 0
+#define LPM_CLASS_H 1
+#define LPM_CLASS_M 2
+#define LPM_CLASS_X 3
+
+/* ── Cycle-class indices — match cls = (ha<<1)|ma encoding ── */
+#define CY_E 0   /* idle:    ha=0 ma=0 */
+#define CY_M 1   /* miss:    ha=0 ma=1 */
+#define CY_H 2   /* hit:     ha=1 ma=0 */
+#define CY_X 3   /* overlap: ha=1 ma=1 */
+
+/* ── Reusable counter bucket (one instance per tier) ── */
+struct LPM_BucketCy {
+    union {
+        struct { uint64_t e_idleCy, m_pureMissCy, h_pureHitCy, x_overlapCy; };
+        uint64_t cy[4];
+    };
+    uint64_t α_accessCount;
+    uint64_t load_accessCount, load_missCount;
+
+    void reset() {
+        cy[0] = cy[1] = cy[2] = cy[3] = 0;
+        α_accessCount = load_accessCount = load_missCount = 0;
+    }
+    void halve() {
+        cy[0] >>= 1; cy[1] >>= 1; cy[2] >>= 1; cy[3] >>= 1;
+        α_accessCount >>= 1; load_accessCount >>= 1; load_missCount >>= 1;
+    }
+    inline void tick_class(uint8_t cls) {
+        cy[cls]++;
+    }
+    inline void tick_α(uint64_t dα)                        { α_accessCount += dα; }
+    inline void tick_load(uint64_t dAcc, uint64_t dMiss)   { load_accessCount += dAcc; load_missCount += dMiss; }
+
+    inline uint64_t ω_activeMemCy()  const { return h_pureHitCy + m_pureMissCy + x_overlapCy; }
+    inline uint64_t totalCy()        const { return h_pureHitCy + m_pureMissCy + x_overlapCy + e_idleCy; }
+
+    inline double µ_missCyFracOfActiveCy()     const { uint64_t w = ω_activeMemCy(); return w ? (double)(m_pureMissCy + x_overlapCy) / w : 0.0; }
+    inline double κ_pureMissFracOfMissCy()     const { uint64_t d = m_pureMissCy + x_overlapCy; return d ? (double)m_pureMissCy / d : 0.0; }
+    inline double φ_hitCyFracOfActiveCy()      const { uint64_t w = ω_activeMemCy(); return w ? (double)(h_pureHitCy + x_overlapCy) / w : 0.0; }
+    inline double load_missRate()              const { return load_accessCount ? (double)load_missCount / load_accessCount : 0.0; }
+};
+
+/* ── Derived metrics (one instance per tier) ── */
+struct LPM_Metrics {
+    double camat_activeMemCyDivAccesses;     /* ω/α   [eq 30] */
+    double apc_accessesDivActiveMemCy;        /* α/ω   [eq 32] */
+    double lpmr_activeMemCyDivIdealCy;       /* ω/ideal [eq 52] */
+    double mst_pureMissCyDivAccesses;         /* m/α   [eq 18] */
+    double cpa_totalCyDivAccesses;            /* n/α   (incl idle) */
+
+    void reset() {
+        camat_activeMemCyDivAccesses = apc_accessesDivActiveMemCy = 0.0;
+        lpmr_activeMemCyDivIdealCy = mst_pureMissCyDivAccesses = 0.0;
+        cpa_totalCyDivAccesses = 9999.0;
+    }
+    inline void compute(const LPM_BucketCy& b, uint64_t ideal) {
+        uint64_t ω = b.ω_activeMemCy();
+        uint64_t α = b.α_accessCount;
+        double inv_α = α ? 1.0 / (double)α : 0.0;
+        double inv_ω = ω ? 1.0 / (double)ω : 0.0;
+        double inv_ideal = ideal ? 1.0 / (double)ideal : 0.0;
+        camat_activeMemCyDivAccesses  = (double)ω * inv_α;
+        apc_accessesDivActiveMemCy     = (double)α * inv_ω;
+        lpmr_activeMemCyDivIdealCy    = (double)ω * inv_ideal;
+        mst_pureMissCyDivAccesses      = (double)b.m_pureMissCy * inv_α;
+        cpa_totalCyDivAccesses         = α ? (double)b.totalCy() * inv_α : 9999.0;
+    }
+};
+
+/* ── Main tracker ── */
+struct LPM_Tracker {
+    /* === Tier 1: Global (cumulative post-warmup) === */
+    LPM_BucketCy g;
+    LPM_Metrics  gm;
+    uint64_t prev_α, prev_load_α, prev_load_miss;
+
+    /* Bypass correction (global only) */
+    uint64_t m_byp_l1d_pureMissCy;
+    uint64_t m_byp_llc_pureMissCy;
+
+    /* ROI snapshot */
+    LPM_BucketCy roi;
+    LPM_Metrics  roi_m;
+    uint64_t roi_m_byp_l1d_pureMissCy, roi_m_byp_llc_pureMissCy;
+
+#ifdef LPM_DYNAMIC_WIN
+    /* === Tier 2: Windowed (halve at w_size, dynamic) === */
+    static constexpr uint32_t W_SIZE_MIN = 64;
+    static constexpr uint32_t W_SIZE_MAX = 4096;
+    static constexpr uint32_t W_SIZE_DEFAULT = 512;
+    static constexpr uint32_t W_SIZE_IN_CAMATS = 12; /* window = W_SIZE_IN_CAMATS × C-AMAT cycles */
+    uint32_t w_size;           /* current window size (dynamic) */
+    uint32_t w_tick;
+    LPM_BucketCy w;
+    LPM_Metrics  wm;
+
+    /* === Tier 3: Double-overlap window (halve points derived from w_size) === */
+    uint32_t w2d_a_half;       /* 3/4 of w_size */
+    uint32_t w2d_b_half;       /* 1/4 of w_size */
+    LPM_BucketCy w2d_a, w2d_b;
+    LPM_Metrics  w2dm;  /* averaged from A and B */
+
+    /* === State === */
+    uint8_t last_class;
+
+    inline void recompute_halve_points() {
+        w2d_a_half = w_size * 3 / 4;
+        w2d_b_half = w_size / 4;
+    }
+#else
+    /* === Tier 2: Windowed (halve at W_SIZE) === */
+    static constexpr uint32_t W_SIZE = 512;
+    uint32_t w_tick;
+    LPM_BucketCy w;
+    LPM_Metrics  wm;
+
+    /* === Tier 3: Double-overlap window === */
+    static constexpr uint32_t W2D_A_HALF = W_SIZE * 3 / 4;  /* 384 */
+    static constexpr uint32_t W2D_B_HALF = W_SIZE / 4;       /* 128 */
+    LPM_BucketCy w2d_a, w2d_b;
+    LPM_Metrics  w2dm;  /* averaged from A and B */
+
+    /* === State === */
+    uint8_t last_class;
+#endif
+
+#ifdef LPM_LONG_SHORT_WIN
+    /* === Tier 4: Long/Short window pair (for bypass model decisions) ===
+     * Short window: SHORT_SIZE cycles (fast-reacting, noisy).
+     * Long window:  LONG_SIZE = SHORT_SIZE × 32 (stable, low-noise).
+     * Used together: short for reactive phase detection, long for stable κ/φ/MST
+     * reference — a bypass model can compare κ_short vs κ_long to decide if the
+     * current κ is a transient spike or a durable regime worth acting on. */
+    static constexpr uint32_t SHORT_SIZE = 512;
+    static constexpr uint32_t LONG_MULT  = 32;
+    static constexpr uint32_t LONG_SIZE  = SHORT_SIZE * LONG_MULT;   /* 16384 */
+#ifdef LPM_DYNAMIC_WIN
+    /* Dynamic short/long: size adapts from current window C-AMAT (ω/α).
+     * W_SHORT_IN_CAMATS × C-AMAT ≈ short_size (target ~SHORT_SIZE under typical C-AMAT).
+     * long_size = LONG_MULT × W_SHORT_IN_CAMATS × C-AMAT (keeps the 32× ratio). */
+    static constexpr uint32_t W_SHORT_IN_CAMATS = 256;
+    uint32_t short_size;
+    uint32_t long_size;
+#endif
+    uint32_t short_tick;
+    uint32_t long_tick;
+    LPM_BucketCy ws;      /* short-term bucket */
+    LPM_Metrics  wsm;     /* short-term metrics */
+    LPM_BucketCy wl;      /* long-term bucket  */
+    LPM_Metrics  wlm;     /* long-term metrics */
+#endif
+
+    void init() {
+        g.reset(); gm.reset();
+        prev_α = prev_load_α = prev_load_miss = 0;
+        m_byp_l1d_pureMissCy = m_byp_llc_pureMissCy = 0;
+        roi.reset(); roi_m.reset();
+        roi_m_byp_l1d_pureMissCy = roi_m_byp_llc_pureMissCy = 0;
+#ifdef LPM_DYNAMIC_WIN
+        w_size = W_SIZE_DEFAULT;
+        w_tick = 0; w.reset(); wm.reset();
+        w2d_a.reset(); w2d_b.reset(); w2dm.reset();
+        recompute_halve_points();
+#else
+        w_tick = 0; w.reset(); wm.reset();
+        w2d_a.reset(); w2d_b.reset(); w2dm.reset();
+#endif
+#ifdef LPM_LONG_SHORT_WIN
+        short_tick = long_tick = 0;
+        ws.reset(); wsm.reset();
+        wl.reset(); wlm.reset();
+#ifdef LPM_DYNAMIC_WIN
+        short_size = SHORT_SIZE;
+        long_size  = LONG_SIZE;
+#endif
+#endif
+        last_class = LPM_CLASS_E;
+    }
+
+    void reset_sim() {
+        g.reset(); gm.reset();
+        prev_α = prev_load_α = prev_load_miss = 0;
+        m_byp_l1d_pureMissCy = m_byp_llc_pureMissCy = 0;
+        /* w_ / w2d_ NOT reset — windowed, not cumulative */
+    }
+
+    void record_roi() {
+        roi = g; roi_m = gm;
+        roi_m_byp_l1d_pureMissCy = m_byp_l1d_pureMissCy;
+        roi_m_byp_llc_pureMissCy = m_byp_llc_pureMissCy;
+    }
+
+    /* ── Core tick — updates all 3 tiers' cycle counters ── */
+    inline void tick(bool ha, bool ma) {
+        uint8_t cls = ((uint8_t)ha << 1) | (uint8_t)ma;
+        static const uint8_t map[4] = { LPM_CLASS_E, LPM_CLASS_M, LPM_CLASS_H, LPM_CLASS_X };
+        last_class = map[cls];
+
+        g.tick_class(cls);
+        w.tick_class(cls);
+        w2d_a.tick_class(cls);
+        w2d_b.tick_class(cls);
+#ifdef LPM_LONG_SHORT_WIN
+        ws.tick_class(cls);
+        wl.tick_class(cls);
+#endif
+
+        /* windowed halve + tick advance */
+#ifdef LPM_DYNAMIC_WIN
+        if (++w_tick >= w_size) {
+            /* Adapt window size from current window's C-AMAT before halving.
+             * C-AMAT = ω/α [eq 30], where ω = active memory cycles (h+m+x).
+             * Window should span ~W_SIZE_IN_CAMATS access-episodes.
+             * One "episode" ≈ C-AMAT cycles. So w_size = C-AMAT × W_SIZE_IN_CAMATS.
+             * This ensures the window always covers a comparable number of
+             * memory-active events regardless of cache level or workload phase. */
+            uint64_t w_α = w.α_accessCount;
+            uint64_t w_ω = w.ω_activeMemCy();
+            if (w_α > 0 && w_ω > 0) {
+                double camat_est = (double)w_ω / (double)w_α;
+                uint32_t new_size = (uint32_t)(camat_est * W_SIZE_IN_CAMATS + 0.5);
+                if (new_size < W_SIZE_MIN) new_size = W_SIZE_MIN;
+                if (new_size > W_SIZE_MAX) new_size = W_SIZE_MAX;
+                w_size = new_size;
+                recompute_halve_points();
+            }
+            w.halve();
+            w_tick = 0;
+        }
+        /* double-window halves at offset boundaries */
+        if (w_tick == w2d_a_half) w2d_a.halve();
+        if (w_tick == w2d_b_half) w2d_b.halve();
+#else
+        if (++w_tick >= W_SIZE) { w.halve(); w_tick = 0; }
+        /* double-window halves at offset boundaries */
+        if (w_tick == W2D_A_HALF) w2d_a.halve();
+        if (w_tick == W2D_B_HALF) w2d_b.halve();
+#endif
+#ifdef LPM_LONG_SHORT_WIN
+#ifdef LPM_DYNAMIC_WIN
+        if (++short_tick >= short_size) {
+            /* Adapt short_size from short-window C-AMAT before halving. */
+            uint64_t s_α = ws.α_accessCount;
+            uint64_t s_ω = ws.ω_activeMemCy();
+            if (s_α > 0 && s_ω > 0) {
+                double camat_s = (double)s_ω / (double)s_α;
+                short_size = (uint32_t)(camat_s * W_SHORT_IN_CAMATS + 0.5);
+            }
+            ws.halve(); short_tick = 0;
+        }
+        if (++long_tick >= long_size) {
+            /* Adapt long_size = LONG_MULT × long-window-derived short estimate. */
+            uint64_t l_α = wl.α_accessCount;
+            uint64_t l_ω = wl.ω_activeMemCy();
+            if (l_α > 0 && l_ω > 0) {
+                double camat_l = (double)l_ω / (double)l_α;
+                long_size = (uint32_t)(camat_l * W_SHORT_IN_CAMATS * LONG_MULT + 0.5);
+            }
+            wl.halve(); long_tick = 0;
+        }
+#else
+        if (++short_tick >= SHORT_SIZE) { ws.halve(); short_tick = 0; }
+        if (++long_tick  >= LONG_SIZE)  { wl.halve(); long_tick  = 0; }
+#endif
+#endif
+    }
+
+    inline void tick_byp(bool ha, bool ma, bool has_byp_miss, bool upper_pure_miss) {
+        tick(ha, ma);
+        m_byp_l1d_pureMissCy += (last_class == LPM_CLASS_M) & has_byp_miss & (!upper_pure_miss);
+    }
+
+    inline void tick_llc_byp(bool ha, bool ma, bool has_byp_miss) {
+        tick(ha, ma);
+        m_byp_llc_pureMissCy += (last_class == LPM_CLASS_M) & has_byp_miss;
+    }
+
+    /* ── Update all metrics (called from lpm_operate every cycle) ── */
+    inline void update_all_metrics(uint64_t cum_α, uint64_t ideal,
+                                   uint64_t cum_load_α, uint64_t cum_load_miss,
+                                   uint64_t w_ideal,
+                                   uint64_t w2d_a_ideal, uint64_t w2d_b_ideal
+#ifdef LPM_LONG_SHORT_WIN
+                                   , uint64_t ws_ideal, uint64_t wl_ideal
+#endif
+                                   ) {
+        /* Delta α from cumulative counters */
+        uint64_t dα  = cum_α - prev_α;           prev_α = cum_α;
+        uint64_t dL  = cum_load_α - prev_load_α; prev_load_α = cum_load_α;
+        uint64_t dLM = cum_load_miss - prev_load_miss; prev_load_miss = cum_load_miss;
+
+        g.tick_α(dα);     g.tick_load(dL, dLM);
+        w.tick_α(dα);     w.tick_load(dL, dLM);
+        w2d_a.tick_α(dα); w2d_a.tick_load(dL, dLM);
+        w2d_b.tick_α(dα); w2d_b.tick_load(dL, dLM);
+#ifdef LPM_LONG_SHORT_WIN
+        ws.tick_α(dα); ws.tick_load(dL, dLM);
+        wl.tick_α(dα); wl.tick_load(dL, dLM);
+#endif
+
+        /* Tier 1: global */
+        gm.compute(g, ideal);
+
+        /* Tier 2: windowed */
+        wm.compute(w, w_ideal);
+
+        /* Tier 3: w2d averaged */
+        LPM_Metrics ma, mb;
+        ma.compute(w2d_a, w2d_a_ideal);
+        mb.compute(w2d_b, w2d_b_ideal);
+        w2dm.camat_activeMemCyDivAccesses  = (ma.camat_activeMemCyDivAccesses  + mb.camat_activeMemCyDivAccesses)  * 0.5;
+        w2dm.apc_accessesDivActiveMemCy     = (ma.apc_accessesDivActiveMemCy     + mb.apc_accessesDivActiveMemCy)     * 0.5;
+        w2dm.lpmr_activeMemCyDivIdealCy    = (ma.lpmr_activeMemCyDivIdealCy    + mb.lpmr_activeMemCyDivIdealCy)    * 0.5;
+        w2dm.mst_pureMissCyDivAccesses      = (ma.mst_pureMissCyDivAccesses      + mb.mst_pureMissCyDivAccesses)      * 0.5;
+        w2dm.cpa_totalCyDivAccesses         = (ma.cpa_totalCyDivAccesses         + mb.cpa_totalCyDivAccesses)         * 0.5;
+
+#ifdef LPM_LONG_SHORT_WIN
+        /* Tier 4: short + long */
+        wsm.compute(ws, ws_ideal);
+        wlm.compute(wl, wl_ideal);
+#endif
+    }
+};
+
+/* Global storage: lpm[cpu][cache_type] */
+extern LPM_Tracker lpm[NUM_CPUS][LPM_NUM_TYPES];
+
+inline void lpm_init() {
+    for (int c = 0; c < NUM_CPUS; c++)
+        for (int t = 0; t < LPM_NUM_TYPES; t++)
+            lpm[c][t].init();
+}
+
+inline void lpm_reset_sim(int cpu) {
+    for (int t = 0; t < LPM_NUM_TYPES; t++)
+        lpm[cpu][t].reset_sim();
+}
+
+inline void lpm_record_roi(int cpu) {
+    for (int t = 0; t < LPM_NUM_TYPES; t++)
+        lpm[cpu][t].record_roi();
+}
+
+/*-----------------------------------------------------------------
+ * lpm_operate() — call from CACHE::operate() BEFORE handle_*
+ *-----------------------------------------------------------------*/
+inline void lpm_operate(int cpu, uint8_t cache_type,
+                        bool hit_active, bool miss_active,
+                        uint64_t α, bool has_byp_miss,
+                        uint64_t load_α, uint64_t load_miss) {
+    /* tick cycle classification */
+#ifdef BYPASS_LLC_LOGIC
+    if (cache_type == IS_LLC) {
+        lpm[cpu][cache_type].tick_llc_byp(hit_active, miss_active, has_byp_miss);
+    } else
+#endif
+#ifdef BYPASS_L1_LOGIC
+    if (cache_type == IS_L2C) {
+        bool l1d_pm = (lpm[cpu][LPM_L1D].last_class == LPM_CLASS_M);
+        lpm[cpu][cache_type].tick_byp(hit_active, miss_active, has_byp_miss, l1d_pm);
+    } else
+#endif
+    {
+        lpm[cpu][cache_type].tick(hit_active, miss_active);
+    }
+
+    /* compute ideals for each tier */
+    const LPM_Tracker& l1d = lpm[cpu][LPM_L1D];
+    uint64_t ideal      = l1d.g.e_idleCy + l1d.g.h_pureHitCy + l1d.g.x_overlapCy;
+    uint64_t w_ideal    = l1d.w.e_idleCy + l1d.w.h_pureHitCy + l1d.w.x_overlapCy;
+    uint64_t w2d_a_id   = l1d.w2d_a.e_idleCy + l1d.w2d_a.h_pureHitCy + l1d.w2d_a.x_overlapCy;
+    uint64_t w2d_b_id   = l1d.w2d_b.e_idleCy + l1d.w2d_b.h_pureHitCy + l1d.w2d_b.x_overlapCy;
+#ifdef LPM_LONG_SHORT_WIN
+    uint64_t ws_ideal   = l1d.ws.e_idleCy + l1d.ws.h_pureHitCy + l1d.ws.x_overlapCy;
+    uint64_t wl_ideal   = l1d.wl.e_idleCy + l1d.wl.h_pureHitCy + l1d.wl.x_overlapCy;
+    lpm[cpu][cache_type].update_all_metrics(α, ideal, load_α, load_miss,
+                                             w_ideal, w2d_a_id, w2d_b_id,
+                                             ws_ideal, wl_ideal);
+#else
+    lpm[cpu][cache_type].update_all_metrics(α, ideal, load_α, load_miss,
+                                             w_ideal, w2d_a_id, w2d_b_id);
+#endif
+}
+
+/*-----------------------------------------------------------------
+ * Standalone accessors
+ *-----------------------------------------------------------------*/
+inline double lpm_c_amat(int cpu, uint8_t ct, uint64_t α) {
+    return α ? (double)lpm[cpu][ct].g.ω_activeMemCy() / α : 0.0;
+}
+inline double lpm_apc(int cpu, uint8_t ct, uint64_t α) {
+    uint64_t w = lpm[cpu][ct].g.ω_activeMemCy();
+    return w ? (double)α / w : 0.0;
+}
+inline double lpm_mst(int cpu, uint8_t ct, uint64_t α) {
+    return α ? (double)lpm[cpu][ct].g.m_pureMissCy / α : 0.0;
+}
+
+#ifdef LPM_LONG_SHORT_WIN
+/*-----------------------------------------------------------------
+ * Long/Short window accessors — use in bypass models:
+ *   short: reactive, noisy, spots phase transitions
+ *   long:  stable baseline over ~32× more cycles
+ * A κ-driven bypass model can use get_kappa_long/short and
+ * kappa_long_above_short() to decide if a high-κ regime is durable
+ * (long κ also high) vs transient (only short κ high).
+ *-----------------------------------------------------------------*/
+inline double get_kappa_short(int cpu, uint8_t ct) {
+    return lpm[cpu][ct].ws.κ_pureMissFracOfMissCy();
+}
+inline double get_kappa_long(int cpu, uint8_t ct) {
+    return lpm[cpu][ct].wl.κ_pureMissFracOfMissCy();
+}
+inline double get_phi_short(int cpu, uint8_t ct) {
+    return lpm[cpu][ct].ws.φ_hitCyFracOfActiveCy();
+}
+inline double get_phi_long(int cpu, uint8_t ct) {
+    return lpm[cpu][ct].wl.φ_hitCyFracOfActiveCy();
+}
+inline double get_mst_short(int cpu, uint8_t ct) {
+    return lpm[cpu][ct].wsm.mst_pureMissCyDivAccesses;
+}
+inline double get_mst_long(int cpu, uint8_t ct) {
+    return lpm[cpu][ct].wlm.mst_pureMissCyDivAccesses;
+}
+/* Durable κ check: long κ at/above short κ → not a transient spike.
+ * epsilon guards against near-equal noise. */
+inline bool kappa_durable(int cpu, uint8_t ct, double epsilon = 0.02) {
+    return (get_kappa_long(cpu, ct) + epsilon) >= get_kappa_short(cpu, ct);
+}
+#endif
+
+/*-----------------------------------------------------------------
+ * Recursive C-AMAT [eq 31]
+ *-----------------------------------------------------------------*/
+inline double get_recursive_camat(int cpu) {
+    const auto& l1 = lpm[cpu][LPM_L1D]; const auto& l2 = lpm[cpu][LPM_L2C];
+    const auto& llc = lpm[cpu][LPM_LLC]; const auto& dram = lpm[cpu][LPM_DRAM];
+    double mk_l1 = l1.g.µ_missCyFracOfActiveCy() * l1.g.κ_pureMissFracOfMissCy();
+    double mk_l2 = l2.g.µ_missCyFracOfActiveCy() * l2.g.κ_pureMissFracOfMissCy();
+    double mk_llc = llc.g.µ_missCyFracOfActiveCy() * llc.g.κ_pureMissFracOfMissCy();
+    return l1.gm.camat_activeMemCyDivAccesses + mk_l1 * l2.gm.camat_activeMemCyDivAccesses
+         + mk_l1 * mk_l2 * llc.gm.camat_activeMemCyDivAccesses
+         + mk_l1 * mk_l2 * mk_llc * dram.gm.camat_activeMemCyDivAccesses;
+}
+
+inline double get_recursive_camat_roi(int cpu) {
+    const auto& l1 = lpm[cpu][LPM_L1D]; const auto& l2 = lpm[cpu][LPM_L2C];
+    const auto& llc = lpm[cpu][LPM_LLC]; const auto& dram = lpm[cpu][LPM_DRAM];
+    double mk_l1 = l1.roi.µ_missCyFracOfActiveCy() * l1.roi.κ_pureMissFracOfMissCy();
+    double mk_l2 = l2.roi.µ_missCyFracOfActiveCy() * l2.roi.κ_pureMissFracOfMissCy();
+    double mk_llc = llc.roi.µ_missCyFracOfActiveCy() * llc.roi.κ_pureMissFracOfMissCy();
+    return l1.roi_m.camat_activeMemCyDivAccesses + mk_l1 * l2.roi_m.camat_activeMemCyDivAccesses
+         + mk_l1 * mk_l2 * llc.roi_m.camat_activeMemCyDivAccesses
+         + mk_l1 * mk_l2 * mk_llc * dram.roi_m.camat_activeMemCyDivAccesses;
+}
+
+inline double get_recursive_apc(int cpu) {
+    double rc = get_recursive_camat(cpu); return rc > 0.0 ? 1.0 / rc : 0.0;
+}
+inline double get_recursive_apc_roi(int cpu) {
+    double rc = get_recursive_camat_roi(cpu); return rc > 0.0 ? 1.0 / rc : 0.0;
+}
+
+/* Standard LPMR [eq 52] */
+inline double get_LPMR_std(int cpu, uint8_t ct) {
+    const auto& ref = lpm[cpu][LPM_L1D].g;
+    uint64_t ideal = ref.e_idleCy + ref.h_pureHitCy + ref.x_overlapCy;
+    return ideal ? (double)lpm[cpu][ct].g.ω_activeMemCy() / ideal : 0.0;
+}
+inline double get_LPMR_byp(int cpu, uint8_t ct) {
+    const auto& ref = lpm[cpu][LPM_L1D].g;
+    uint64_t app = ref.e_idleCy + ref.h_pureHitCy + ref.x_overlapCy;
+    uint64_t cor = lpm[cpu][LPM_L1D].m_byp_l1d_pureMissCy;
+    uint64_t ideal = (app > cor) ? (app - cor) : 1;
+    return (double)lpm[cpu][ct].g.ω_activeMemCy() / ideal;
+}
+inline double get_LPMR_roi_std(int cpu, uint8_t ct) {
+    const auto& ref = lpm[cpu][LPM_L1D].roi;
+    uint64_t ideal = ref.e_idleCy + ref.h_pureHitCy + ref.x_overlapCy;
+    return ideal ? (double)lpm[cpu][ct].roi.ω_activeMemCy() / ideal : 0.0;
+}
+inline double get_LPMR_roi_byp(int cpu, uint8_t ct) {
+    const auto& ref = lpm[cpu][LPM_L1D].roi;
+    uint64_t app = ref.e_idleCy + ref.h_pureHitCy + ref.x_overlapCy;
+    uint64_t cor = lpm[cpu][LPM_L1D].roi_m_byp_l1d_pureMissCy;
+    uint64_t ideal = (app > cor) ? (app - cor) : 1;
+    return (double)lpm[cpu][ct].roi.ω_activeMemCy() / ideal;
+}
+
+inline double get_LPMR_global_std(int cpu) {
+    return get_LPMR_std(cpu,LPM_L1D) * get_LPMR_std(cpu,LPM_L2C) * get_LPMR_std(cpu,LPM_LLC) * get_LPMR_std(cpu,LPM_DRAM);
+}
+inline double get_LPMR_global_byp(int cpu) {
+    return get_LPMR_byp(cpu,LPM_L1D) * get_LPMR_byp(cpu,LPM_L2C) * get_LPMR_byp(cpu,LPM_LLC) * get_LPMR_byp(cpu,LPM_DRAM);
+}
+inline double get_LPMR_global_roi_std(int cpu) {
+    return get_LPMR_roi_std(cpu,LPM_L1D) * get_LPMR_roi_std(cpu,LPM_L2C) * get_LPMR_roi_std(cpu,LPM_LLC) * get_LPMR_roi_std(cpu,LPM_DRAM);
+}
+inline double get_LPMR_global_roi_byp(int cpu) {
+    return get_LPMR_roi_byp(cpu,LPM_L1D) * get_LPMR_roi_byp(cpu,LPM_L2C) * get_LPMR_roi_byp(cpu,LPM_LLC) * get_LPMR_roi_byp(cpu,LPM_DRAM);
+}
+
+/* Final stats print — ROI snapshot */
+inline void lpm_print(int cpu) {
+    static const char* nm[] = {"ITLB","DTLB","STLB","L1I ","L1D ","L2C ","LLC ","DRAM"};
+    printf("\n=== LPM Cycle Classification  CPU %d (ROI) ===\n", cpu);
+    printf("%-4s %12s %12s %12s %12s | %12s %8s %8s %8s | %10s %10s | %8s %8s %8s %8s\n",
+           "Lvl", "h(hit)", "m(miss)", "x(mixed)", "e(idle)",
+           "omega", "mu", "kappa", "phi", "LPMR_std", "LPMR_byp",
+           "C-AMAT", "APC", "MST", "CPA");
+    for (int t = 0; t < LPM_NUM_TYPES; t++) {
+        const auto& s = lpm[cpu][t];
+        if (s.roi.totalCy() == 0) continue;
+        printf("%-4s %12lu %12lu %12lu %12lu | %12lu %8.4f %8.4f %8.4f",
+               nm[t], s.roi.h_pureHitCy, s.roi.m_pureMissCy, s.roi.x_overlapCy, s.roi.e_idleCy,
+               s.roi.ω_activeMemCy(),
+               s.roi.µ_missCyFracOfActiveCy(), s.roi.κ_pureMissFracOfMissCy(), s.roi.φ_hitCyFracOfActiveCy());
+        if (t >= LPM_L1D)
+            printf(" | %10.6f %10.6f | %8.4f %8.4f %8.4f %8.4f",
+                   get_LPMR_roi_std(cpu, t), get_LPMR_roi_byp(cpu, t),
+                   s.roi_m.camat_activeMemCyDivAccesses, s.roi_m.apc_accessesDivActiveMemCy,
+                   s.roi_m.mst_pureMissCyDivAccesses, s.roi_m.cpa_totalCyDivAccesses);
+        else
+            printf(" | %10s %10s | %8s %8s %8s %8s", "n/a","n/a","n/a","n/a","n/a","n/a");
+        printf("\n");
+    }
+    printf("Global LPMR_std: %.6f  LPMR_byp: %.6f\n",
+           get_LPMR_global_roi_std(cpu), get_LPMR_global_roi_byp(cpu));
+}
+
+#endif /* LPM_TRACKER_H */

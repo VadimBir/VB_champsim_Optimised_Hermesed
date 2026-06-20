@@ -1,0 +1,395 @@
+CHAMPSIM v15 ACCELERATION STUDY — COMPLETE FINDINGS
+ 
+  Date: 2026-06-08 | 22 agents (14 sonnet + 8 opus) | Source: champsim_v15/
+
+  ---
+  ARCHITECTURE BASELINE
+  
+  Main loop (main.cc:1573): while(run_sim) { for(core) { 14 stages } → LLC.operate() → DRAM.operate() }
+
+  Profiling hotspots (from perf_priority.md):
+  - update_rob + complete_execution = 47% CPU (already SOA-optimized via rob_events_soa in instr_event.h)
+  - schedule_instruction = 10.65% (bitset fused scan, already optimized)
+  - schedule_memory = 8.5%
+  - CACHE::operate = 13.28% (handle_read 4.43%, lpm 1.43%, handle_wb 1.12%, handle_fill 0.87%)
+  - handle_branch = 13.23% (11.23% = XZ decompression, external, can't optimize)
+  - DRAM::operate = 10.73%
+  
+  ROB is ALREADY SOA: rob_events_soa extracted hot bitsets. update_rob/schedule scan ONLY bitset arrays, NOT ROB.entry[]. complete_execution touches only fields at offset 36-56
+  (cache line 0). HOT/COLD split = already done, ~0% remaining gain.
+  
+  ---
+  PIPELINE STAGE BATCHING
+  
+  12 of 14 per-core stages are PURE LOCAL (no shared state). Only L2C.operate() writes to shared LLC.RQ. LLC+DRAM already run post-loop.
+
+  OpenMP parallel core loop: FAILED EMPIRICALLY. User tried it — results are NON-EQUIVALENT due to L2→LLC request ordering dependency. MSHR merge winner changes, DRAM FR-FCFS order
+   changes. DROPPED.
+
+  ---
+  CORRECTED OPTIMIZATION RANKING
+  
+  #1: LPM MSHR Counter Replacement (agents running for exact logic)
+
+  - cache.cc:910-970 scans ALL MSHR entries (up to 1024 for 16c LLC) TWICE per cycle
+  - Just to compute 2 booleans: miss_active, has_byp
+  - Fix: Incremental counters inc/dec on MSHR add/remove → O(1)/cycle
+  - Per-CPU variant needed for TRACKER_LPM_SHARED (LLC)
+  - Agent designing exact counter placement + assertions
+
+  #2: Dirty-Flag Stage Skipping
+
+  - ITLB/STLB ~90-95% idle, L1I ~80-90%, schedule_memory ~60-80%
+  - CRITICAL USER CONSTRAINT: NO extra instructions in the loop checks — any additional check = 5x slowdown
+  - Must split LPM tick from cache.operate() queue processing first
+  - Gate queue processing on has_work byte set by add_rq/add_wq/add_pq
+  - Estimated: 1.10-1.20x speedup
+
+  #3: AddressProxy → Real SOA (NOT kill — FIX)
+
+  - User WANTS SOA due to cache misses — that's why proxy exists
+  - Current proxy is BROKEN: std::move corrupts wiring at 6 locations, works accidentally via fallback_value
+  - SOA vectors exist but are NEVER scanned directly — pure overhead (56B/PACKET)
+  - The right path: Fix SOA to actually deliver the benefit
+    - check_mshr(): scan address_vector[] directly instead of through PACKETs → 2 cache lines vs 96 for L2C
+    - check_queue(): same pattern
+    - bloom_rebuild_mshr(): iterate vector directly
+    - Address field can also be packed (user mentioned)
+    - Option C hybrid: plain uint64_t in PACKET + separate SOA scan arrays in PACKET_QUEUE for hot lookups
+    - Sync points: ~8-10 locations where address writes must mirror to vector
+
+  #4: Bloom Rebuild Analysis (agent running)
+
+  - User believes current rebuild may be UNUSED
+  - LLC uses hashmap (USE_LLC_HASHMAP_MSHR) which may supersede bloom
+  - Non-LLC caches (L1D MSHR=16, L2C MSHR=48) may still use bloom
+  - bloom_rebuild_mshr() = O(MSHR_SIZE) after every removal
+  - update_fill_cycle() = O(MSHR_SIZE) scan for min event_cycle among returned entries
+  - Could use min-heap for update_fill_cycle
+
+  #5: schedule_instruction Sparse Bit Iteration
+
+  - ooo_cpu.cc:855-857: inner loop does 64 PCYCLE_LE per word unconditionally
+  - Fix: only evaluate SET bits using __builtin_ctzll + bit-clear loop
+  - ~300 PCYCLE_LE calls eliminated per core per cycle
+  - Exact equivalency — same results, fewer comparisons
+
+  ---
+  DATA PACKING — PROVEN SAFE CHANGES
+  
+  BLOCK struct (48B → 32B, saves 16 MB at 16-core)
+
+  ┌──────────────────────────────────┬──────────────────┬───────────────────────────────────────────┐
+  │              Change              │      Saves       │                  Safety                   │
+  ├──────────────────────────────────┼──────────────────┼───────────────────────────────────────────┤
+  │ Remove tag (always == address)   │ 8B/block = 8.6MB │ VERIFIED — 5 callsites, all substitutable │
+  ├──────────────────────────────────┼──────────────────┼───────────────────────────────────────────┤
+  │ lru uint32→uint8                 │ 3B = 3.2MB       │ VERIFIED — max=19                         │
+  ├──────────────────────────────────┼──────────────────┼───────────────────────────────────────────┤
+  │ pmc uint32→uint16                │ 2B = 2.1MB       │ VERIFIED — max=350                        │
+  ├──────────────────────────────────┼──────────────────┼───────────────────────────────────────────┤
+  │ Drop l1/l2/llc_bypassed on BLOCK │ 3B = 2.1MB       │ VERIFIED — zero reads from BLOCK          │
+  └──────────────────────────────────┴──────────────────┴───────────────────────────────────────────┘
+  
+  PACKET struct
+  
+  ┌───────────────────────────────────┬──────────────┬────────────────────────────────────────────┐
+  │              Change               │    Saves     │                   Safety                   │
+  ├───────────────────────────────────┼──────────────┼────────────────────────────────────────────┤
+  │ AddressProxy fix (not kill)       │ redesign     │ See #3 above — fix SOA, don't remove       │
+  ├───────────────────────────────────┼──────────────┼────────────────────────────────────────────┤
+  │ Union data/instruction_pa/data_pa │ 16B/pkt      │ VERIFIED mutually exclusive by packet type │
+  ├───────────────────────────────────┼──────────────┼────────────────────────────────────────────┤
+  - ~300 PCYCLE_LE calls eliminated per core per cycle
+  #5: schedule_instruction Sparse Bit Iteration
+
+  - ooo_cpu.cc:855-857: inner loop does 64 PCYCLE_LE per word unconditionally
+  - Fix: only evaluate SET bits using __builtin_ctzll + bit-clear loop
+  - ~300 PCYCLE_LE calls eliminated per core per cycle
+  - Exact equivalency — same results, fewer comparisons
+
+  ---
+  DATA PACKING — PROVEN SAFE CHANGES
+
+  BLOCK struct (48B → 32B, saves 16 MB at 16-core)
+
+  ┌──────────────────────────────────┬──────────────────┬───────────────────────────────────────────┐
+  - ~300 PCYCLE_LE calls eliminated per core per cycle
+  - Exact equivalency — same results, fewer comparisons
+
+  ---
+  DATA PACKING — PROVEN SAFE CHANGES
+
+  BLOCK struct (48B → 32B, saves 16 MB at 16-core)
+
+  ┌──────────────────────────────────┬──────────────────┬───────────────────────────────────────────┐
+  DATA PACKING — PROVEN SAFE CHANGES
+
+  BLOCK struct (48B → 32B, saves 16 MB at 16-core)
+
+  ┌──────────────────────────────────┬──────────────────┬───────────────────────────────────────────┐
+  ┌──────────────────────────────────┬──────────────────┬───────────────────────────────────────────┐
+  │              Change              │      Saves       │                  Safety                   │
+  ├──────────────────────────────────┼──────────────────┼───────────────────────────────────────────┤
+  │ Remove tag (always == address)   │ 8B/block = 8.6MB │ VERIFIED — 5 callsites, all substitutable │
+  ├──────────────────────────────────┼──────────────────┼───────────────────────────────────────────┤
+  │ lru uint32→uint8                 │ 3B = 3.2MB       │ VERIFIED — max=19                         │
+  ├──────────────────────────────────┼──────────────────┼───────────────────────────────────────────┤
+  ┌──────────────────────────────────┬──────────────────┬───────────────────────────────────────────┐
+  │              Change              │      Saves       │                  Safety                   │
+  ├──────────────────────────────────┼──────────────────┼───────────────────────────────────────────┤
+  │ Remove tag (always == address)   │ 8B/block = 8.6MB │ VERIFIED — 5 callsites, all substitutable │
+  ├──────────────────────────────────┼──────────────────┼───────────────────────────────────────────┤
+  │ lru uint32→uint8                 │ 3B = 3.2MB       │ VERIFIED — max=19                         │
+  ├──────────────────────────────────┼──────────────────┼───────────────────────────────────────────┤
+  │ pmc uint32→uint16                │ 2B = 2.1MB       │ VERIFIED — max=350                        │
+  ├──────────────────────────────────┼──────────────────┼───────────────────────────────────────────┤
+  │ pmc uint32→uint16                │ 2B = 2.1MB       │ VERIFIED — max=350                        │
+  ├──────────────────────────────────┼──────────────────┼───────────────────────────────────────────┤
+  │ Drop l1/l2/llc_bypassed on BLOCK │ 3B = 2.1MB       │ VERIFIED — zero reads from BLOCK          │
+  └──────────────────────────────────┴──────────────────┴───────────────────────────────────────────┘
+
+  PACKET struct
+
+  ┌───────────────────────────────────┬──────────────┬────────────────────────────────────────────┐
+  │              Change               │    Saves     │                   Safety                   │
+  ├───────────────────────────────────┼──────────────┼────────────────────────────────────────────┤
+  │ AddressProxy fix (not kill)       │ redesign     │ See #3 above — fix SOA, don't remove       │
+  ├───────────────────────────────────┼──────────────┼────────────────────────────────────────────┤
+  │ Union data/instruction_pa/data_pa │ 16B/pkt      │ VERIFIED mutually exclusive by packet type │
+  ├───────────────────────────────────┼──────────────┼────────────────────────────────────────────┤
+  │ producer_id on ooo_model_instr    │ 8B/ROB entry │ VERIFIED dead — zero reads from ROB        │
+  ├───────────────────────────────────┼──────────────┼────────────────────────────────────────────┤
+  │ 3×int → int8+int8+int16           │ 8B/ROB entry │ VERIFIED — ranges fit, signed preserved    │
+  └───────────────────────────────────┴──────────────┴────────────────────────────────────────────┘
+
+  THINGS THAT CANNOT BE PACKED (adversary-proven)
+
+  - event_cycle must stay 64-bit — PCYCLE wrap deadlock at 16.7M cycles (proven bug, vault: bug_dram_pcycle_wrap_deadlock.md)
+  - address/full_addr must stay 64-bit — rotr64 high-bit CPU masking
+  - PACKET layout before rob_index_depend_on_me frozen — fast_copy_packet memcpy uses offsetof
+  - Bypass flags must stay independent of type/fill_level — set-before-forward + restore-after-merge
+  - lq_index/sq_index use UINT16_MAX sentinel — can't narrow to uint8
+  - LPM counters must stay uint64 — global bucket accumulates all sim cycles without halving
+  - Fastset (LQ 20B, SQ 24B) already at minimum — union{values[8], bits[2]} at parity
+
+  BANK_REQUEST (small, clean)
+
+  - open_row uint32→uint16 (max=65535), request_index int→int8 (max=63), 4 flags→1 bitfield
+
+  O3_CPU class (~109KB at 16-core)
+  
+  - RTE0/1/RTL0/1/RTS0/1 uint32→uint16 (sentinel=ROB_SIZE fits)
+  - 7 dead fields, inflight counters uint32→uint16
+
+  ---
+  HASH/CACHE-LINE ANALYSIS
+  
+  Hottest paths = NOT hashmaps — they're array scans:
+  - Cache tag check: AOS BLOCK array linear scan (wastes lines loading full BLOCK for valid+tag)
+  - MSHR check: branchless linear scan with bloom pre-filter (sequential, prefetcher-friendly)
+
+  Actual hashmaps in hot paths:
+  - reg_producers (ankerl::unordered_dense): HOT per-issue, 3-hop cache-unfriendly (bucket→value→heap vector)
+  - mshr_map (LLC only): point-access but tiny, stays L1-hot
+
+  unordered_dense layout: Robin-hood open-addressing. Buckets=8B each (8 per cache line). Values=contiguous dense vector of KV pairs. Two-hop access: buckets→values.
+
+  ---
+  EQUIVALENCY CONSTRAINTS (proven by adversary agents)
+  
+  - UNSAFE: Skip schedule when no new ROB entries — reg_RAW_release makes existing entries ready
+  - USELESS: Ready-queue of ROB indices — stall-barrier requires FIRST non-ready, fundamentally sequential
+  - UNSAFE: Skip cache.operate() when queues empty — LPM MUST tick every cycle post-warmup
+  - FRAGILE: DRAM min-heap — row-buffer state dynamic, FCFS needs seq numbers, worst=O(N)
+  - ALREADY DONE: Cache next-MSHR-cycle skip — update_fill_cycle already caches it
+  - FAILED: OpenMP parallel cores — L2→LLC ordering non-equivalent (user tested)
+
+  ---
+  KEY FILES REFERENCE
+
+  - main.cc:1573-1760 — main simulation loop
+  - ooo_cpu.cc:828 — schedule_instruction (bitset fused scan)
+  - ooo_cpu.cc:1733 — update_rob (rob_events SOA scan)
+  - cache.cc:888-994 — CACHE::operate() (LPM + handle_fill/read/wb/pf)
+  - cache.cc:1686-1783 — check_mshr (bloom + linear scan)
+  - cache.cc:1601-1666 — update_fill_cycle (min event_cycle scan)
+  - block.h:158-235 — AddressProxy (broken SOA proxy, 56B overhead)
+  - block.h:247-260 — fast_copy_packet (memcpy + offsetof constraint)
+  - instr_event.h:17-58 — rob_events_soa (already-extracted hot fields)
+  - set.h — fastset definition (hybrid bitset/sorted-array)
+  - lpm_tracker.h — LPM tick functions consuming miss_active/has_byp booleans
+  - cycle_pack.h — cycle packing DISABLED (wrap deadlock fix)
+
+  ---
+  PENDING AGENT RESULTS
+
+  1. LPM counter logic — exact counter placement, inc/dec points, assertions
+  2. Bloom rebuild analysis — alive/dead status, hashmap relationship, optimization path
+
+✻ Baked for 2m 31s · 1 local agent still running
+
+● Agent "Bloom rebuild usage analysis" completed · 1m 29s
+
+● Bloom agent done. Results:
+  
+  Bloom rebuild = NOT dead. Used for L1D/L2C on every MSHR removal. LLC uses hashmap (replaced bloom). L1D MSHR=8-16, L2C MSHR=32-48 — rebuild is cheap at those sizes. Not a bottleneck.
+  
+  ┌───────────────────┬────────────────────┬────────────────────────────────┐
+  │     Component     │        LLC         │            L1D/L2C             │
+  ├───────────────────┼────────────────────┼────────────────────────────────┤
+  │ MSHR lookup       │ hashmap O(1)       │ bloom pre-filter + linear scan │
+  ├───────────────────┼────────────────────┼────────────────────────────────┤
+  │ MSHR insert       │ hashmap O(1)       │ bloom_insert O(1)              │
+  ├───────────────────┼────────────────────┼────────────────────────────────┤
+  │ MSHR remove       │ hashmap erase O(1) │ bloom_rebuild O(MSHR_SIZE)     │
+  ├───────────────────┼────────────────────┼────────────────────────────────┤
+  │ update_fill_cycle │ O(MSHR_SIZE)       │ O(MSHR_SIZE)                   │
+  └───────────────────┴────────────────────┴────────────────────────────────┘
+
+  update_fill_cycle() = independent from bloom. Scans MSHR for min event_cycle among returned entries. Early-terminates after num_returned found. At small MSHR sizes, linear scan beats heap (constant factor of pointer chasing).
+  
+  Still waiting on LPM counter logic agent. Will append that when it arrives.
+  
+  ---
+  UPDATED COMPACT-SURVIVING ADDITIONS
+  
+  #3 AddressProxy: User WANTS SOA fixed, not killed. Proxy exists because of cache misses. Right path = Option C hybrid: plain uint64_t in PACKET + separate SOA scan arrays in PACKET_QUEUE. Address can also be packed. ~8-10 sync points need mirroring (add_rq, add_wq, add_pq, add_mshr,
+  merge_with_prefetch, check_mshr PF takeover, return_data paths).
+  
+  #4 Bloom: Alive for L1D/L2C, dead for LLC. Small MSHR sizes = not a bottleneck. Counting bloom possible but marginal gain.
+  
+  #2 Dirty-flags: User constraint = NO extra instructions in loop checks. Must be zero-cost when not skipping. Approach: split cache.operate() into lpm_tick_only() + operate_queues_only(). Gate second call on single has_work byte. The has_work check is ONE branch per cache per cycle —
+  that's 6 branches per core. If this causes 5x slowdown as user warns, the branch predictor must always predict "has work" (taken). Need to profile the branch cost vs skip savings. Alternative: use [[likely]] / __builtin_expect to hint the compiler.
+
+✻ Cooked for 21s · 1 local agent still running
+
+● Agent "LPM counter replacement logic" completed · 4m 5s
+
+● LPM counter agent DONE. All 24 agents complete. Here's the final piece:
+  
+  ---
+  LPM COUNTER REPLACEMENT — EXACT LOGIC
+ 
+  What the scans compute (cache.cc:906-970)
+
+  - miss_active: any MSHR entry with returned != COMPLETED (INFLIGHT)
+  - has_byp: any MSHR entry with relevant bypass flag set
+  - Per-CPU variants for LLC when !TRACKER_LPM_SHARED
+
+  4 counters in CACHE class (cache.h after line 97):
+
+  uint16_t lpm_mshr_inflight_count;           // entries with returned != COMPLETED
+  uint16_t lpm_mshr_byp_count;               // entries with bypass flag
+  uint16_t lpm_mshr_inflight_per_cpu[NUM_CPUS]; // per-CPU inflight (LLC)
+  uint16_t lpm_mshr_byp_per_cpu[NUM_CPUS];     // per-CPU bypass (LLC)
+  
+  6 mutation points:
+  
+  ┌───────┬───────────────────────────────────────────────┬────────────────────────────────────┬─────────────────────────────────────────────────────┐
+  │ Point │                   Location                    │               Event                │                       Action                        │
+  ├───────┼───────────────────────────────────────────────┼────────────────────────────────────┼─────────────────────────────────────────────────────┤
+  │ A     │ cache.cc:1871 (add_mshr)                      │ New entry = INFLIGHT               │ inflight++, inflight_pc[cpu]++, conditionally byp++ │
+  ├───────┼───────────────────────────────────────────────┼────────────────────────────────────┼─────────────────────────────────────────────────────┤
+  │ C     │ cache.cc:1468 (return_data)                   │ INFLIGHT→COMPLETED                 │ inflight--, inflight_pc[cpu]--                      │
+  ├───────┼───────────────────────────────────────────────┼────────────────────────────────────┼─────────────────────────────────────────────────────┤
+  │ D1    │ cache.cc:374 (LLC bypass remove)              │ MSHR removal                       │ byp-- if was_byp, byp_pc[cpu]--                     │
+  ├───────┼───────────────────────────────────────────────┼────────────────────────────────────┼─────────────────────────────────────────────────────┤
+  │ D2    │ cache.h:1373 (handle_fill_remove)             │ MSHR removal                       │ same as D1                                          │
+  ├───────┼───────────────────────────────────────────────┼────────────────────────────────────┼─────────────────────────────────────────────────────┤
+  │ E1    │ cache.cc:1708-1777 (check_mshr merge)         │ Bypass flag 0→1 or 1→0, CPU change │ delta adjust byp/byp_pc, inflight_pc                │
+  ├───────┼───────────────────────────────────────────────┼────────────────────────────────────┼─────────────────────────────────────────────────────┤
+  │ E2    │ cache.cc:1791-1853 (check_mshr_hashmap merge) │ Same as E1                         │ Same — must duplicate logic                         │
+  └───────┴───────────────────────────────────────────────┴────────────────────────────────────┴─────────────────────────────────────────────────────┘
+  
+  Replacement in operate() (lines 906-931 → 3 lines):
+
+  bool miss_active = (lpm_mshr_inflight_count > 0);  // LPM_STRICT_MISS always defined
+  bool has_byp = (lpm_mshr_byp_count > 0);
+
+  Per-CPU LLC (lines 948-970 → loop over counters):
+  
+  for (uint32_t c = 0; c < NUM_CPUS; c++) {
+      miss_active_pc[c] = (lpm_mshr_inflight_per_cpu[c] > 0);
+      has_byp_pc[c] = (lpm_mshr_byp_per_cpu[c] > 0);
+  }
+  
+  Edge case: PF→demand takeover in merge paths
+  
+  Snapshot old bypass state + old CPU before overwrite. After merge, compute new state. Adjust counters for: old_byp→!new_byp (dec), !old_byp→new_byp (inc), CPU change (transfer between per_cpu buckets).
+  
+  Debug assertion: #ifdef SANITY_CHECK brute-force scan to verify counters match. Run in DBG builds.
+  
+  Cost: O(2048)/cycle → O(1)/cycle. Counter maintenance = O(1) per MSHR event (rare vs per-cycle).
+  
+  ---
+  MASTER SUMMARY — ALL 24 AGENTS, ALL FINDINGS
+  
+  PROVEN SAFE OPTIMIZATIONS (corrected ranking, OpenMP dropped)
+
+  ┌─────┬───────────────────────┬─────────────────────────────────┬──────────────────────────────────────────────┬─────────────────────────────────────────┐
+  │  #  │         What          │              Where              │                     Gain                     │                  Risk                   │
+  ├─────┼───────────────────────┼─────────────────────────────────┼──────────────────────────────────────────────┼─────────────────────────────────────────┤
+  │ 1   │ LPM MSHR counters     │ cache.cc:906-970, cache.h       │ Eliminate O(2048)/cycle scan                 │ LOW — assertions verify                 │
+  ├─────┼───────────────────────┼─────────────────────────────────┼──────────────────────────────────────────────┼─────────────────────────────────────────┤
+  │ 2   │ Dirty-flag stage skip │ main.cc loop + cache.cc split   │ 1.10-1.20x                                   │ MED — user warns extra branch = 5x slow │
+  ├─────┼───────────────────────┼─────────────────────────────────┼──────────────────────────────────────────────┼─────────────────────────────────────────┤                                                                                                                   
+  │ 3   │ Fix AddressProxy SOA  │ block.h:158-235, cache.cc scans │ Fewer cache misses in check_mshr/check_queue │ MED — 8-10 sync points                  │
+  ├─────┼───────────────────────┼─────────────────────────────────┼──────────────────────────────────────────────┼─────────────────────────────────────────┤
+  │ 4   │ Sparse bit iteration  │ ooo_cpu.cc:855                  │ ~300 fewer PCYCLE_LE/core/cycle              │ LOW — exact equiv                       │
+  ├─────┼───────────────────────┼─────────────────────────────────┼──────────────────────────────────────────────┼─────────────────────────────────────────┤
+  │ 5   │ L2C hashmap MSHR      │ cache.cc:1686                   │ O(48)→O(1) per miss                          │ LOW — pattern exists for LLC            │
+  └─────┴───────────────────────┴─────────────────────────────────┴──────────────────────────────────────────────┴─────────────────────────────────────────┘
+  
+  PROVEN SAFE DATA PACKING
+
+  ┌───────────────────────────────┬───────────┬──────────────────────────────────────────────┐
+  │             What              │   Saves   │                    Where                     │
+  ├───────────────────────────────┼───────────┼──────────────────────────────────────────────┤
+  │ BLOCK.tag removal             │ 8.6MB@16c │ block.h:41, cache.cc:998/1043/1069/1077/1093 │
+  ├───────────────────────────────┼───────────┼──────────────────────────────────────────────┤
+  │ BLOCK.lru uint32→uint8        │ 3.2MB     │ block.h:48                                   │
+  ├───────────────────────────────┼───────────┼──────────────────────────────────────────────┤                                                                                                                                                                                 
+  │ BLOCK.pmc uint32→uint16       │ 2.1MB     │ block.h:49                                   │
+  ├───────────────────────────────┼───────────┼──────────────────────────────────────────────┤
+  │ BLOCK l1/l2/llc_bypassed drop │ 2.1MB     │ block.h:30-32 (zero reads from BLOCK)        │
+  ├───────────────────────────────┼───────────┼──────────────────────────────────────────────┤
+  │ PACKET data/iPA/dPA union     │ 16B/pkt   │ block.h:125-127                              │
+  ├───────────────────────────────┼───────────┼──────────────────────────────────────────────┤
+  │ ROB producer_id removal       │ 8B/entry  │ instruction.h:101 (dead field)               │
+  ├───────────────────────────────┼───────────┼──────────────────────────────────────────────┤
+  │ ROB 3×int→int8+int8+int16     │ 8B/entry  │ instruction.h:127                            │
+  ├───────────────────────────────┼───────────┼──────────────────────────────────────────────┤
+  │ RTE/RTL/RTS uint32→uint16     │ 44KB@16c  │ ooo_cpu.h:496-497                            │
+  ├───────────────────────────────┼───────────┼──────────────────────────────────────────────┤
+  │ BANK_REQUEST pack             │ 8B/entry  │ memory_class.h:57-93                         │
+  └───────────────────────────────┴───────────┴──────────────────────────────────────────────┘
+  
+  CANNOT PACK (adversary-proven)
+
+  - event_cycle (64-bit mandatory — PCYCLE wrap deadlock)
+  - address/full_addr (64-bit — rotr64 CPU masking)
+  - PACKET layout before rob_index_depend_on_me (memcpy+offsetof frozen)
+  - lq/sq_index (UINT16_MAX sentinel)
+  - LPM counters (uint64 — no-halve global bucket)
+  - Fastset (already at minimum union parity)
+
+  FAILED/UNSAFE
+
+  - OpenMP parallel cores — L2→LLC ordering non-equivalent (user tested)
+  - Skip schedule on no-new-ROB — reg_RAW_release makes entries ready
+  - Ready-queue — stall-barrier fundamentally sequential
+  - Skip cache.operate — LPM must tick every cycle
+  - DRAM min-heap — fragile, worst=O(N) for 16-64 entries
+
+  BLOOM STATUS
+
+  - LLC: hashmap replaced bloom (USE_LLC_HASHMAP_MSHR unconditional)
+  - L1D/L2C: bloom alive — rebuild O(MSHR_SIZE) per removal, cheap at size 8-48
+  - update_fill_cycle: independent, O(MSHR_SIZE) with early-term, already cached via next_fill_index
+
+  ROB STATUS
+
+  - Already SOA-optimized via rob_events_soa (instr_event.h:17-58)
+  - Hot paths scan bitsets only, NOT ROB.entry[]
+  - HOT/COLD split = already done, ~0% remaining gain

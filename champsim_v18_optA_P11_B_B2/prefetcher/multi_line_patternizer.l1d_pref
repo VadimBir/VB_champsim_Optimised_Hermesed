@@ -1,0 +1,306 @@
+#include "cache.h"
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <unordered_map>
+#include <string>
+
+#define WINDOW_SIZE 512
+#define NUM_PAIRS 15
+
+// Define pair types as const strings
+const std::string PAIR_NAMES[NUM_PAIRS] = {
+    "ip:addr_block",
+    "ip:page",
+    "ip:addr_block_delta",
+    "ip:ip_delta",
+    "ip:page_delta",
+    "addr_block:page",
+    "addr_block:addr_block_delta",
+    "addr_block:ip_delta",
+    "addr_block:page_delta",
+    "page:addr_block_delta",
+    "page:ip_delta",
+    "page:page_delta",
+    "ip_delta:addr_block_delta",
+    "ip_delta:page_delta",
+    "addr_block_delta:page_delta"
+};
+
+class AccessTracker {
+private:
+    struct AccessRecord {
+        uint64_t addr_block;
+        uint64_t ip;
+        uint64_t page;
+        int64_t addr_block_delta;
+        int64_t ip_delta;
+        int64_t page_delta;
+        
+        AccessRecord() : addr_block(0), ip(0), page(0), 
+                        addr_block_delta(0), ip_delta(0), page_delta(0) {}
+    };
+    
+    std::vector<AccessRecord> history;
+    int current_index;
+    bool window_full;
+    
+    // Pair scores
+    double pair_scores[NUM_PAIRS];
+    
+    // Previous values for delta calculation
+    uint64_t prev_addr_block;
+    uint64_t prev_ip;
+    uint64_t prev_page;
+    bool has_prev;
+    
+public:
+    AccessTracker() : current_index(0), window_full(false), has_prev(false) {
+        history.resize(WINDOW_SIZE);
+        for(int i = 0; i < NUM_PAIRS; i++) {
+            pair_scores[i] = 0.0;
+        }
+        prev_addr_block = 0;
+        prev_ip = 0;
+        prev_page = 0;
+    }
+    
+    void operate(uint64_t ip, uint64_t addr) {
+        // Extract components
+        uint64_t addr_block = addr >> LOG2_BLOCK_SIZE;
+        uint64_t page = addr >> LOG2_PAGE_SIZE;
+        
+        AccessRecord& record = history[current_index];
+        record.addr_block = addr_block;
+        record.ip = ip;
+        record.page = page;
+        
+        // Calculate deltas
+        if(has_prev) {
+            record.addr_block_delta = (int64_t)prev_addr_block - (int64_t)addr_block;
+            record.ip_delta = (int64_t)prev_ip - (int64_t)ip;
+            record.page_delta = (int64_t)prev_page - (int64_t)page;
+        } else {
+            record.addr_block_delta = 0;
+            record.ip_delta = 0;
+            record.page_delta = 0;
+        }
+        
+        // Update previous values
+        prev_addr_block = addr_block;
+        prev_ip = ip;
+        prev_page = page;
+        has_prev = true;
+        
+        // Move to next index
+        current_index = (current_index + 1) % WINDOW_SIZE;
+        if(current_index == 0) {
+            window_full = true;
+        }
+        
+        // Process the window
+        processing();
+    }
+    
+    void processing() {
+        int window_len = window_full ? WINDOW_SIZE : current_index;
+        if(window_len < 2) return;
+        
+        // Calculate correlation for each pair
+        calculate_correlation(0, window_len);  // ip:addr_block
+        calculate_correlation(1, window_len);  // ip:page
+        calculate_correlation(2, window_len);  // ip:addr_block_delta
+        calculate_correlation(3, window_len);  // ip:ip_delta
+        calculate_correlation(4, window_len);  // ip:page_delta
+        calculate_correlation(5, window_len);  // addr_block:page
+        calculate_correlation(6, window_len);  // addr_block:addr_block_delta
+        calculate_correlation(7, window_len);  // addr_block:ip_delta
+        calculate_correlation(8, window_len);  // addr_block:page_delta
+        calculate_correlation(9, window_len);  // page:addr_block_delta
+        calculate_correlation(10, window_len); // page:ip_delta
+        calculate_correlation(11, window_len); // page:page_delta
+        calculate_correlation(12, window_len); // ip_delta:addr_block_delta
+        calculate_correlation(13, window_len); // ip_delta:page_delta
+        calculate_correlation(14, window_len); // addr_block_delta:page_delta
+        
+        // Print scores
+        print_scores();
+    }
+    
+private:
+    void calculate_correlation(int pair_idx, int window_len) {
+        std::vector<double> x_values, y_values;
+        
+        for(int i = 0; i < window_len; i++) {
+            const AccessRecord& rec = history[i];
+            
+            // Extract values based on pair type
+            switch(pair_idx) {
+                case 0: // ip:addr_block
+                    x_values.push_back((double)rec.ip);
+                    y_values.push_back((double)rec.addr_block);
+                    break;
+                case 1: // ip:page
+                    x_values.push_back((double)rec.ip);
+                    y_values.push_back((double)rec.page);
+                    break;
+                case 2: // ip:addr_block_delta
+                    x_values.push_back((double)rec.ip);
+                    y_values.push_back((double)rec.addr_block_delta);
+                    break;
+                case 3: // ip:ip_delta
+                    x_values.push_back((double)rec.ip);
+                    y_values.push_back((double)rec.ip_delta);
+                    break;
+                case 4: // ip:page_delta
+                    x_values.push_back((double)rec.ip);
+                    y_values.push_back((double)rec.page_delta);
+                    break;
+                case 5: // addr_block:page
+                    x_values.push_back((double)rec.addr_block);
+                    y_values.push_back((double)rec.page);
+                    break;
+                case 6: // addr_block:addr_block_delta
+                    x_values.push_back((double)rec.addr_block);
+                    y_values.push_back((double)rec.addr_block_delta);
+                    break;
+                case 7: // addr_block:ip_delta
+                    x_values.push_back((double)rec.addr_block);
+                    y_values.push_back((double)rec.ip_delta);
+                    break;
+                case 8: // addr_block:page_delta
+                    x_values.push_back((double)rec.addr_block);
+                    y_values.push_back((double)rec.page_delta);
+                    break;
+                case 9: // page:addr_block_delta
+                    x_values.push_back((double)rec.page);
+                    y_values.push_back((double)rec.addr_block_delta);
+                    break;
+                case 10: // page:ip_delta
+                    x_values.push_back((double)rec.page);
+                    y_values.push_back((double)rec.ip_delta);
+                    break;
+                case 11: // page:page_delta
+                    x_values.push_back((double)rec.page);
+                    y_values.push_back((double)rec.page_delta);
+                    break;
+                case 12: // ip_delta:addr_block_delta
+                    x_values.push_back((double)rec.ip_delta);
+                    y_values.push_back((double)rec.addr_block_delta);
+                    break;
+                case 13: // ip_delta:page_delta
+                    x_values.push_back((double)rec.ip_delta);
+                    y_values.push_back((double)rec.page_delta);
+                    break;
+                case 14: // addr_block_delta:page_delta
+                    x_values.push_back((double)rec.addr_block_delta);
+                    y_values.push_back((double)rec.page_delta);
+                    break;
+            }
+        }
+        
+        // Calculate Pearson correlation coefficient
+        double correlation = pearson_correlation(x_values, y_values);
+        pair_scores[pair_idx] = correlation;
+    }
+    
+    double pearson_correlation(const std::vector<double>& x, const std::vector<double>& y) {
+        if(x.size() != y.size() || x.size() < 2) return 0.0;
+        
+        double n = x.size();
+        double sum_x = 0, sum_y = 0, sum_xy = 0;
+        double sum_x2 = 0, sum_y2 = 0;
+        
+        for(size_t i = 0; i < x.size(); i++) {
+            sum_x += x[i];
+            sum_y += y[i];
+            sum_xy += x[i] * y[i];
+            sum_x2 += x[i] * x[i];
+            sum_y2 += y[i] * y[i];
+        }
+        
+        double numerator = n * sum_xy - sum_x * sum_y;
+        double denominator = std::sqrt((n * sum_x2 - sum_x * sum_x) * (n * sum_y2 - sum_y * sum_y));
+        
+        if(denominator == 0) return 0.0;
+        
+        return numerator / denominator;
+    }
+    
+    void print_scores() {
+        // Clear the entire line and return cursor to beginning
+        std::cout << "\r\033[2K";
+        
+        // Print correlations in a compact format
+        std::cout << "Corr: ";
+        for(int i = 0; i < NUM_PAIRS; i++) {
+            char buffer[8];
+            snprintf(buffer, sizeof(buffer), "%.2f", pair_scores[i]);
+            
+            // Use abbreviated pair names to fit on one line
+            std::string short_name;
+            switch(i) {
+                case 0: short_name = "ip:ab"; break;
+                case 1: short_name = "ip:pg"; break;
+                case 2: short_name = "ip:abd"; break;
+                case 3: short_name = "ip:ipd"; break;
+                case 4: short_name = "ip:pgd"; break;
+                case 5: short_name = "ab:pg"; break;
+                case 6: short_name = "ab:abd"; break;
+                case 7: short_name = "ab:ipd"; break;
+                case 8: short_name = "ab:pgd"; break;
+                case 9: short_name = "pg:abd"; break;
+                case 10: short_name = "pg:ipd"; break;
+                case 11: short_name = "pg:pgd"; break;
+                case 12: short_name = "ipd:abd"; break;
+                case 13: short_name = "ipd:pgd"; break;
+                case 14: short_name = "abd:pgd"; break;
+            }
+            
+            std::cout << short_name << "=" << buffer;
+            if(i < NUM_PAIRS - 1) std::cout << " ";
+        }
+        std::cout << std::flush;  // Force immediate output without newline
+    }
+};
+
+// Global tracker instance
+AccessTracker* global_tracker = nullptr;
+
+void CACHE::l1d_prefetcher_initialize() 
+{
+    std::cout << "CPU " << cpu << " L1D Multi-Line Patternizer Prefetcher" << std::endl;
+    
+    // Initialize global tracker if not already done
+    if(global_tracker == nullptr) {
+        global_tracker = new AccessTracker();
+    }
+}
+
+void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type)
+{
+    // Operate the tracker on each access
+    if(global_tracker != nullptr) {
+        global_tracker->operate(ip, addr);
+    }
+    
+    // Simple next line prefetch
+    uint64_t pf_addr = ((addr>>LOG2_BLOCK_SIZE)+1) << LOG2_BLOCK_SIZE;
+    prefetch_line(ip, addr, pf_addr, FILL_L1, 0);
+}
+
+void CACHE::l1d_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in)
+{
+    // No action needed for cache fill
+}
+
+void CACHE::l1d_prefetcher_final_stats()
+{
+    std::cout << "CPU " << cpu << " L1D Multi-Line Patternizer Prefetcher final stats" << std::endl;
+    
+    // Clean up
+    if(global_tracker != nullptr) {
+        delete global_tracker;
+        global_tracker = nullptr;
+    }
+}

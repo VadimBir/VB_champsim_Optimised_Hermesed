@@ -1,0 +1,53 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+#include "uncore.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 409b — κ-Reduce (w2d) — LLC (DRAM-Guarded variant)
+// Bypass IFF κ_short > κ_long  AND  κ_reduce% >= DRAM_used%
+//   DRAM_reserved = LLC_free     (each free LLC MSHR → 1 future DRAM slot)
+//   DRAM_used%    = 1 - (DRAM_RQ_free - DRAM_reserved) / DRAM_RQ_SIZE
+
+inline bool llc_bypass_init_409b[NUM_CPUS] = {};
+
+#define SHALL_LLC_BYPASS_DEFINED
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init_409b[cpu]) return;
+    cout << "LLC Bypass [409b-KappaReduce-DRAMGuard-w2d]:\n"
+         << "  Bypass IFF κ_short > κ_long AND κ_reduce% >= DRAM_used%" << endl;
+    llc_bypass_init_409b[cpu] = true;
+}
+
+inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    llc_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    double k_now  = get_kappa_short(cpu, LPM_LLC);
+    double k_long = get_kappa_long(cpu, LPM_LLC);
+    if (k_long < 1e-6) return false;
+    if (k_now <= k_long) return false;
+
+    uint32_t dram_rq_size = 0;
+    uint32_t dram_rq_occ  = 0;
+    for (int ch = 0; ch < DRAM_CHANNELS; ch++) {
+        dram_rq_size += uncore.DRAM.RQ[ch].SIZE;
+        dram_rq_occ  += uncore.DRAM.RQ[ch].occupancy;
+    }
+    if (dram_rq_size == 0) return false;
+
+    int32_t  dram_rq_free  = (int32_t)dram_rq_size - (int32_t)dram_rq_occ;
+    uint32_t llc_free      = LLC->MSHR.SIZE - LLC->MSHR.occupancy;
+    uint32_t dram_reserved = llc_free;
+
+    int32_t dram_available = dram_rq_free - (int32_t)dram_reserved;
+    if (dram_available <= 0) return false;
+
+    double k_reduce_pct   = k_now / k_long;
+    double dram_used_pct  = 1.0 - (double)dram_available / (double)dram_rq_size;
+
+    return (k_reduce_pct >= dram_used_pct);
+}

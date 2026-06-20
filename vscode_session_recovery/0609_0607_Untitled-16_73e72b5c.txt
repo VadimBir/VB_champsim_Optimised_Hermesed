@@ -1,0 +1,5 @@
+❯  1. execute_load — hoist const auto& lqe = LQ.entry[idx] (11 reloads eliminated)
+    2. reg_dependency — hoist const uint32_t src_reg before get_latest_producer call
+    3. add_rq / check_hit / check_mshr — const PACKET* params                                                                                                                                                                                                                                  
+    4. add_load_queue — const auto& rob = ROB.entry[idx] (8 reloads)                                                                                                                                                                                                             
+    5. complete_execution — hoist const bool has_raw before remove_producer HAVE AGENT DO IT ...

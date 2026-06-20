@@ -1,0 +1,2274 @@
+Initialize SIGNATURE TABLE
+ST_SET: 1
+ST_WAY: 256
+ST_TAG_BIT: 16
+ST_TAG_MASK: ffff
+
+Initialize PATTERN TABLE
+PT_SET: 512
+PT_WAY: 4
+SIG_DELTA_BIT: 7
+C_SIG_BIT: 4
+C_DELTA_BIT: 4
+
+Initialize PREFETCH FILTER
+FILTER_SET: 1024
+*************************************************
+   ChampSim Multicore Out-of-Order Simulator
+   Last compiled: Jun 20 2026 15:35:15
+*************************************************
+
+trace_0 C:\Users\vasum\VB_champsim_Optimised_Hermesed\traces\LLM256.Pythia-70M_21M.champsimtrace.xz
+trace_1 C:\Users\vasum\VB_champsim_Optimised_Hermesed\traces\LLM256.Pythia-70M_21M.champsimtrace.xz
+trace_2 C:\Users\vasum\VB_champsim_Optimised_Hermesed\traces\LLM256.Pythia-70M_21M.champsimtrace.xz
+trace_3 C:\Users\vasum\VB_champsim_Optimised_Hermesed\traces\LLM256.Pythia-70M_21M.champsimtrace.xz
+trace_4 C:\Users\vasum\VB_champsim_Optimised_Hermesed\traces\LLM256.Pythia-70M_21M.champsimtrace.xz
+trace_5 C:\Users\vasum\VB_champsim_Optimised_Hermesed\traces\LLM256.Pythia-70M_21M.champsimtrace.xz
+trace_6 C:\Users\vasum\VB_champsim_Optimised_Hermesed\traces\LLM256.Pythia-70M_21M.champsimtrace.xz
+trace_7 C:\Users\vasum\VB_champsim_Optimised_Hermesed\traces\LLM256.Pythia-70M_21M.champsimtrace.xz
+NUM_CPUS 8
+[Hermes] CPU 0 offchip_pred = ttp
+Hermes:TTP
+[model: 4000fix-KappaPhiL1L2.l1_bypass] L1 Bypass [4000fix-KappaPhiL1L2]: L1 Bypass [4000fix: F6 sign-deriv: kappa_rising AND phi_falling + LATTRACK]
+ST_WAYS: 256
+PT_SETS: 512
+[model: 4000fix-KappaPhiL1L2.l2_bypass] L2 Bypass [4000fix-KappaPhiL1L2]: L2 Bypass [4000fix: F6 sign-deriv: kappa_rising AND phi_falling + LATTRACK]
+[Hermes] CPU 1 offchip_pred = ttp
+[model: 4000fix-KappaPhiL1L2.l1_bypass] L1 Bypass [4000fix-KappaPhiL1L2]: L1 Bypass [4000fix: F6 sign-deriv: kappa_rising AND phi_falling + LATTRACK]
+ST_WAYS: 256
+PT_SETS: 512
+[model: 4000fix-KappaPhiL1L2.l2_bypass] L2 Bypass [4000fix-KappaPhiL1L2]: L2 Bypass [4000fix: F6 sign-deriv: kappa_rising AND phi_falling + LATTRACK]
+[Hermes] CPU 2 offchip_pred = ttp
+[model: 4000fix-KappaPhiL1L2.l1_bypass] L1 Bypass [4000fix-KappaPhiL1L2]: L1 Bypass [4000fix: F6 sign-deriv: kappa_rising AND phi_falling + LATTRACK]
+ST_WAYS: 256
+PT_SETS: 512
+[model: 4000fix-KappaPhiL1L2.l2_bypass] L2 Bypass [4000fix-KappaPhiL1L2]: L2 Bypass [4000fix: F6 sign-deriv: kappa_rising AND phi_falling + LATTRACK]
+[Hermes] CPU 3 offchip_pred = ttp
+[model: 4000fix-KappaPhiL1L2.l1_bypass] L1 Bypass [4000fix-KappaPhiL1L2]: L1 Bypass [4000fix: F6 sign-deriv: kappa_rising AND phi_falling + LATTRACK]
+ST_WAYS: 256
+PT_SETS: 512
+[model: 4000fix-KappaPhiL1L2.l2_bypass] L2 Bypass [4000fix-KappaPhiL1L2]: L2 Bypass [4000fix: F6 sign-deriv: kappa_rising AND phi_falling + LATTRACK]
+[Hermes] CPU 4 offchip_pred = ttp
+[model: 4000fix-KappaPhiL1L2.l1_bypass] L1 Bypass [4000fix-KappaPhiL1L2]: L1 Bypass [4000fix: F6 sign-deriv: kappa_rising AND phi_falling + LATTRACK]
+ST_WAYS: 256
+PT_SETS: 512
+[model: 4000fix-KappaPhiL1L2.l2_bypass] L2 Bypass [4000fix-KappaPhiL1L2]: L2 Bypass [4000fix: F6 sign-deriv: kappa_rising AND phi_falling + LATTRACK]
+[Hermes] CPU 5 offchip_pred = ttp
+[model: 4000fix-KappaPhiL1L2.l1_bypass] L1 Bypass [4000fix-KappaPhiL1L2]: L1 Bypass [4000fix: F6 sign-deriv: kappa_rising AND phi_falling + LATTRACK]
+ST_WAYS: 256
+PT_SETS: 512
+[model: 4000fix-KappaPhiL1L2.l2_bypass] L2 Bypass [4000fix-KappaPhiL1L2]: L2 Bypass [4000fix: F6 sign-deriv: kappa_rising AND phi_falling + LATTRACK]
+[Hermes] CPU 6 offchip_pred = ttp
+[model: 4000fix-KappaPhiL1L2.l1_bypass] L1 Bypass [4000fix-KappaPhiL1L2]: L1 Bypass [4000fix: F6 sign-deriv: kappa_rising AND phi_falling + LATTRACK]
+ST_WAYS: 256
+PT_SETS: 512
+[model: 4000fix-KappaPhiL1L2.l2_bypass] L2 Bypass [4000fix-KappaPhiL1L2]: L2 Bypass [4000fix: F6 sign-deriv: kappa_rising AND phi_falling + LATTRACK]
+[Hermes] CPU 7 offchip_pred = ttp
+[model: 4000fix-KappaPhiL1L2.l1_bypass] L1 Bypass [4000fix-KappaPhiL1L2]: L1 Bypass [4000fix: F6 sign-deriv: kappa_rising AND phi_falling + LATTRACK]
+ST_WAYS: 256
+PT_SETS: 512
+[model: 4000fix-KappaPhiL1L2.l2_bypass] L2 Bypass [4000fix-KappaPhiL1L2]: L2 Bypass [4000fix: F6 sign-deriv: kappa_rising AND phi_falling + LATTRACK]
+[model: 4000fix-KappaPhiL1L2.llc_bypass] LLC Bypass [4000fix-KappaPhiL1L2]: LLC Bypass [4000fix: unconditional + LATTRACK]
+MAIN.cc ln 790 stats print to disable
+warmup_instructions 2000000
+simulation_instructions 14000000
+champsim_seed 3608
+
+num_cpus	;8;
+cpu_freq	;4000;	dram_io_freq	;3200;
+page_size	;4096;	block_size	;64;
+max_read_per_cycle	;16;	max_fill_per_cycle	;1;
+dram_channels	;4; dram_ranks	;2; dram_banks	;8; dram_rows	;65536; dram_columns	;128; dram_row_size	;8; dram_size	;32768; dram_pages	;8388608; 
+OffChipPred	;Hermes:TTP;
+
+fetch_width ;6; decode_width ;6; exec_width ;6; lq_width ;2; sq_width ;2; retire_width ;6; 
+scheduler_size ;512; 
+branch_mispredict_penalty ;17; 
+rob_size ;512; lq_size ;128; sq_size ;72; 
+num_instr_destinations_sparc ;2; num_instr_destinations ;2; num_instr_sources ;4; 
+
+dram_chnl_width;8    ;                          dram_rq_sz ;64 ;dram_wq_sz ;64   ;
+dram_mtps ;3200 ;tRP ;12.5 ;tRCD ;12.5 ;tCAS ;12.5 ;
+ dram_dbus_TAT ;30   ;dram_write_hi_wm;56   ;dram_write_lo_wm;48   ;
+ min_dram_write_per_sw;16   ;dram_dbus_ret_time;10   
+
+
+C:6 I# 500000     cy 271495     IPC 1.84 IPCavg 1.84165 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 93 50 27 ⏱ 0h 0m 5s TPMI 10.00
+C:4 I# 500000     cy 271881     IPC 1.84 IPCavg 1.83904 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 93 50 26 ⏱ 0h 0m 5s TPMI 10.00
+C:1 I# 500000     cy 271964     IPC 1.84 IPCavg 1.83848 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 93 50 27 ⏱ 0h 0m 5s TPMI 10.00
+C:3 I# 500000     cy 272263     IPC 1.84 IPCavg 1.83646 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 93 51 27 ⏱ 0h 0m 5s TPMI 10.00
+C:0 I# 500000     cy 272361     IPC 1.84 IPCavg 1.83580 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 93 51 27 ⏱ 0h 0m 5s TPMI 10.00
+C:7 I# 500000     cy 272447     IPC 1.84 IPCavg 1.83522 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 93 51 28 ⏱ 0h 0m 5s TPMI 10.00
+C:2 I# 500000     cy 272515     IPC 1.83 IPCavg 1.83476 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 93 51 28 ⏱ 0h 0m 5s TPMI 10.00
+C:5 I# 500000     cy 272610     IPC 1.83 IPCavg 1.83412 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 93 51 29 ⏱ 0h 0m 5s TPMI 10.00
+C:6 I# 1000001    cy 516135     IPC 2.04 IPCavg 1.93748 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 94 60 34 ⏱ 0h 0m10s TPMI 10.00
+C:4 I# 1000001    cy 516601     IPC 2.04 IPCavg 1.93573 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 94 60 33 ⏱ 0h 0m10s TPMI 10.00
+C:1 I# 1000001    cy 516676     IPC 2.04 IPCavg 1.93545 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 94 60 34 ⏱ 0h 0m10s TPMI 10.00
+C:3 I# 1000001    cy 516886     IPC 2.04 IPCavg 1.93466 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 94 61 33 ⏱ 0h 0m10s TPMI 10.00
+C:0 I# 1000001    cy 517009     IPC 2.04 IPCavg 1.93420 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 94 61 34 ⏱ 0h 0m10s TPMI 10.00
+C:7 I# 1000001    cy 517083     IPC 2.04 IPCavg 1.93393 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 94 61 34 ⏱ 0h 0m10s TPMI 10.00
+C:2 I# 1000001    cy 517166     IPC 2.04 IPCavg 1.93362 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 94 61 35 ⏱ 0h 0m10s TPMI 10.00
+C:5 I# 1000001    cy 517244     IPC 2.04 IPCavg 1.93333 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 94 61 35 ⏱ 0h 0m10s TPMI 10.00
+C:6 I# 1500000    cy 764319     IPC 2.01 IPCavg 1.96253 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 93 64 37 ⏱ 0h 0m15s TPMI 10.00
+C:4 I# 1500000    cy 764764     IPC 2.01 IPCavg 1.96139 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 93 64 35 ⏱ 0h 0m15s TPMI 10.00
+C:1 I# 1500000    cy 764933     IPC 2.01 IPCavg 1.96096 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 93 64 36 ⏱ 0h 0m15s TPMI 10.00
+C:3 I# 1500000    cy 765162     IPC 2.01 IPCavg 1.96037 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 93 64 36 ⏱ 0h 0m15s TPMI 10.00
+C:0 I# 1500000    cy 765181     IPC 2.01 IPCavg 1.96032 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 93 64 36 ⏱ 0h 0m15s TPMI 10.00
+C:7 I# 1500000    cy 765299     IPC 2.01 IPCavg 1.96002 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 93 64 36 ⏱ 0h 0m15s TPMI 10.00
+C:5 I# 1500000    cy 765401     IPC 2.01 IPCavg 1.95976 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 93 65 36 ⏱ 0h 0m15s TPMI 10.00
+C:2 I# 1500000    cy 765492     IPC 2.01 IPCavg 1.95952 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 93 65 36 ⏱ 0h 0m15s TPMI 10.00
+C:6 I# 2000003    cy 1008738    IPC 2.05 IPCavg 1.98268 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 94 65 42 ⏱ 0h 0m20s TPMI 10.00
+C:4 I# 2000003    cy 1009312    IPC 2.04 IPCavg 1.98155 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 94 67 39 ⏱ 0h 0m20s TPMI 10.00
+C:1 I# 2000003    cy 1009414    IPC 2.05 IPCavg 1.98135 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 94 66 40 ⏱ 0h 0m20s TPMI 10.00
+C:3 I# 2000003    cy 1009605    IPC 2.05 IPCavg 1.98098 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 94 66 41 ⏱ 0h 0m20s TPMI 10.00
+C:0 I# 2000003    cy 1009639    IPC 2.05 IPCavg 1.98091 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 94 65 41 ⏱ 0h 0m20s TPMI 10.00
+C:7 I# 2000003    cy 1009736    IPC 2.05 IPCavg 1.98072 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 94 66 41 ⏱ 0h 0m20s TPMI 10.00
+C:5 I# 2000003    cy 1009930    IPC 2.04 IPCavg 1.98034 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 94 67 40 ⏱ 0h 0m20s TPMI 10.00
+C:2 I# 2000003    cy 1010026    IPC 2.04 IPCavg 1.98015 ByP%   0  0  0 CPA ①9999.00②9999.00③9999.00Ⓜ9999.00 LPM ⚙0.00 ①0.00  ②0.00  ③0.00  Ⓜ0.00   cAMT ①0.00  ②0.00  ③0.00  Ⓜ0.00   MST ①0.00  ②0.00  ③0.00  Ⓜ0.00   MSHR%  0  0  0 LoadByPH% 94 67 39 ⏱ 0h 0m20s TPMI 10.00
+
+Warmup done CPU 0  instr: 2000899    cycles: 1010026    (Sim time: 0 hr 0 min 20 sec) TPMI:10.00
+Warmup done CPU 1  instr: 2001365    cycles: 1010026    (Sim time: 0 hr 0 min 20 sec) TPMI:9.99
+Warmup done CPU 2  instr: 2000003    cycles: 1010026    (Sim time: 0 hr 0 min 20 sec) TPMI:10.00
+Warmup done CPU 3  instr: 2000899    cycles: 1010025    (Sim time: 0 hr 0 min 20 sec) TPMI:10.00
+Warmup done CPU 4  instr: 2001417    cycles: 1010025    (Sim time: 0 hr 0 min 20 sec) TPMI:9.99
+Warmup done CPU 5  instr: 2000266    cycles: 1010025    (Sim time: 0 hr 0 min 20 sec) TPMI:10.00
+Warmup done CPU 6  instr: 2002698    cycles: 1010025    (Sim time: 0 hr 0 min 20 sec) TPMI:9.99
+Warmup done CPU 7  instr: 2000643    cycles: 1010025    (Sim time: 0 hr 0 min 20 sec) TPMI:10.00
+
+[model: 4000fix-KappaPhiL1L2.llc_bypass] LLC Bypass [4000fix-KappaPhiL1L2]: LLC Bypass [4000fix: unconditional + LATTRACK]
+[model: 4000fix-KappaPhiL1L2.llc_bypass] LLC Bypass [4000fix-KappaPhiL1L2]: LLC Bypass [4000fix: unconditional + LATTRACK]
+[model: 4000fix-KappaPhiL1L2.llc_bypass] LLC Bypass [4000fix-KappaPhiL1L2]: LLC Bypass [4000fix: unconditional + LATTRACK]
+[model: 4000fix-KappaPhiL1L2.llc_bypass] LLC Bypass [4000fix-KappaPhiL1L2]: LLC Bypass [4000fix: unconditional + LATTRACK]
+[model: 4000fix-KappaPhiL1L2.llc_bypass] LLC Bypass [4000fix-KappaPhiL1L2]: LLC Bypass [4000fix: unconditional + LATTRACK]
+[model: 4000fix-KappaPhiL1L2.llc_bypass] LLC Bypass [4000fix-KappaPhiL1L2]: LLC Bypass [4000fix: unconditional + LATTRACK]
+[model: 4000fix-KappaPhiL1L2.llc_bypass] LLC Bypass [4000fix-KappaPhiL1L2]: LLC Bypass [4000fix: unconditional + LATTRACK]
+C:4 I# 2500002    cy 1341732    IPC 1.50 IPCavg 1.50309 ByP%  25  6 93 CPA ①0.39  ②1.09  ③9.57  Ⓜ61.17  LPM ⚙0.84 ①0.85  ②0.68  ③1.14  Ⓜ1.28   cAMT ①0.26  ②0.58  ③8.41  Ⓜ60.43  MST ①0.08  ②0.23  ③2.17  Ⓜ28.90  MSHR% 12  0  0 LoadByPH% 83 75 24 ⏱ 0h 0m25s TPMI 10.00
+C:5 I# 2500005    cy 1342858    IPC 1.50 IPCavg 1.50147 ByP%  23  3 96 CPA ①0.39  ②1.09  ③10.06 Ⓜ62.51  LPM ⚙0.92 ①0.87  ②0.70  ③1.16  Ⓜ1.30   cAMT ①0.27  ②0.60  ③8.84  Ⓜ61.72  MST ①0.09  ②0.24  ③2.28  Ⓜ29.44  MSHR%  6  0  0 LoadByPH% 84 75 22 ⏱ 0h 0m25s TPMI 10.00
+C:2 I# 2500005    cy 1346254    IPC 1.49 IPCavg 1.48709 ByP%  23  7 93 CPA ①0.40  ②1.10  ③10.03 Ⓜ66.89  LPM ⚙0.82 ①0.82  ②0.70  ③1.12  Ⓜ1.27   cAMT ①0.26  ②0.62  ③8.81  Ⓜ66.06  MST ①0.08  ②0.25  ③2.28  Ⓜ29.99  MSHR%  6  0  0 LoadByPH% 83 76 22 ⏱ 0h 0m25s TPMI 10.00
+C:6 I# 2500005    cy 1346458    IPC 1.48 IPCavg 1.47818 ByP%  25  6 94 CPA ①0.40  ②1.11  ③8.50  Ⓜ65.00  LPM ⚙0.85 ①0.83  ②0.71  ③1.13  Ⓜ1.27   cAMT ①0.26  ②0.63  ③7.47  Ⓜ64.16  MST ①0.08  ②0.26  ③1.93  Ⓜ29.80  MSHR%  6  0  0 LoadByPH% 83 74 29 ⏱ 0h 0m25s TPMI 10.00
+C:3 I# 2500002    cy 1347231    IPC 1.48 IPCavg 1.48011 ByP%  27  4 95 CPA ①0.40  ②1.11  ③8.92  Ⓜ62.72  LPM ⚙0.89 ①0.85  ②0.71  ③1.14  Ⓜ1.29   cAMT ①0.27  ②0.62  ③7.84  Ⓜ61.94  MST ①0.08  ②0.26  ③2.02  Ⓜ28.80  MSHR%  6  0  0 LoadByPH% 83 74 27 ⏱ 0h 0m25s TPMI 10.00
+C:1 I# 2500002    cy 1348388    IPC 1.48 IPCavg 1.47368 ByP%  24  5 94 CPA ①0.40  ②1.11  ③9.20  Ⓜ66.57  LPM ⚙0.85 ①0.83  ②0.70  ③1.13  Ⓜ1.28   cAMT ①0.26  ②0.62  ③8.09  Ⓜ65.74  MST ①0.08  ②0.26  ③2.08  Ⓜ30.90  MSHR% 12  0  0 LoadByPH% 83 75 25 ⏱ 0h 0m25s TPMI 10.00
+C:7 I# 2500005    cy 1348795    IPC 1.47 IPCavg 1.47404 ByP%  25 10 90 CPA ①0.40  ②1.11  ③9.32  Ⓜ68.52  LPM ⚙0.82 ①0.82  ②0.69  ③1.13  Ⓜ1.27   cAMT ①0.26  ②0.62  ③8.18  Ⓜ67.66  MST ①0.08  ②0.26  ③2.11  Ⓜ30.95  MSHR%  0  0  0 LoadByPH% 83 74 25 ⏱ 0h 0m25s TPMI 10.00
+C:0 I# 2500002    cy 1349156    IPC 1.47 IPCavg 1.47172 ByP%  25  7 93 CPA ①0.40  ②1.12  ③8.87  Ⓜ65.53  LPM ⚙0.83 ①0.82  ②0.71  ③1.13  Ⓜ1.27   cAMT ①0.26  ②0.64  ③7.79  Ⓜ64.71  MST ①0.08  ②0.27  ③2.00  Ⓜ29.41  MSHR% 12  0  0 LoadByPH% 83 74 27 ⏱ 0h 0m25s TPMI 10.00
+C:4 I# 3000000    cy 1638921    IPC 1.68 IPCavg 1.58783 ByP%  24  4 95 CPA ①0.67  ②1.78  ③16.99 Ⓜ67.67  LPM ⚙0.69 ①0.82  ②0.64  ③1.05  Ⓜ1.24   cAMT ①0.44  ②0.92  ③14.20 Ⓜ66.59  MST ①0.13  ②0.35  ③3.69  Ⓜ34.70  MSHR%  0  0  3 LoadByPH% 85 77 26 ⏱ 0h 0m29s TPMI 9.67
+C:5 I# 3000000    cy 1638993    IPC 1.69 IPCavg 1.58948 ByP%  21  5 94 CPA ①0.67  ②1.78  ③17.62 Ⓜ67.61  LPM ⚙0.72 ①0.83  ②0.65  ③1.06  Ⓜ1.25   cAMT ①0.45  ②0.93  ③14.73 Ⓜ66.50  MST ①0.13  ②0.36  ③3.82  Ⓜ34.87  MSHR%  0  0  3 LoadByPH% 85 77 25 ⏱ 0h 0m29s TPMI 9.67
+C:2 I# 3000000    cy 1641929    IPC 1.69 IPCavg 1.58252 ByP%  23  6 94 CPA ①0.67  ②1.78  ③17.50 Ⓜ70.82  LPM ⚙0.67 ①0.80  ②0.65  ③1.04  Ⓜ1.23   cAMT ①0.44  ②0.95  ③14.64 Ⓜ69.70  MST ①0.12  ②0.37  ③3.80  Ⓜ35.52  MSHR%  0  0  2 LoadByPH% 85 77 24 ⏱ 0h 0m29s TPMI 9.67
+C:0 I# 3000000    cy 1645387    IPC 1.69 IPCavg 1.57249 ByP%  22  5 94 CPA ①0.68  ②1.81  ③15.74 Ⓜ69.74  LPM ⚙0.67 ①0.80  ②0.65  ③1.04  Ⓜ1.23   cAMT ①0.44  ②0.96  ③13.18 Ⓜ68.62  MST ①0.13  ②0.38  ③3.42  Ⓜ35.45  MSHR%  0  0  1 LoadByPH% 85 76 26 ⏱ 0h 0m29s TPMI 9.67
+C:7 I# 3000003    cy 1645470    IPC 1.69 IPCavg 1.57269 ByP%  19  7 92 CPA ①0.68  ②1.80  ③16.39 Ⓜ71.66  LPM ⚙0.68 ①0.81  ②0.65  ③1.05  Ⓜ1.23   cAMT ①0.45  ②0.95  ③13.73 Ⓜ70.49  MST ①0.13  ②0.37  ③3.56  Ⓜ36.30  MSHR% 12  0  0 LoadByPH% 85 76 26 ⏱ 0h 0m29s TPMI 9.67
+C:1 I# 3000000    cy 1649010    IPC 1.66 IPCavg 1.56285 ByP%  17  8 93 CPA ①0.68  ②1.81  ③16.38 Ⓜ72.22  LPM ⚙0.72 ①0.83  ②0.66  ③1.06  Ⓜ1.24   cAMT ①0.45  ②0.97  ③13.71 Ⓜ71.07  MST ①0.13  ②0.39  ③3.56  Ⓜ36.77  MSHR%  0  0  0 LoadByPH% 85 77 25 ⏱ 0h 0m29s TPMI 9.67
+C:6 I# 3000000    cy 1649975    IPC 1.65 IPCavg 1.55841 ByP%  18 10 90 CPA ①0.68  ②1.82  ③15.27 Ⓜ72.76  LPM ⚙0.71 ①0.82  ②0.67  ③1.05  Ⓜ1.24   cAMT ①0.45  ②0.98  ③12.79 Ⓜ71.59  MST ①0.13  ②0.39  ③3.32  Ⓜ36.40  MSHR%  0  0  0 LoadByPH% 85 76 28 ⏱ 0h 0m29s TPMI 9.67
+C:3 I# 3000000    cy 1651365    IPC 1.64 IPCavg 1.55783 ByP%  19  6 93 CPA ①0.68  ②1.82  ③15.95 Ⓜ71.09  LPM ⚙0.73 ①0.83  ②0.67  ③1.06  Ⓜ1.25   cAMT ①0.45  ②0.97  ③13.35 Ⓜ70.00  MST ①0.14  ②0.40  ③3.46  Ⓜ35.52  MSHR%  0  0  0 LoadByPH% 85 76 27 ⏱ 0h 0m29s TPMI 9.67
+C:4 I# 3500003    cy 1971697    IPC 1.50 IPCavg 1.55831 ByP%  27  6 93 CPA ①0.92  ②2.35  ③23.87 Ⓜ65.68  LPM ⚙0.75 ①0.83  ②0.66  ③1.09  Ⓜ1.26   cAMT ①0.61  ②1.24  ③20.52 Ⓜ64.90  MST ①0.18  ②0.48  ③5.30  Ⓜ33.10  MSHR%  0  0  0 LoadByPH% 84 76 25 ⏱ 0h 0m34s TPMI 9.71
+C:2 I# 3500003    cy 1972800    IPC 1.51 IPCavg 1.55800 ByP%  30  5 94 CPA ①0.92  ②2.35  ③24.24 Ⓜ68.00  LPM ⚙0.73 ①0.81  ②0.67  ③1.08  Ⓜ1.25   cAMT ①0.61  ②1.26  ③20.84 Ⓜ67.18  MST ①0.18  ②0.50  ③5.38  Ⓜ33.84  MSHR%  0  0  0 LoadByPH% 84 77 23 ⏱ 0h 0m34s TPMI 9.71
+C:5 I# 3500003    cy 1973553    IPC 1.49 IPCavg 1.55651 ByP%  24  8 91 CPA ①0.92  ②2.35  ③24.69 Ⓜ66.38  LPM ⚙0.76 ①0.83  ②0.66  ③1.09  Ⓜ1.26   cAMT ①0.61  ②1.25  ③21.23 Ⓜ65.56  MST ①0.18  ②0.49  ③5.48  Ⓜ33.41  MSHR%  0  0  0 LoadByPH% 85 76 24 ⏱ 0h 0m34s TPMI 9.71
+C:0 I# 3500003    cy 1975917    IPC 1.51 IPCavg 1.55204 ByP%  31  6 94 CPA ①0.92  ②2.37  ③22.21 Ⓜ66.28  LPM ⚙0.73 ①0.81  ②0.66  ③1.08  Ⓜ1.25   cAMT ①0.61  ②1.27  ③19.09 Ⓜ65.46  MST ①0.18  ②0.50  ③4.94  Ⓜ33.29  MSHR%  0  0  0 LoadByPH% 84 76 24 ⏱ 0h 0m34s TPMI 9.71
+C:7 I# 3500003    cy 1976323    IPC 1.51 IPCavg 1.55165 ByP%  27  7 92 CPA ①0.92  ②2.36  ③22.81 Ⓜ68.28  LPM ⚙0.74 ①0.82  ②0.67  ③1.09  Ⓜ1.25   cAMT ①0.61  ②1.26  ③19.60 Ⓜ67.42  MST ①0.18  ②0.50  ③5.07  Ⓜ34.22  MSHR%  0  0  0 LoadByPH% 84 76 24 ⏱ 0h 0m34s TPMI 9.71
+C:1 I# 3500003    cy 1977728    IPC 1.52 IPCavg 1.54866 ByP%  27  4 95 CPA ①0.92  ②2.36  ③22.97 Ⓜ66.86  LPM ⚙0.75 ①0.82  ②0.67  ③1.09  Ⓜ1.25   cAMT ①0.61  ②1.27  ③19.75 Ⓜ66.04  MST ①0.18  ②0.50  ③5.10  Ⓜ33.62  MSHR%  0  0  0 LoadByPH% 84 76 23 ⏱ 0h 0m34s TPMI 9.71
+C:3 I# 3500003    cy 1998105    IPC 1.44 IPCavg 1.51719 ByP%  27  4 95 CPA ①0.94  ②2.42  ③22.70 Ⓜ67.13  LPM ⚙0.80 ①0.83  ②0.68  ③1.10  Ⓜ1.27   cAMT ①0.62  ②1.31  ③19.55 Ⓜ66.33  MST ①0.19  ②0.55  ③5.03  Ⓜ32.35  MSHR%  0  0  0 LoadByPH% 84 76 25 ⏱ 0h 0m34s TPMI 9.71
+C:6 I# 3500003    cy 1998618    IPC 1.43 IPCavg 1.51458 ByP%  23  3 96 CPA ①0.94  ②2.43  ③21.93 Ⓜ68.26  LPM ⚙0.80 ①0.83  ②0.69  ③1.10  Ⓜ1.27   cAMT ①0.63  ②1.33  ③18.88 Ⓜ67.41  MST ①0.19  ②0.56  ③4.86  Ⓜ32.94  MSHR%  0  0  0 LoadByPH% 85 76 25 ⏱ 0h 0m34s TPMI 9.71
+C:2 I# 4000005    cy 2271867    IPC 1.67 IPCavg 1.58499 ByP%  25  5 94 CPA ①1.10  ②2.74  ③29.53 Ⓜ70.10  LPM ⚙0.71 ①0.81  ②0.65  ③1.09  Ⓜ1.24   cAMT ①0.72  ②1.45  ③25.65 Ⓜ69.32  MST ①0.21  ②0.57  ③6.18  Ⓜ35.92  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 0m39s TPMI 9.75
+C:4 I# 4000005    cy 2276566    IPC 1.64 IPCavg 1.57799 ByP%  22  3 96 CPA ①1.11  ②2.75  ③29.55 Ⓜ68.65  LPM ⚙0.75 ①0.83  ②0.65  ③1.10  Ⓜ1.25   cAMT ①0.74  ②1.44  ③25.67 Ⓜ67.90  MST ①0.22  ②0.56  ③6.18  Ⓜ35.44  MSHR%  0  0  3 LoadByPH% 85 77 25 ⏱ 0h 0m39s TPMI 9.75
+C:5 I# 4000005    cy 2280364    IPC 1.63 IPCavg 1.57418 ByP%  25  3 97 CPA ①1.11  ②2.76  ③30.57 Ⓜ69.03  LPM ⚙0.77 ①0.84  ②0.66  ③1.10  Ⓜ1.26   cAMT ①0.74  ②1.46  ③26.55 Ⓜ68.24  MST ①0.22  ②0.58  ③6.39  Ⓜ35.62  MSHR%  6  0  0 LoadByPH% 85 77 24 ⏱ 0h 0m39s TPMI 9.75
+C:7 I# 4000005    cy 2281084    IPC 1.64 IPCavg 1.57299 ByP%  21  4 95 CPA ①1.11  ②2.76  ③28.23 Ⓜ70.80  LPM ⚙0.74 ①0.82  ②0.66  ③1.09  Ⓜ1.25   cAMT ①0.74  ②1.47  ③24.52 Ⓜ69.99  MST ①0.22  ②0.58  ③5.90  Ⓜ36.43  MSHR%  6  0  0 LoadByPH% 85 77 24 ⏱ 0h 0m39s TPMI 9.75
+C:0 I# 4000005    cy 2281288    IPC 1.64 IPCavg 1.57254 ByP%  23  6 94 CPA ①1.11  ②2.77  ③27.55 Ⓜ69.33  LPM ⚙0.73 ①0.82  ②0.66  ③1.09  Ⓜ1.24   cAMT ①0.73  ②1.48  ③23.92 Ⓜ68.55  MST ①0.21  ②0.58  ③5.75  Ⓜ35.67  MSHR%  6  0  0 LoadByPH% 85 77 24 ⏱ 0h 0m39s TPMI 9.75
+C:1 I# 4000005    cy 2281661    IPC 1.65 IPCavg 1.57171 ByP%  24  4 95 CPA ①1.11  ②2.76  ③28.59 Ⓜ70.01  LPM ⚙0.75 ①0.82  ②0.66  ③1.10  Ⓜ1.25   cAMT ①0.74  ②1.47  ③24.82 Ⓜ69.22  MST ①0.22  ②0.58  ③5.97  Ⓜ36.19  MSHR%  6  0  0 LoadByPH% 85 77 24 ⏱ 0h 0m39s TPMI 9.75
+C:6 I# 4000005    cy 2293379    IPC 1.70 IPCavg 1.55632 ByP%  23  5 93 CPA ①1.12  ②2.81  ③26.87 Ⓜ69.19  LPM ⚙0.75 ①0.82  ②0.66  ③1.10  Ⓜ1.25   cAMT ①0.74  ②1.50  ③23.34 Ⓜ68.41  MST ①0.22  ②0.61  ③5.62  Ⓜ34.66  MSHR%  6  0  0 LoadByPH% 85 76 25 ⏱ 0h 0m39s TPMI 9.75
+C:3 I# 4000002    cy 2306607    IPC 1.62 IPCavg 1.54183 ByP%  22  4 95 CPA ①1.13  ②2.82  ③27.84 Ⓜ68.85  LPM ⚙0.77 ①0.83  ②0.67  ③1.11  Ⓜ1.26   cAMT ①0.75  ②1.51  ③24.18 Ⓜ68.09  MST ①0.23  ②0.63  ③5.81  Ⓜ33.97  MSHR% 12  0  1 LoadByPH% 85 76 25 ⏱ 0h 0m39s TPMI 9.75
+C:2 I# 4500002    cy 2617765    IPC 1.45 IPCavg 1.55498 ByP%  20  3 96 CPA ①1.29  ②3.11  ③34.47 Ⓜ68.90  LPM ⚙0.77 ①0.82  ②0.67  ③1.12  Ⓜ1.26   cAMT ①0.85  ②1.67  ③30.41 Ⓜ68.23  MST ①0.25  ②0.67  ③6.90  Ⓜ33.66  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 0m44s TPMI 9.78
+C:0 I# 4500005    cy 2619842    IPC 1.48 IPCavg 1.55242 ByP%  24  4 96 CPA ①1.29  ②3.13  ③32.19 Ⓜ68.56  LPM ⚙0.79 ①0.83  ②0.67  ③1.12  Ⓜ1.26   cAMT ①0.86  ②1.69  ③28.40 Ⓜ67.87  MST ①0.26  ②0.68  ③6.44  Ⓜ34.63  MSHR%  0  0  1 LoadByPH% 84 77 24 ⏱ 0h 0m44s TPMI 9.78
+C:1 I# 4500005    cy 2623578    IPC 1.46 IPCavg 1.54853 ByP%  24  5 95 CPA ①1.29  ②3.12  ③33.67 Ⓜ69.00  LPM ⚙0.81 ①0.84  ②0.68  ③1.13  Ⓜ1.26   cAMT ①0.86  ②1.69  ③29.71 Ⓜ68.31  MST ①0.26  ②0.68  ③6.73  Ⓜ34.91  MSHR%  0  0  0 LoadByPH% 84 77 23 ⏱ 0h 0m44s TPMI 9.78
+C:5 I# 4500002    cy 2623684    IPC 1.46 IPCavg 1.54911 ByP%  24  5 95 CPA ①1.29  ②3.12  ③35.61 Ⓜ68.98  LPM ⚙0.82 ①0.84  ②0.68  ③1.13  Ⓜ1.27   cAMT ①0.86  ②1.68  ③31.43 Ⓜ68.29  MST ①0.27  ②0.68  ③7.12  Ⓜ35.01  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 0m44s TPMI 9.78
+C:4 I# 4500005    cy 2623745    IPC 1.44 IPCavg 1.54834 ByP%  24  5 94 CPA ①1.29  ②3.12  ③34.49 Ⓜ68.34  LPM ⚙0.81 ①0.84  ②0.67  ③1.13  Ⓜ1.27   cAMT ①0.86  ②1.66  ③30.44 Ⓜ67.69  MST ①0.27  ②0.66  ③6.90  Ⓜ32.85  MSHR%  0  0  0 LoadByPH% 85 77 24 ⏱ 0h 0m44s TPMI 9.78
+C:7 I# 4500005    cy 2624286    IPC 1.46 IPCavg 1.54830 ByP%  22  6 94 CPA ①1.29  ②3.12  ③33.17 Ⓜ70.21  LPM ⚙0.78 ①0.83  ②0.67  ③1.12  Ⓜ1.26   cAMT ①0.86  ②1.68  ③29.28 Ⓜ69.51  MST ①0.26  ②0.67  ③6.63  Ⓜ34.65  MSHR%  0  0  2 LoadByPH% 84 77 23 ⏱ 0h 0m44s TPMI 9.78
+C:6 I# 4500005    cy 2632677    IPC 1.47 IPCavg 1.53903 ByP%  21  3 96 CPA ①1.30  ②3.16  ③31.34 Ⓜ68.02  LPM ⚙0.79 ①0.83  ②0.67  ③1.12  Ⓜ1.26   cAMT ①0.86  ②1.70  ③27.66 Ⓜ67.34  MST ①0.26  ②0.70  ③6.26  Ⓜ33.54  MSHR%  0  0  1 LoadByPH% 85 76 24 ⏱ 0h 0m44s TPMI 9.78
+C:3 I# 4500005    cy 2639957    IPC 1.50 IPCavg 1.53326 ByP%  29  3 96 CPA ①1.30  ②3.16  ③32.24 Ⓜ67.04  LPM ⚙0.79 ①0.82  ②0.67  ③1.12  Ⓜ1.26   cAMT ①0.86  ②1.70  ③28.47 Ⓜ66.40  MST ①0.26  ②0.71  ③6.44  Ⓜ31.71  MSHR%  0  0  0 LoadByPH% 85 76 24 ⏱ 0h 0m44s TPMI 9.78
+C:2 I# 5000001    cy 2917741    IPC 1.67 IPCavg 1.57256 ByP%  24  5 94 CPA ①1.41  ②3.36  ③38.41 Ⓜ69.85  LPM ⚙0.76 ①0.82  ②0.66  ③1.12  Ⓜ1.25   cAMT ①0.93  ②1.79  ③34.13 Ⓜ69.19  MST ①0.28  ②0.71  ③7.07  Ⓜ33.01  MSHR%  0  0  0 LoadByPH% 85 77 24 ⏱ 0h 0m49s TPMI 9.80
+C:0 I# 5000001    cy 2922908    IPC 1.65 IPCavg 1.56784 ByP%  22  2 97 CPA ①1.42  ②3.39  ③35.61 Ⓜ69.43  LPM ⚙0.78 ①0.83  ②0.67  ③1.13  Ⓜ1.26   cAMT ①0.94  ②1.81  ③31.64 Ⓜ68.75  MST ①0.28  ②0.72  ③6.54  Ⓜ34.69  MSHR%  0  0  1 LoadByPH% 85 77 24 ⏱ 0h 0m49s TPMI 9.80
+C:7 I# 5000001    cy 2927657    IPC 1.65 IPCavg 1.56409 ByP%  20  5 94 CPA ①1.42  ②3.38  ③36.87 Ⓜ71.29  LPM ⚙0.78 ①0.83  ②0.67  ③1.13  Ⓜ1.26   cAMT ①0.94  ②1.80  ③32.76 Ⓜ70.60  MST ①0.28  ②0.72  ③6.76  Ⓜ34.34  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 0m49s TPMI 9.80
+C:4 I# 5000004    cy 2929204    IPC 1.64 IPCavg 1.56243 ByP%  22  6 93 CPA ①1.42  ②3.39  ③38.23 Ⓜ69.52  LPM ⚙0.80 ①0.84  ②0.66  ③1.13  Ⓜ1.26   cAMT ①0.95  ②1.79  ③33.97 Ⓜ68.87  MST ①0.29  ②0.72  ③7.01  Ⓜ33.94  MSHR% 12  0  0 LoadByPH% 85 77 24 ⏱ 0h 0m49s TPMI 9.80
+C:5 I# 5000001    cy 2931542    IPC 1.62 IPCavg 1.56113 ByP%  19  6 93 CPA ①1.42  ②3.39  ③39.40 Ⓜ70.72  LPM ⚙0.81 ①0.84  ②0.67  ③1.14  Ⓜ1.27   cAMT ①0.95  ②1.81  ③35.01 Ⓜ70.03  MST ①0.29  ②0.73  ③7.22  Ⓜ35.71  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 0m49s TPMI 9.80
+C:1 I# 5000001    cy 2931715    IPC 1.62 IPCavg 1.56042 ByP%  19  5 94 CPA ①1.42  ②3.39  ③37.37 Ⓜ70.50  LPM ⚙0.81 ①0.84  ②0.67  ③1.13  Ⓜ1.26   cAMT ①0.95  ②1.82  ③33.21 Ⓜ69.81  MST ①0.29  ②0.74  ③6.84  Ⓜ35.11  MSHR%  6  0  0 LoadByPH% 85 77 23 ⏱ 0h 0m49s TPMI 9.80
+C:6 I# 5000001    cy 2933756    IPC 1.66 IPCavg 1.55807 ByP%  20  4 95 CPA ①1.42  ②3.41  ③34.83 Ⓜ68.89  LPM ⚙0.78 ①0.83  ②0.67  ③1.13  Ⓜ1.26   cAMT ①0.94  ②1.82  ③30.95 Ⓜ68.21  MST ①0.28  ②0.74  ③6.37  Ⓜ34.74  MSHR%  0  0  0 LoadByPH% 85 76 24 ⏱ 0h 0m49s TPMI 9.80
+C:3 I# 5000001    cy 2937946    IPC 1.68 IPCavg 1.55561 ByP%  22  5 94 CPA ①1.43  ②3.40  ③35.81 Ⓜ68.01  LPM ⚙0.77 ①0.82  ②0.66  ③1.12  Ⓜ1.25   cAMT ①0.94  ②1.81  ③31.83 Ⓜ67.37  MST ①0.28  ②0.74  ③6.55  Ⓜ32.37  MSHR%  0  0  2 LoadByPH% 85 76 25 ⏱ 0h 0m49s TPMI 9.80
+C:2 I# 5500004    cy 3262702    IPC 1.45 IPCavg 1.55371 ByP%  23  7 93 CPA ①1.55  ②3.60  ③41.73 Ⓜ68.52  LPM ⚙0.78 ①0.82  ②0.67  ③1.13  Ⓜ1.25   cAMT ①1.02  ②1.94  ③37.44 Ⓜ67.94  MST ①0.30  ②0.78  ③7.28  Ⓜ30.27  MSHR%  0  0  3 LoadByPH% 85 76 23 ⏱ 0h 0m54s TPMI 9.82
+C:0 I# 5500005    cy 3265715    IPC 1.46 IPCavg 1.55124 ByP%  26  8 92 CPA ①1.55  ②3.63  ③38.71 Ⓜ68.20  LPM ⚙0.80 ①0.83  ②0.67  ③1.14  Ⓜ1.26   cAMT ①1.03  ②1.95  ③34.74 Ⓜ67.60  MST ①0.31  ②0.79  ③6.75  Ⓜ31.87  MSHR%  0  0  1 LoadByPH% 84 76 24 ⏱ 0h 0m54s TPMI 9.82
+C:4 I# 5500003    cy 3271066    IPC 1.46 IPCavg 1.54733 ByP%  23  5 95 CPA ①1.55  ②3.63  ③41.47 Ⓜ68.46  LPM ⚙0.82 ①0.84  ②0.67  ③1.15  Ⓜ1.27   cAMT ①1.03  ②1.94  ③37.22 Ⓜ67.88  MST ①0.32  ②0.78  ③7.22  Ⓜ31.48  MSHR%  0  0  2 LoadByPH% 85 77 23 ⏱ 0h 0m54s TPMI 9.82
+C:7 I# 5500005    cy 3271953    IPC 1.45 IPCavg 1.54707 ByP%  21  6 94 CPA ①1.55  ②3.63  ③40.10 Ⓜ69.99  LPM ⚙0.81 ①0.83  ②0.67  ③1.14  Ⓜ1.26   cAMT ①1.03  ②1.95  ③35.99 Ⓜ69.38  MST ①0.31  ②0.79  ③6.98  Ⓜ32.07  MSHR%  0  0  3 LoadByPH% 85 76 23 ⏱ 0h 0m54s TPMI 9.82
+C:5 I# 5500004    cy 3274814    IPC 1.46 IPCavg 1.54528 ByP%  21  7 94 CPA ①1.55  ②3.63  ③42.62 Ⓜ69.74  LPM ⚙0.83 ①0.84  ②0.68  ③1.15  Ⓜ1.27   cAMT ①1.04  ②1.95  ③38.26 Ⓜ69.13  MST ①0.32  ②0.80  ③7.42  Ⓜ32.53  MSHR%  0  0  0 LoadByPH% 85 77 22 ⏱ 0h 0m54s TPMI 9.82
+C:6 I# 5500005    cy 3276711    IPC 1.46 IPCavg 1.54292 ByP%  23  4 95 CPA ①1.55  ②3.65  ③38.28 Ⓜ68.14  LPM ⚙0.80 ①0.83  ②0.67  ③1.14  Ⓜ1.26   cAMT ①1.03  ②1.96  ③34.36 Ⓜ67.53  MST ①0.31  ②0.80  ③6.66  Ⓜ32.60  MSHR%  0  0  0 LoadByPH% 85 76 23 ⏱ 0h 0m54s TPMI 9.82
+C:1 I# 5500005    cy 3278042    IPC 1.44 IPCavg 1.54260 ByP%  19  4 95 CPA ①1.56  ②3.63  ③40.61 Ⓜ69.97  LPM ⚙0.83 ①0.84  ②0.68  ③1.15  Ⓜ1.27   cAMT ①1.04  ②1.96  ③36.46 Ⓜ69.35  MST ①0.32  ②0.80  ③7.06  Ⓜ33.22  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 0m54s TPMI 9.82
+C:3 I# 5500005    cy 3278589    IPC 1.47 IPCavg 1.54243 ByP%  23  5 95 CPA ①1.56  ②3.64  ③39.25 Ⓜ67.52  LPM ⚙0.79 ①0.82  ②0.67  ③1.14  Ⓜ1.26   cAMT ①1.02  ②1.95  ③35.24 Ⓜ66.95  MST ①0.31  ②0.80  ③6.83  Ⓜ30.77  MSHR%  0  0  2 LoadByPH% 85 76 24 ⏱ 0h 0m54s TPMI 9.82
+C:2 I# 6000002    cy 3571714    IPC 1.62 IPCavg 1.56147 ByP%  23  3 97 CPA ①1.65  ②3.80  ③44.31 Ⓜ69.87  LPM ⚙0.78 ①0.82  ②0.67  ③1.14  Ⓜ1.26   cAMT ①1.09  ②2.03  ③39.92 Ⓜ69.32  MST ①0.32  ②0.83  ③7.22  Ⓜ30.53  MSHR%  0  2  0 LoadByPH% 85 77 24 ⏱ 0h 0m58s TPMI 9.67
+C:0 I# 6000002    cy 3576119    IPC 1.61 IPCavg 1.55844 ByP%  25  5 95 CPA ①1.65  ②3.82  ③41.61 Ⓜ69.38  LPM ⚙0.79 ①0.83  ②0.67  ③1.14  Ⓜ1.26   cAMT ①1.09  ②2.05  ③37.48 Ⓜ68.81  MST ①0.33  ②0.83  ③6.77  Ⓜ32.65  MSHR%  0  0  0 LoadByPH% 85 77 24 ⏱ 0h 0m58s TPMI 9.67
+C:4 I# 6000002    cy 3577099    IPC 1.63 IPCavg 1.55764 ByP%  22  4 95 CPA ①1.65  ②3.82  ③44.13 Ⓜ69.78  LPM ⚙0.82 ①0.84  ②0.67  ③1.15  Ⓜ1.27   cAMT ①1.10  ②2.03  ③39.76 Ⓜ69.23  MST ①0.34  ②0.82  ③7.18  Ⓜ29.87  MSHR%  6  0  0 LoadByPH% 85 77 23 ⏱ 0h 0m58s TPMI 9.67
+C:7 I# 6000005    cy 3579075    IPC 1.63 IPCavg 1.55675 ByP%  22  3 96 CPA ①1.65  ②3.82  ③42.61 Ⓜ71.18  LPM ⚙0.81 ①0.83  ②0.67  ③1.15  Ⓜ1.26   cAMT ①1.10  ②2.04  ③38.39 Ⓜ70.59  MST ①0.33  ②0.82  ③6.93  Ⓜ33.44  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 0m58s TPMI 9.67
+C:6 I# 6000002    cy 3583160    IPC 1.63 IPCavg 1.55348 ByP%  23  2 98 CPA ①1.65  ②3.84  ③41.11 Ⓜ69.41  LPM ⚙0.81 ①0.83  ②0.67  ③1.15  Ⓜ1.26   cAMT ①1.09  ②2.05  ③37.04 Ⓜ68.84  MST ①0.33  ②0.84  ③6.68  Ⓜ32.06  MSHR%  6  0  0 LoadByPH% 85 76 23 ⏱ 0h 0m58s TPMI 9.67
+C:3 I# 6000002    cy 3584492    IPC 1.63 IPCavg 1.55337 ByP%  22  3 97 CPA ①1.65  ②3.83  ③42.07 Ⓜ68.92  LPM ⚙0.79 ①0.82  ②0.67  ③1.14  Ⓜ1.26   cAMT ①1.09  ②2.04  ③37.90 Ⓜ68.38  MST ①0.33  ②0.84  ③6.83  Ⓜ30.52  MSHR%  0  0  1 LoadByPH% 85 76 24 ⏱ 0h 0m58s TPMI 9.67
+C:1 I# 6000002    cy 3584639    IPC 1.63 IPCavg 1.55310 ByP%  24  4 95 CPA ①1.66  ②3.82  ③43.40 Ⓜ71.38  LPM ⚙0.83 ①0.84  ②0.67  ③1.15  Ⓜ1.27   cAMT ①1.11  ②2.05  ③39.10 Ⓜ70.79  MST ①0.34  ②0.83  ③7.05  Ⓜ34.34  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 0m58s TPMI 9.67
+C:5 I# 6000002    cy 3585174    IPC 1.61 IPCavg 1.55321 ByP%  21  4 96 CPA ①1.65  ②3.83  ③45.12 Ⓜ70.98  LPM ⚙0.83 ①0.84  ②0.67  ③1.15  Ⓜ1.27   cAMT ①1.10  ②2.05  ③40.65 Ⓜ70.40  MST ①0.34  ②0.84  ③7.32  Ⓜ32.31  MSHR%  0  0  0 LoadByPH% 85 77 22 ⏱ 0h 0m58s TPMI 9.67
+C:2 I# 6500003    cy 3925424    IPC 1.41 IPCavg 1.54353 ByP%  24  4 95 CPA ①1.76  ②3.99  ③46.67 Ⓜ69.61  LPM ⚙0.83 ①0.83  ②0.68  ③1.16  Ⓜ1.27   cAMT ①1.16  ②2.16  ③42.27 Ⓜ69.11  MST ①0.36  ②0.90  ③7.32  Ⓜ29.69  MSHR%  0  0  0 LoadByPH% 85 77 24 ⏱ 0h 1m 3s TPMI 9.69
+C:0 I# 6500003    cy 3927105    IPC 1.42 IPCavg 1.54233 ByP%  30  5 94 CPA ①1.76  ②4.01  ③44.45 Ⓜ69.33  LPM ⚙0.81 ①0.82  ②0.68  ③1.15  Ⓜ1.26   cAMT ①1.16  ②2.17  ③40.27 Ⓜ68.81  MST ①0.35  ②0.90  ③6.97  Ⓜ30.88  MSHR%  0  0  1 LoadByPH% 85 77 24 ⏱ 0h 1m 3s TPMI 9.69
+C:7 I# 6500003    cy 3927309    IPC 1.44 IPCavg 1.54231 ByP%  24  5 95 CPA ①1.76  ②4.00  ③45.08 Ⓜ71.16  LPM ⚙0.84 ①0.84  ②0.68  ③1.16  Ⓜ1.27   cAMT ①1.17  ②2.16  ③40.83 Ⓜ70.61  MST ①0.36  ②0.89  ③7.07  Ⓜ32.68  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 1m 3s TPMI 9.69
+C:4 I# 6500001    cy 3927856    IPC 1.43 IPCavg 1.54176 ByP%  26  5 94 CPA ①1.76  ②4.00  ③46.70 Ⓜ69.87  LPM ⚙0.85 ①0.84  ②0.68  ③1.16  Ⓜ1.28   cAMT ①1.17  ②2.15  ③42.30 Ⓜ69.37  MST ①0.37  ②0.88  ③7.32  Ⓜ27.86  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 1m 3s TPMI 9.69
+C:6 I# 6500002    cy 3933944    IPC 1.43 IPCavg 1.53811 ByP%  27  5 94 CPA ①1.76  ②4.02  ③43.88 Ⓜ69.39  LPM ⚙0.82 ①0.83  ②0.68  ③1.15  Ⓜ1.27   cAMT ①1.16  ②2.17  ③39.75 Ⓜ68.88  MST ①0.36  ②0.91  ③6.88  Ⓜ29.82  MSHR%  0  0  0 LoadByPH% 85 76 24 ⏱ 0h 1m 3s TPMI 9.69
+C:3 I# 6500002    cy 3934046    IPC 1.43 IPCavg 1.53867 ByP%  24  5 94 CPA ①1.76  ②4.01  ③44.63 Ⓜ69.17  LPM ⚙0.82 ①0.83  ②0.68  ③1.15  Ⓜ1.27   cAMT ①1.16  ②2.17  ③40.43 Ⓜ68.67  MST ①0.36  ②0.90  ③6.99  Ⓜ29.81  MSHR%  0  0  0 LoadByPH% 85 76 24 ⏱ 0h 1m 3s TPMI 9.69
+C:1 I# 6500004    cy 3935340    IPC 1.43 IPCavg 1.53783 ByP%  23  5 95 CPA ①1.76  ②4.00  ③46.07 Ⓜ71.19  LPM ⚙0.86 ①0.84  ②0.68  ③1.16  Ⓜ1.27   cAMT ①1.18  ②2.17  ③41.74 Ⓜ70.66  MST ①0.37  ②0.90  ③7.22  Ⓜ31.86  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 1m 3s TPMI 9.69
+C:5 I# 6500003    cy 3938229    IPC 1.42 IPCavg 1.53669 ByP%  25  6 93 CPA ①1.76  ②4.01  ③47.53 Ⓜ71.21  LPM ⚙0.86 ①0.84  ②0.68  ③1.16  Ⓜ1.28   cAMT ①1.18  ②2.17  ③43.06 Ⓜ70.68  MST ①0.37  ②0.90  ③7.45  Ⓜ30.72  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 1m 3s TPMI 9.69
+C:6 I# 7000002    cy 4284610    IPC 1.43 IPCavg 1.52609 ByP%  19  3 96 CPA ①1.86  ②4.22  ③46.61 Ⓜ71.15  LPM ⚙0.86 ①0.84  ②0.69  ③1.17  Ⓜ1.28   cAMT ①1.23  ②2.29  ③42.22 Ⓜ70.68  MST ①0.39  ②0.98  ③7.27  Ⓜ27.41  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 1m 8s TPMI 9.71
+C:4 I# 7000002    cy 4285638    IPC 1.40 IPCavg 1.52600 ByP%  19  2 97 CPA ①1.86  ②4.21  ③49.61 Ⓜ71.92  LPM ⚙0.90 ①0.86  ②0.69  ③1.18  Ⓜ1.29   cAMT ①1.25  ②2.28  ③44.95 Ⓜ71.47  MST ①0.41  ②0.97  ③7.74  Ⓜ25.55  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 1m 8s TPMI 9.71
+C:7 I# 7000002    cy 4285825    IPC 1.39 IPCavg 1.52615 ByP%  18  4 95 CPA ①1.86  ②4.21  ③47.92 Ⓜ73.26  LPM ⚙0.89 ①0.85  ②0.69  ③1.17  Ⓜ1.29   cAMT ①1.25  ②2.29  ③43.41 Ⓜ72.77  MST ①0.40  ②0.98  ③7.48  Ⓜ29.96  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 1m 8s TPMI 9.71
+C:1 I# 7000002    cy 4287011    IPC 1.42 IPCavg 1.52538 ByP%  18  4 95 CPA ①1.86  ②4.20  ③48.55 Ⓜ72.67  LPM ⚙0.90 ①0.86  ②0.70  ③1.17  Ⓜ1.29   cAMT ①1.25  ②2.29  ③43.98 Ⓜ72.19  MST ①0.40  ②0.98  ③7.57  Ⓜ29.38  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 1m 8s TPMI 9.71
+C:0 I# 7000002    cy 4287244    IPC 1.39 IPCavg 1.52541 ByP%  18  3 96 CPA ①1.86  ②4.22  ③47.35 Ⓜ71.59  LPM ⚙0.87 ①0.84  ②0.69  ③1.17  Ⓜ1.28   cAMT ①1.24  ②2.30  ③42.89 Ⓜ71.11  MST ①0.40  ②0.99  ③7.39  Ⓜ28.39  MSHR%  0  0  2 LoadByPH% 85 77 24 ⏱ 0h 1m 8s TPMI 9.71
+C:5 I# 7000002    cy 4287840    IPC 1.43 IPCavg 1.52533 ByP%  18  3 95 CPA ①1.86  ②4.21  ③49.99 Ⓜ72.82  LPM ⚙0.90 ①0.85  ②0.69  ③1.17  Ⓜ1.29   cAMT ①1.24  ②2.29  ③45.28 Ⓜ72.33  MST ①0.40  ②0.98  ③7.80  Ⓜ28.68  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 1m 8s TPMI 9.71
+C:3 I# 7000002    cy 4292832    IPC 1.39 IPCavg 1.52281 ByP%  18  3 96 CPA ①1.86  ②4.22  ③47.50 Ⓜ71.17  LPM ⚙0.88 ①0.84  ②0.69  ③1.17  Ⓜ1.28   cAMT ①1.24  ②2.30  ③43.02 Ⓜ70.71  MST ①0.40  ②0.99  ③7.40  Ⓜ27.40  MSHR%  0  0  0 LoadByPH% 85 76 24 ⏱ 0h 1m 8s TPMI 9.71
+C:2 I# 7000002    cy 4302096    IPC 1.33 IPCavg 1.51880 ByP%  17  2 97 CPA ①1.87  ②4.22  ③49.59 Ⓜ72.19  LPM ⚙0.90 ①0.85  ②0.70  ③1.17  Ⓜ1.29   cAMT ①1.24  ②2.31  ③44.91 Ⓜ71.73  MST ①0.40  ②1.01  ③7.71  Ⓜ27.34  MSHR%  0  0  2 LoadByPH% 85 77 24 ⏱ 0h 1m 8s TPMI 9.71
+C:4 I# 7500000    cy 4646606    IPC 1.39 IPCavg 1.51202 ByP%  27  6 91 CPA ①1.95  ②4.35  ③51.52 Ⓜ72.21  LPM ⚙0.93 ①0.86  ②0.70  ③1.18  Ⓜ1.29   cAMT ①1.31  ②2.39  ③46.80 Ⓜ71.80  MST ①0.43  ②1.04  ③7.97  Ⓜ23.16  MSHR%  6  2  4 LoadByPH% 85 77 24 ⏱ 0h 1m12s TPMI 9.60
+C:6 I# 7500000    cy 4649283    IPC 1.37 IPCavg 1.51056 ByP%  24  6 93 CPA ①1.95  ②4.37  ③48.68 Ⓜ71.86  LPM ⚙0.90 ①0.85  ②0.70  ③1.17  Ⓜ1.29   cAMT ①1.30  ②2.40  ③44.22 Ⓜ71.43  MST ①0.42  ②1.05  ③7.52  Ⓜ24.90  MSHR% 25  2  3 LoadByPH% 85 77 24 ⏱ 0h 1m12s TPMI 9.60
+C:5 I# 7500000    cy 4651041    IPC 1.38 IPCavg 1.51049 ByP%  30  6 92 CPA ①1.96  ②4.36  ③51.93 Ⓜ73.43  LPM ⚙0.92 ①0.86  ②0.70  ③1.18  Ⓜ1.29   cAMT ①1.31  ②2.39  ③47.18 Ⓜ72.99  MST ①0.43  ②1.04  ③8.02  Ⓜ26.16  MSHR%  6  0  2 LoadByPH% 85 77 23 ⏱ 0h 1m12s TPMI 9.60
+C:7 I# 7500000    cy 4653449    IPC 1.36 IPCavg 1.50939 ByP%  25  6 93 CPA ①1.96  ②4.36  ③50.22 Ⓜ73.84  LPM ⚙0.93 ①0.86  ②0.71  ③1.18  Ⓜ1.29   cAMT ①1.31  ②2.40  ③45.63 Ⓜ73.39  MST ①0.43  ②1.05  ③7.75  Ⓜ27.21  MSHR% 18  6  1 LoadByPH% 85 77 24 ⏱ 0h 1m13s TPMI 9.73
+C:1 I# 7500000    cy 4656619    IPC 1.35 IPCavg 1.50788 ByP%  29  4 94 CPA ①1.96  ②4.36  ③50.97 Ⓜ73.48  LPM ⚙0.94 ①0.86  ②0.71  ③1.18  Ⓜ1.30   cAMT ①1.32  ②2.40  ③46.31 Ⓜ73.04  MST ①0.44  ②1.05  ③7.86  Ⓜ26.87  MSHR% 18  6  3 LoadByPH% 85 77 23 ⏱ 0h 1m13s TPMI 9.73
+C:0 I# 7500000    cy 4657207    IPC 1.35 IPCavg 1.50777 ByP%  27  6 93 CPA ①1.96  ②4.38  ③49.65 Ⓜ72.58  LPM ⚙0.91 ①0.85  ②0.71  ③1.18  Ⓜ1.29   cAMT ①1.30  ②2.42  ③45.12 Ⓜ72.14  MST ①0.43  ②1.06  ③7.66  Ⓜ25.92  MSHR%  0  0  2 LoadByPH% 85 77 24 ⏱ 0h 1m13s TPMI 9.73
+C:3 I# 7500000    cy 4668314    IPC 1.33 IPCavg 1.50319 ByP%  26  5 93 CPA ①1.96  ②4.39  ③49.84 Ⓜ72.19  LPM ⚙0.91 ①0.85  ②0.70  ③1.18  Ⓜ1.29   cAMT ①1.31  ②2.41  ③45.30 Ⓜ71.77  MST ①0.43  ②1.07  ③7.66  Ⓜ25.13  MSHR%  0  0  0 LoadByPH% 85 76 24 ⏱ 0h 1m13s TPMI 9.73
+C:2 I# 7500004    cy 4677386    IPC 1.33 IPCavg 1.49972 ByP%  24  2 97 CPA ①1.97  ②4.39  ③51.73 Ⓜ72.99  LPM ⚙0.94 ①0.86  ②0.71  ③1.19  Ⓜ1.30   cAMT ①1.31  ②2.43  ③47.02 Ⓜ72.56  MST ①0.44  ②1.09  ③7.94  Ⓜ24.89  MSHR% 25  0  1 LoadByPH% 85 77 24 ⏱ 0h 1m13s TPMI 9.73
+C:4 I# 8000000    cy 4989183    IPC 1.46 IPCavg 1.50750 ByP%  21  3 96 CPA ①2.02  ②4.49  ③53.11 Ⓜ72.54  LPM ⚙0.94 ①0.86  ②0.71  ③1.19  Ⓜ1.30   cAMT ①1.36  ②2.46  ③48.47 Ⓜ72.16  MST ①0.45  ②1.08  ③8.15  Ⓜ22.14  MSHR%  0  0  3 LoadByPH% 85 77 23 ⏱ 0h 1m17s TPMI 9.62
+C:5 I# 8000000    cy 4990110    IPC 1.47 IPCavg 1.50744 ByP%  19  4 94 CPA ①2.02  ②4.49  ③53.52 Ⓜ73.72  LPM ⚙0.93 ①0.86  ②0.70  ③1.19  Ⓜ1.30   cAMT ①1.35  ②2.47  ③48.84 Ⓜ73.32  MST ①0.45  ②1.09  ③8.21  Ⓜ24.23  MSHR%  0  0  2 LoadByPH% 85 77 23 ⏱ 0h 1m17s TPMI 9.62
+C:6 I# 8000000    cy 5001513    IPC 1.42 IPCavg 1.50252 ByP%  19  3 95 CPA ①2.03  ②4.52  ③50.53 Ⓜ72.57  LPM ⚙0.93 ①0.85  ②0.71  ③1.19  Ⓜ1.29   cAMT ①1.35  ②2.49  ③46.12 Ⓜ72.18  MST ①0.45  ②1.11  ③7.75  Ⓜ23.10  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 1m17s TPMI 9.62
+C:7 I# 8000000    cy 5007624    IPC 1.41 IPCavg 1.50074 ByP%  19  4 95 CPA ①2.03  ②4.51  ③52.16 Ⓜ74.40  LPM ⚙0.96 ①0.87  ②0.71  ③1.20  Ⓜ1.30   cAMT ①1.37  ②2.49  ③47.61 Ⓜ73.99  MST ①0.46  ②1.11  ③8.00  Ⓜ25.12  MSHR%  0  0  2 LoadByPH% 85 77 23 ⏱ 0h 1m17s TPMI 9.62
+C:1 I# 8000000    cy 5022180    IPC 1.37 IPCavg 1.49512 ByP%  17  3 96 CPA ①2.04  ②4.52  ③52.97 Ⓜ74.30  LPM ⚙0.98 ①0.87  ②0.72  ③1.20  Ⓜ1.31   cAMT ①1.37  ②2.50  ③48.36 Ⓜ73.89  MST ①0.47  ②1.12  ③8.11  Ⓜ24.69  MSHR%  0  0  0 LoadByPH% 85 77 23 ⏱ 0h 1m18s TPMI 9.75
+C:0 I# 8000000    cy 5023244    IPC 1.37 IPCavg 1.49484 ByP%  19  2 97 CPA ①2.04  ②4.54  ③51.53 Ⓜ73.37  LPM ⚙0.96 ①0.86  ②0.72  ③1.20  Ⓜ1.30   cAMT ①1.36  ②2.52  ③47.05 Ⓜ72.97  MST ①0.46  ②1.13  ③7.89  Ⓜ23.87  MSHR%  0  0  0 LoadByPH% 85 77 24 ⏱ 0h 1m18s TPMI 9.75
+C:3 I# 8000000    cy 5026835    IPC 1.39 IPCavg 1.49350 ByP%  21  3 96 CPA ①2.04  ②4.54  ③51.94 Ⓜ72.86  LPM ⚙0.94 ①0.85  ②0.71  ③1.19  Ⓜ1.30   cAMT ①1.36  ②2.51  ③47.42 Ⓜ72.48  MST ①0.45  ②1.13  ③7.95  Ⓜ23.17  MSHR%  0  0  0 LoadByPH% 85 76 24 ⏱ 0h 1m18s TPMI 9.75
+C:2 I# 8000000    cy 5037123    IPC 1.39 IPCavg 1.48991 ByP%  21  2 97 CPA ①2.05  ②4.54  ③53.59 Ⓜ73.58  LPM ⚙0.98 ①0.87  ②0.72  ③1.20  Ⓜ1.31   cAMT ①1.37  ②2.53  ③48.93 Ⓜ73.19  MST ①0.47  ②1.15  ③8.21  Ⓜ22.85  MSHR%  0  0  0 LoadByPH% 85 77 24 ⏱ 0h 1m18s TPMI 9.75
+C:4 I# 8500001    cy 5285951    IPC 1.68 IPCavg 1.51981 ByP%  27  3 96 CPA ①2.07  ②4.55  ③54.70 Ⓜ73.47  LPM ⚙0.92 ①0.86  ②0.70  ③1.19  Ⓜ1.29   cAMT ①1.38  ②2.48  ③50.01 Ⓜ73.11  MST ①0.45  ②1.08  ③8.23  Ⓜ21.30  MSHR%  0  0  0 LoadByPH% 85 77 24 ⏱ 0h 1m22s TPMI 9.65
+C:5 I# 8500001    cy 5288475    IPC 1.68 IPCavg 1.51918 ByP%  25  5 93 CPA ①2.07  ②4.55  ③55.16 Ⓜ74.64  LPM ⚙0.91 ①0.85  ②0.70  ③1.18  Ⓜ1.29   cAMT ①1.38  ②2.48  ③50.43 Ⓜ74.25  MST ①0.45  ②1.08  ③8.30  Ⓜ22.94  MSHR%  0  0  0 LoadByPH% 85 77 24 ⏱ 0h 1m22s TPMI 9.65
+C:6 I# 8500001    cy 5307041    IPC 1.64 IPCavg 1.51205 ByP%  27  4 95 CPA ①2.08  ②4.58  ③52.11 Ⓜ73.85  LPM ⚙0.91 ①0.85  ②0.70  ③1.19  Ⓜ1.29   cAMT ①1.38  ②2.51  ③47.67 Ⓜ73.48  MST ①0.45  ②1.11  ③7.86  Ⓜ21.85  MSHR%  0  0  2 LoadByPH% 85 77 24 ⏱ 0h 1m22s TPMI 9.65
+C:7 I# 8500002    cy 5317453    IPC 1.61 IPCavg 1.50887 ByP%  26  7 92 CPA ①2.09  ②4.58  ③53.75 Ⓜ75.47  LPM ⚙0.94 ①0.86  ②0.71  ③1.19  Ⓜ1.30   cAMT ①1.40  ②2.52  ③49.18 Ⓜ75.08  MST ①0.46  ②1.11  ③8.11  Ⓜ24.11  MSHR%  6  0  3 LoadByPH% 85 77 24 ⏱ 0h 1m22s TPMI 9.65
+C:0 I# 8500002    cy 5341256    IPC 1.57 IPCavg 1.50052 ByP%  27  4 96 CPA ①2.10  ②4.62  ③53.17 Ⓜ74.80  LPM ⚙0.95 ①0.86  ②0.71  ③1.19  Ⓜ1.30   cAMT ①1.40  ②2.56  ③48.67 Ⓜ74.42  MST ①0.47  ②1.15  ③8.03  Ⓜ22.92  MSHR%  6  0  1 LoadByPH% 85 77 24 ⏱ 0h 1m22s TPMI 9.65
+C:1 I# 8500002    cy 5341635    IPC 1.57 IPCavg 1.50028 ByP%  27  7 93 CPA ①2.10  ②4.60  ③54.68 Ⓜ75.71  LPM ⚙0.96 ①0.87  ②0.71  ③1.20  Ⓜ1.30   cAMT ①1.41  ②2.54  ③50.05 Ⓜ75.32  MST ①0.47  ②1.13  ③8.26  Ⓜ23.43  MSHR%  6  0  0 LoadByPH% 85 77 24 ⏱ 0h 1m22s TPMI 9.65
+C:3 I# 8500002    cy 5344624    IPC 1.57 IPCavg 1.49936 ByP%  27  5 94 CPA ①2.10  ②4.62  ③53.84 Ⓜ74.21  LPM ⚙0.92 ①0.85  ②0.71  ③1.19  Ⓜ1.29   cAMT ①1.39  ②2.55  ③49.29 Ⓜ73.85  MST ①0.46  ②1.15  ③8.14  Ⓜ21.92  MSHR%  6  0  1 LoadByPH% 85 77 24 ⏱ 0h 1m22s TPMI 9.65
+C:2 I# 8500002    cy 5352515    IPC 1.59 IPCavg 1.49684 ByP%  25  6 93 CPA ①2.10  ②4.62  ③55.26 Ⓜ74.87  LPM ⚙0.96 ①0.86  ②0.72  ③1.20  Ⓜ1.30   cAMT ①1.40  ②2.56  ③50.60 Ⓜ74.51  MST ①0.47  ②1.16  ③8.34  Ⓜ21.66  MSHR% 12  0  4 LoadByPH% 85 77 24 ⏱ 0h 1m22s TPMI 9.65
+C:5 I# 9000000    cy 6434184    IPC 0.44 IPCavg 1.29047 ByP%   3  7 90 CPA ①2.45  ②5.32  ③33.33 Ⓜ77.89  LPM ⚙1.02 ①0.84  ②0.77  ③1.22  Ⓜ1.30   cAMT ①1.59  ②3.16  ③31.07 Ⓜ77.38  MST ①0.55  ②1.65  ③4.30  Ⓜ20.32  MSHR%  6  2  0 LoadByPH% 83 63 52 ⏱ 0h 1m31s TPMI 10.11
+C:4 I# 9000000    cy 6438334    IPC 0.43 IPCavg 1.28927 ByP%   3  7 92 CPA ①2.46  ②5.33  ③33.23 Ⓜ76.56  LPM ⚙1.03 ①0.84  ②0.77  ③1.22  Ⓜ1.30   cAMT ①1.59  ②3.18  ③30.97 Ⓜ76.05  MST ①0.56  ②1.66  ③4.29  Ⓜ19.16  MSHR%  6  2  0 LoadByPH% 83 63 51 ⏱ 0h 1m31s TPMI 10.11
+C:6 I# 9000000    cy 6509807    IPC 0.42 IPCavg 1.27229 ByP%   3  7 89 CPA ①2.49  ②5.41  ③32.86 Ⓜ77.03  LPM ⚙1.02 ①0.83  ②0.77  ③1.22  Ⓜ1.30   cAMT ①1.61  ②3.22  ③30.65 Ⓜ76.31  MST ①0.56  ②1.70  ③4.20  Ⓜ19.95  MSHR%  6  2  0 LoadByPH% 83 63 51 ⏱ 0h 1m31s TPMI 10.11
+C:1 I# 9000000    cy 6545511    IPC 0.42 IPCavg 1.26432 ByP%   3  7 90 CPA ①2.51  ②5.41  ③34.70 Ⓜ77.16  LPM ⚙1.05 ①0.85  ②0.77  ③1.23  Ⓜ1.31   cAMT ①1.63  ②3.21  ③32.38 Ⓜ76.36  MST ①0.58  ②1.69  ③4.42  Ⓜ21.41  MSHR%  6  2  0 LoadByPH% 83 64 49 ⏱ 0h 1m31s TPMI 10.11
+C:7 I# 9000000    cy 6545526    IPC 0.41 IPCavg 1.26445 ByP%   3  8 90 CPA ①2.51  ②5.43  ③34.20 Ⓜ76.62  LPM ⚙1.03 ①0.84  ②0.77  ③1.23  Ⓜ1.30   cAMT ①1.63  ②3.24  ③31.91 Ⓜ75.82  MST ①0.57  ②1.70  ③4.36  Ⓜ21.63  MSHR%  6  2  0 LoadByPH% 83 64 48 ⏱ 0h 1m31s TPMI 10.11
+C:3 I# 9000000    cy 6548833    IPC 0.42 IPCavg 1.26365 ByP%   3  7 90 CPA ①2.51  ②5.44  ③34.03 Ⓜ76.64  LPM ⚙1.03 ①0.84  ②0.77  ③1.23  Ⓜ1.30   cAMT ①1.62  ②3.22  ③31.75 Ⓜ75.86  MST ①0.57  ②1.70  ③4.34  Ⓜ20.16  MSHR%  6  2  0 LoadByPH% 83 64 50 ⏱ 0h 1m31s TPMI 10.11
+C:0 I# 9000000    cy 6575062    IPC 0.41 IPCavg 1.25769 ByP%   3  7 91 CPA ①2.53  ②5.47  ③34.36 Ⓜ75.68  LPM ⚙1.03 ①0.84  ②0.77  ③1.23  Ⓜ1.30   cAMT ①1.63  ②3.27  ③32.07 Ⓜ74.86  MST ①0.58  ②1.73  ③4.37  Ⓜ20.62  MSHR%  6  2  0 LoadByPH% 83 64 48 ⏱ 0h 1m31s TPMI 10.11
+C:2 I# 9000000    cy 6583475    IPC 0.41 IPCavg 1.25595 ByP%   3  8 90 CPA ①2.52  ②5.47  ③34.59 Ⓜ75.51  LPM ⚙1.03 ①0.83  ②0.78  ③1.23  Ⓜ1.30   cAMT ①1.62  ②3.28  ③32.29 Ⓜ74.70  MST ①0.57  ②1.75  ③4.40  Ⓜ19.58  MSHR%  6  2  0 LoadByPH% 83 63 48 ⏱ 0h 1m31s TPMI 10.11
+C:5 I# 9500000    cy 8219202    IPC 0.28 IPCavg 1.04030 ByP%  28  5100 CPA ①2.99  ②6.98  ③35.45 Ⓜ92.35  LPM ⚙0.99 ①0.85  ②0.73  ③1.24  Ⓜ1.28   cAMT ①1.96  ②3.93  ③33.54 Ⓜ89.77  MST ①0.69  ②2.31  ③4.15  Ⓜ30.06  MSHR%  6  2  0 LoadByPH% 85 63 52 ⏱ 0h 1m38s TPMI 10.32
+C:4 I# 9500000    cy 8226425    IPC 0.28 IPCavg 1.03910 ByP%  30  5100 CPA ①3.00  ②7.01  ③35.26 Ⓜ90.84  LPM ⚙0.99 ①0.85  ②0.73  ③1.24  Ⓜ1.28   cAMT ①1.96  ②3.95  ③33.37 Ⓜ88.33  MST ①0.69  ②2.32  ③4.13  Ⓜ28.08  MSHR%  6  2  0 LoadByPH% 85 63 52 ⏱ 0h 1m38s TPMI 10.32
+C:6 I# 9500000    cy 8298064    IPC 0.28 IPCavg 1.02871 ByP%  30  4100 CPA ①3.02  ②7.09  ③34.78 Ⓜ91.26  LPM ⚙0.99 ①0.85  ②0.73  ③1.24  Ⓜ1.28   cAMT ①1.98  ②4.00  ③32.92 Ⓜ88.64  MST ①0.69  ②2.37  ③4.06  Ⓜ29.46  MSHR%  6  2  0 LoadByPH% 85 63 52 ⏱ 0h 1m39s TPMI 10.42
+C:7 I# 9500000    cy 8333630    IPC 0.28 IPCavg 1.02400 ByP%  30  4100 CPA ①3.05  ②7.11  ③35.86 Ⓜ90.59  LPM ⚙1.00 ①0.85  ②0.74  ③1.25  Ⓜ1.28   cAMT ①2.00  ②4.02  ③33.95 Ⓜ87.94  MST ①0.70  ②2.37  ③4.18  Ⓜ31.30  MSHR%  6  2  0 LoadByPH% 85 63 50 ⏱ 0h 1m39s TPMI 10.42
+C:1 I# 9500000    cy 8333721    IPC 0.28 IPCavg 1.02389 ByP%  30  5100 CPA ①3.05  ②7.08  ③36.79 Ⓜ91.41  LPM ⚙1.02 ①0.86  ②0.74  ③1.25  Ⓜ1.28   cAMT ①2.01  ②4.00  ③34.83 Ⓜ88.75  MST ①0.72  ②2.36  ③4.29  Ⓜ30.88  MSHR%  6  2  0 LoadByPH% 85 63 50 ⏱ 0h 1m39s TPMI 10.42
+C:3 I# 9500000    cy 8340860    IPC 0.28 IPCavg 1.02295 ByP%  31  5100 CPA ①3.05  ②7.12  ③35.89 Ⓜ90.90  LPM ⚙1.00 ①0.85  ②0.73  ③1.25  Ⓜ1.28   cAMT ①1.99  ②4.01  ③33.98 Ⓜ88.26  MST ①0.71  ②2.38  ③4.18  Ⓜ30.09  MSHR%  6  2  0 LoadByPH% 85 63 51 ⏱ 0h 1m39s TPMI 10.42
+C:0 I# 9500000    cy 8361839    IPC 0.28 IPCavg 1.02003 ByP%  29  5100 CPA ①3.06  ②7.14  ③36.06 Ⓜ89.58  LPM ⚙1.01 ①0.85  ②0.74  ③1.25  Ⓜ1.28   cAMT ①2.00  ②4.07  ③34.15 Ⓜ86.95  MST ①0.71  ②2.42  ③4.20  Ⓜ29.38  MSHR%  6  2  0 LoadByPH% 85 63 49 ⏱ 0h 1m39s TPMI 10.42
+C:2 I# 9500000    cy 8369277    IPC 0.28 IPCavg 1.01912 ByP%  29  5100 CPA ①3.06  ②7.15  ③36.02 Ⓜ89.38  LPM ⚙1.00 ①0.85  ②0.74  ③1.25  Ⓜ1.28   cAMT ①2.00  ②4.07  ③34.11 Ⓜ86.74  MST ①0.71  ②2.42  ③4.19  Ⓜ29.14  MSHR%  6  2  0 LoadByPH% 85 63 49 ⏱ 0h 1m39s TPMI 10.42
+C:5 I# 10000000   cy 10003922   IPC 0.28 IPCavg 0.88946 ByP%  31  4100 CPA ①3.45  ②8.61  ③36.65 Ⓜ104.07 LPM ⚙0.95 ①0.86  ②0.70  ③1.25  Ⓜ1.26   cAMT ①2.27  ②4.67  ③34.93 Ⓜ99.82  MST ①0.79  ②2.93  ③4.12  Ⓜ38.32  MSHR%  6  2  0 LoadByPH% 86 63 53 ⏱ 0h 1m46s TPMI 10.60
+C:4 I# 10000000   cy 10011283   IPC 0.28 IPCavg 0.88861 ByP%  28  4100 CPA ①3.45  ②8.63  ③36.69 Ⓜ102.54 LPM ⚙0.96 ①0.86  ②0.71  ③1.25  Ⓜ1.26   cAMT ①2.27  ②4.70  ③34.97 Ⓜ98.37  MST ①0.80  ②2.96  ③4.13  Ⓜ36.82  MSHR%  6  2  0 LoadByPH% 86 62 53 ⏱ 0h 1m46s TPMI 10.60
+C:6 I# 10000000   cy 10082244   IPC 0.28 IPCavg 0.88152 ByP%  29  4100 CPA ①3.48  ②8.72  ③36.21 Ⓜ102.95 LPM ⚙0.95 ①0.85  ②0.71  ③1.25  Ⓜ1.26   cAMT ①2.28  ②4.75  ③34.52 Ⓜ98.72  MST ①0.80  ②3.00  ③4.07  Ⓜ38.03  MSHR%  6  2  0 LoadByPH% 86 62 53 ⏱ 0h 1m46s TPMI 10.60
+C:7 I# 10000000   cy 10124261   IPC 0.28 IPCavg 0.87768 ByP%  32  3100 CPA ①3.50  ②8.75  ③37.27 Ⓜ102.21 LPM ⚙0.98 ①0.86  ②0.71  ③1.26  Ⓜ1.26   cAMT ①2.31  ②4.79  ③35.54 Ⓜ97.95  MST ①0.82  ②3.03  ③4.19  Ⓜ39.67  MSHR%  6  2  1 LoadByPH% 86 63 51 ⏱ 0h 1m47s TPMI 10.70
+C:1 I# 10000000   cy 10124333   IPC 0.28 IPCavg 0.87759 ByP%  32  4100 CPA ①3.50  ②8.70  ③38.13 Ⓜ102.86 LPM ⚙1.00 ①0.87  ②0.72  ③1.26  Ⓜ1.27   cAMT ①2.32  ②4.77  ③36.36 Ⓜ98.58  MST ①0.83  ②3.02  ③4.29  Ⓜ39.02  MSHR%  6  2  2 LoadByPH% 86 63 51 ⏱ 0h 1m47s TPMI 10.70
+C:3 I# 10000000   cy 10131237   IPC 0.28 IPCavg 0.87698 ByP%  31  5100 CPA ①3.50  ②8.76  ③37.31 Ⓜ102.54 LPM ⚙0.97 ①0.86  ②0.71  ③1.26  Ⓜ1.26   cAMT ①2.30  ②4.78  ③35.57 Ⓜ98.28  MST ①0.82  ②3.03  ③4.19  Ⓜ37.88  MSHR%  6  2  1 LoadByPH% 86 62 52 ⏱ 0h 1m47s TPMI 10.70
+C:0 I# 10000000   cy 10146511   IPC 0.28 IPCavg 0.87551 ByP%  31  4100 CPA ①3.51  ②8.77  ③37.45 Ⓜ101.13 LPM ⚙0.98 ①0.86  ②0.72  ③1.26  Ⓜ1.26   cAMT ①2.31  ②4.82  ③35.71 Ⓜ96.92  MST ①0.82  ②3.06  ③4.21  Ⓜ37.54  MSHR%  6  2  0 LoadByPH% 86 63 50 ⏱ 0h 1m47s TPMI 10.70
+C:2 I# 10000000   cy 10153426   IPC 0.28 IPCavg 0.87495 ByP%  30  6100 CPA ①3.51  ②8.77  ③37.20 Ⓜ100.78 LPM ⚙0.98 ①0.86  ②0.72  ③1.26  Ⓜ1.26   cAMT ①2.31  ②4.83  ③35.47 Ⓜ96.58  MST ①0.82  ②3.07  ③4.18  Ⓜ37.18  MSHR%  6  2  1 LoadByPH% 86 62 50 ⏱ 0h 1m47s TPMI 10.70
+C:5 I# 10500000   cy 11790675   IPC 0.28 IPCavg 0.78843 ByP%  27  4100 CPA ①3.84  ②10.19 ③37.93 Ⓜ112.35 LPM ⚙0.96 ①0.87  ②0.70  ③1.26  Ⓜ1.26   cAMT ①2.55  ②5.45  ③36.33 Ⓜ107.49 MST ①0.90  ②3.61  ③4.42  Ⓜ42.47  MSHR%  6  2  0 LoadByPH% 87 62 54 ⏱ 0h 1m54s TPMI 10.86
+C:4 I# 10500000   cy 11797829   IPC 0.28 IPCavg 0.78780 ByP%  26  4100 CPA ①3.84  ②10.22 ③37.85 Ⓜ110.86 LPM ⚙0.98 ①0.87  ②0.70  ③1.26  Ⓜ1.26   cAMT ①2.55  ②5.50  ③36.26 Ⓜ106.10 MST ①0.90  ②3.66  ③4.41  Ⓜ40.82  MSHR%  6  2  0 LoadByPH% 87 62 54 ⏱ 0h 1m54s TPMI 10.86
+C:6 I# 10500000   cy 11868771   IPC 0.28 IPCavg 0.78253 ByP%  26  4100 CPA ①3.86  ②10.31 ③37.33 Ⓜ111.91 LPM ⚙0.98 ①0.87  ②0.70  ③1.26  Ⓜ1.26   cAMT ①2.56  ②5.55  ③35.77 Ⓜ107.11 MST ①0.91  ②3.70  ③4.35  Ⓜ42.18  MSHR%  6  2  0 LoadByPH% 87 62 54 ⏱ 0h 1m54s TPMI 10.86
+C:1 I# 10500000   cy 11910853   IPC 0.28 IPCavg 0.77963 ByP%  29  4100 CPA ①3.88  ②10.28 ③39.35 Ⓜ111.75 LPM ⚙1.01 ①0.88  ②0.71  ③1.27  Ⓜ1.27   cAMT ①2.60  ②5.55  ③37.71 Ⓜ106.97 MST ①0.93  ②3.69  ③4.59  Ⓜ42.57  MSHR%  6  2  0 LoadByPH% 87 62 52 ⏱ 0h 1m54s TPMI 10.86
+C:7 I# 10500000   cy 11910931   IPC 0.28 IPCavg 0.77969 ByP%  30  5100 CPA ①3.89  ②10.34 ③38.48 Ⓜ110.71 LPM ⚙0.99 ①0.87  ②0.71  ③1.27  Ⓜ1.27   cAMT ①2.58  ②5.57  ③36.88 Ⓜ105.97 MST ①0.92  ②3.70  ③4.49  Ⓜ43.18  MSHR%  6  2  1 LoadByPH% 87 62 52 ⏱ 0h 1m54s TPMI 10.86
+C:3 I# 10500000   cy 11917942   IPC 0.28 IPCavg 0.77917 ByP%  28  6100 CPA ①3.88  ②10.34 ③38.34 Ⓜ110.97 LPM ⚙0.98 ①0.87  ②0.70  ③1.27  Ⓜ1.27   cAMT ①2.57  ②5.55  ③36.74 Ⓜ106.25 MST ①0.92  ②3.69  ③4.47  Ⓜ41.93  MSHR%  6  2  0 LoadByPH% 87 62 53 ⏱ 0h 1m54s TPMI 10.86
+C:0 I# 10500000   cy 11933071   IPC 0.28 IPCavg 0.77809 ByP%  27  4100 CPA ①3.90  ②10.36 ③38.29 Ⓜ109.82 LPM ⚙0.99 ①0.87  ②0.71  ③1.27  Ⓜ1.27   cAMT ①2.59  ②5.61  ③36.70 Ⓜ105.13 MST ①0.92  ②3.73  ③4.47  Ⓜ40.98  MSHR%  6  2  0 LoadByPH% 87 62 51 ⏱ 0h 1m54s TPMI 10.86
+C:2 I# 10500000   cy 11940309   IPC 0.28 IPCavg 0.77766 ByP%  25  4100 CPA ①3.89  ②10.36 ③38.22 Ⓜ109.71 LPM ⚙1.01 ①0.87  ②0.72  ③1.27  Ⓜ1.27   cAMT ①2.59  ②5.65  ③36.63 Ⓜ105.04 MST ①0.93  ②3.78  ③4.46  Ⓜ40.80  MSHR%  6  2  0 LoadByPH% 87 62 51 ⏱ 0h 1m54s TPMI 10.86
+C:5 I# 11000000   cy 13571618   IPC 0.28 IPCavg 0.71645 ByP%  21  4100 CPA ①4.17  ②11.73 ③38.83 Ⓜ117.63 LPM ⚙1.03 ①0.89  ②0.71  ③1.28  Ⓜ1.28   cAMT ①2.81  ②6.32  ③37.38 Ⓜ113.10 MST ①1.01  ②4.37  ③4.61  Ⓜ41.60  MSHR%  6  2  0 LoadByPH% 87 62 55 ⏱ 0h 2m 2s TPMI 11.09
+C:4 I# 11000000   cy 13578812   IPC 0.28 IPCavg 0.71595 ByP%  21  4100 CPA ①4.17  ②11.75 ③38.92 Ⓜ116.42 LPM ⚙1.04 ①0.89  ②0.71  ③1.28  Ⓜ1.28   cAMT ①2.81  ②6.35  ③37.47 Ⓜ111.95 MST ①1.01  ②4.40  ③4.62  Ⓜ40.10  MSHR%  6  2  0 LoadByPH% 87 62 55 ⏱ 0h 2m 2s TPMI 11.09
+C:6 I# 11000000   cy 13649485   IPC 0.28 IPCavg 0.71184 ByP%  21  5100 CPA ①4.19  ②11.85 ③38.11 Ⓜ118.59 LPM ⚙1.04 ①0.89  ②0.71  ③1.28  Ⓜ1.28   cAMT ①2.82  ②6.41  ③36.69 Ⓜ114.05 MST ①1.02  ②4.45  ③4.53  Ⓜ41.91  MSHR%  6  2  1 LoadByPH% 88 61 55 ⏱ 0h 2m 2s TPMI 11.09
+C:7 I# 11000000   cy 13691068   IPC 0.28 IPCavg 0.70967 ByP%  23  6 97 CPA ①4.22  ②11.86 ③39.93 Ⓜ116.69 LPM ⚙1.03 ①0.89  ②0.71  ③1.28  Ⓜ1.28   cAMT ①2.84  ②6.38  ③38.46 Ⓜ112.23 MST ①1.02  ②4.41  ③4.75  Ⓜ42.47  MSHR%  6  2  0 LoadByPH% 87 62 53 ⏱ 0h 2m 2s TPMI 11.09
+C:1 I# 11000000   cy 13691131   IPC 0.28 IPCavg 0.70961 ByP%  23  6 95 CPA ①4.22  ②11.80 ③40.27 Ⓜ118.35 LPM ⚙1.06 ①0.90  ②0.72  ③1.29  Ⓜ1.29   cAMT ①2.85  ②6.37  ③38.79 Ⓜ113.84 MST ①1.04  ②4.41  ③4.79  Ⓜ42.01  MSHR%  6  2  0 LoadByPH% 87 62 53 ⏱ 0h 2m 2s TPMI 11.09
+C:3 I# 11000000   cy 13698182   IPC 0.28 IPCavg 0.70925 ByP%  23  5100 CPA ①4.22  ②11.88 ③39.02 Ⓜ117.90 LPM ⚙1.03 ①0.89  ②0.71  ③1.28  Ⓜ1.28   cAMT ①2.83  ②6.39  ③37.58 Ⓜ113.41 MST ①1.02  ②4.43  ③4.64  Ⓜ41.32  MSHR%  6  2  0 LoadByPH% 87 62 54 ⏱ 0h 2m 2s TPMI 11.09
+C:0 I# 11000000   cy 13713476   IPC 0.28 IPCavg 0.70840 ByP%  21  5100 CPA ①4.23  ②11.88 ③39.68 Ⓜ116.97 LPM ⚙1.05 ①0.89  ②0.72  ③1.28  Ⓜ1.28   cAMT ①2.84  ②6.45  ③38.21 Ⓜ112.52 MST ①1.03  ②4.47  ③4.72  Ⓜ41.70  MSHR%  6  2  0 LoadByPH% 87 62 52 ⏱ 0h 2m 3s TPMI 11.18
+C:2 I# 11000000   cy 13720654   IPC 0.28 IPCavg 0.70807 ByP%  21  4100 CPA ①4.22  ②11.90 ③39.04 Ⓜ116.18 LPM ⚙1.07 ①0.89  ②0.72  ③1.29  Ⓜ1.29   cAMT ①2.85  ②6.50  ③37.60 Ⓜ111.76 MST ①1.04  ②4.53  ③4.65  Ⓜ40.76  MSHR%  6  2  0 LoadByPH% 88 61 52 ⏱ 0h 2m 3s TPMI 11.18
+C:5 I# 11500000   cy 15354701   IPC 0.28 IPCavg 0.66225 ByP%  21  4100 CPA ①4.46  ②13.23 ③39.61 Ⓜ122.43 LPM ⚙1.09 ①0.90  ②0.72  ③1.29  Ⓜ1.29   cAMT ①3.04  ②7.16  ③38.27 Ⓜ118.21 MST ①1.11  ②5.11  ③4.93  Ⓜ41.09  MSHR%  6  2  1 LoadByPH% 88 61 56 ⏱ 0h 2m10s TPMI 11.30
+C:4 I# 11500000   cy 15374845   IPC 0.28 IPCavg 0.66124 ByP%  26  6 97 CPA ①4.47  ②13.27 ③40.06 Ⓜ121.29 LPM ⚙1.09 ①0.90  ②0.72  ③1.30  Ⓜ1.29   cAMT ①3.04  ②7.19  ③38.71 Ⓜ117.14 MST ①1.11  ②5.14  ③4.99  Ⓜ39.60  MSHR%  6  2  3 LoadByPH% 88 61 56 ⏱ 0h 2m10s TPMI 11.30
+C:6 I# 11500000   cy 15433222   IPC 0.28 IPCavg 0.65847 ByP%  21  5100 CPA ①4.49  ②13.34 ③39.13 Ⓜ123.65 LPM ⚙1.10 ①0.91  ②0.72  ③1.30  Ⓜ1.30   cAMT ①3.05  ②7.26  ③37.81 Ⓜ119.42 MST ①1.12  ②5.20  ③4.88  Ⓜ41.77  MSHR%  6  2  0 LoadByPH% 88 61 55 ⏱ 0h 2m10s TPMI 11.30
+C:7 I# 11500000   cy 15475042   IPC 0.28 IPCavg 0.65671 ByP%  25  8 96 CPA ①4.51  ②13.36 ③40.66 Ⓜ121.86 LPM ⚙1.08 ①0.90  ②0.72  ③1.29  Ⓜ1.29   cAMT ①3.06  ②7.21  ③39.29 Ⓜ117.70 MST ①1.12  ②5.14  ③5.07  Ⓜ41.38  MSHR%  6  2  0 LoadByPH% 88 61 54 ⏱ 0h 2m10s TPMI 11.30
+C:1 I# 11500000   cy 15475411   IPC 0.28 IPCavg 0.65665 ByP%  25  6100 CPA ①4.51  ②13.30 ③40.97 Ⓜ123.40 LPM ⚙1.10 ①0.91  ②0.72  ③1.30  Ⓜ1.30   cAMT ①3.07  ②7.18  ③39.60 Ⓜ119.19 MST ①1.13  ②5.11  ③5.11  Ⓜ40.76  MSHR%  6  2  0 LoadByPH% 88 62 54 ⏱ 0h 2m10s TPMI 11.30
+C:3 I# 11500000   cy 15483062   IPC 0.28 IPCavg 0.65633 ByP%  24  6 88 CPA ①4.51  ②13.39 ③39.69 Ⓜ123.76 LPM ⚙1.08 ①0.90  ②0.72  ③1.29  Ⓜ1.29   cAMT ①3.05  ②7.22  ③38.36 Ⓜ119.55 MST ①1.12  ②5.16  ③4.95  Ⓜ41.71  MSHR%  6  2  0 LoadByPH% 88 61 55 ⏱ 0h 2m10s TPMI 11.30
+C:0 I# 11500000   cy 15497195   IPC 0.28 IPCavg 0.65569 ByP%  23  4100 CPA ①4.52  ②13.37 ③40.38 Ⓜ122.68 LPM ⚙1.10 ①0.90  ②0.72  ③1.30  Ⓜ1.30   cAMT ①3.07  ②7.28  ③39.03 Ⓜ118.50 MST ①1.12  ②5.20  ③5.04  Ⓜ41.51  MSHR%  6  2  0 LoadByPH% 88 61 53 ⏱ 0h 2m11s TPMI 11.39
+C:2 I# 11500000   cy 15504511   IPC 0.28 IPCavg 0.65542 ByP%  21  4100 CPA ①4.51  ②13.40 ③39.63 Ⓜ121.63 LPM ⚙1.13 ①0.91  ②0.73  ③1.30  Ⓜ1.30   cAMT ①3.07  ②7.36  ③38.30 Ⓜ117.50 MST ①1.13  ②5.29  ③4.95  Ⓜ40.75  MSHR%  6  2  0 LoadByPH% 88 61 53 ⏱ 0h 2m11s TPMI 11.39
+C:5 I# 12000000   cy 17138938   IPC 0.28 IPCavg 0.61999 ByP%  20  4100 CPA ①4.72  ②14.69 ③40.35 Ⓜ125.43 LPM ⚙1.16 ①0.92  ②0.73  ③1.31  Ⓜ1.31   cAMT ①3.24  ②8.03  ③39.12 Ⓜ121.57 MST ①1.20  ②5.88  ③5.17  Ⓜ38.10  MSHR%  6  2  0 LoadByPH% 89 61 56 ⏱ 0h 2m18s TPMI 11.50
+C:4 I# 12000000   cy 17169789   IPC 0.28 IPCavg 0.61873 ByP%  22  5 97 CPA ①4.73  ②14.75 ③40.93 Ⓜ124.89 LPM ⚙1.16 ①0.92  ②0.73  ③1.31  Ⓜ1.31   cAMT ①3.25  ②8.07  ③39.68 Ⓜ121.08 MST ①1.20  ②5.92  ③5.24  Ⓜ37.25  MSHR%  6  2  0 LoadByPH% 89 61 57 ⏱ 0h 2m18s TPMI 11.50
+C:6 I# 12000000   cy 17218059   IPC 0.28 IPCavg 0.61681 ByP%  20  4100 CPA ①4.74  ②14.80 ③39.84 Ⓜ127.27 LPM ⚙1.17 ①0.92  ②0.74  ③1.31  Ⓜ1.31   cAMT ①3.26  ②8.12  ③38.63 Ⓜ123.38 MST ①1.21  ②5.97  ③5.11  Ⓜ39.31  MSHR%  6  2  1 LoadByPH% 89 61 56 ⏱ 0h 2m19s TPMI 11.58
+C:1 I# 12000000   cy 17260127   IPC 0.28 IPCavg 0.61530 ByP%  22  6 97 CPA ①4.76  ②14.76 ③41.53 Ⓜ127.12 LPM ⚙1.15 ①0.92  ②0.73  ③1.31  Ⓜ1.31   cAMT ①3.27  ②8.01  ③40.27 Ⓜ123.25 MST ①1.21  ②5.85  ③5.33  Ⓜ38.31  MSHR%  6  2  0 LoadByPH% 89 61 55 ⏱ 0h 2m19s TPMI 11.58
+C:7 I# 12000000   cy 17260174   IPC 0.28 IPCavg 0.61534 ByP%  22  5100 CPA ①4.77  ②14.82 ③41.45 Ⓜ125.29 LPM ⚙1.13 ①0.92  ②0.73  ③1.31  Ⓜ1.31   cAMT ①3.26  ②8.04  ③40.19 Ⓜ121.48 MST ①1.20  ②5.86  ③5.32  Ⓜ38.76  MSHR%  6  2  0 LoadByPH% 89 61 55 ⏱ 0h 2m19s TPMI 11.58
+C:3 I# 12000000   cy 17266914   IPC 0.28 IPCavg 0.61507 ByP%  21  6 97 CPA ①4.76  ②14.85 ③40.35 Ⓜ127.75 LPM ⚙1.14 ①0.92  ②0.73  ③1.31  Ⓜ1.31   cAMT ①3.26  ②8.08  ③39.12 Ⓜ123.87 MST ①1.21  ②5.92  ③5.18  Ⓜ39.70  MSHR%  6  2  1 LoadByPH% 89 61 55 ⏱ 0h 2m19s TPMI 11.58
+C:0 I# 12000000   cy 17281795   IPC 0.28 IPCavg 0.61451 ByP%  20  3100 CPA ①4.77  ②14.83 ③41.04 Ⓜ126.78 LPM ⚙1.17 ①0.92  ②0.74  ③1.31  Ⓜ1.31   cAMT ①3.27  ②8.14  ③39.79 Ⓜ122.93 MST ①1.22  ②5.97  ③5.27  Ⓜ39.44  MSHR%  6  2  1 LoadByPH% 89 61 54 ⏱ 0h 2m19s TPMI 11.58
+C:2 I# 12000000   cy 17288928   IPC 0.28 IPCavg 0.61429 ByP%  19  5100 CPA ①4.77  ②14.87 ③40.31 Ⓜ125.77 LPM ⚙1.19 ①0.93  ②0.74  ③1.31  Ⓜ1.31   cAMT ①3.28  ②8.23  ③39.09 Ⓜ121.95 MST ①1.23  ②6.05  ③5.18  Ⓜ39.21  MSHR%  6  2  0 LoadByPH% 89 61 54 ⏱ 0h 2m19s TPMI 11.58
+C:5 I# 12500000   cy 18926580   IPC 0.28 IPCavg 0.58604 ByP%  20  5 98 CPA ①4.95  ②16.12 ③41.15 Ⓜ127.58 LPM ⚙1.22 ①0.94  ②0.74  ③1.32  Ⓜ1.32   cAMT ①3.43  ②8.88  ③40.00 Ⓜ124.05 MST ①1.28  ②6.64  ③5.38  Ⓜ36.09  MSHR%  6  2  0 LoadByPH% 89 61 57 ⏱ 0h 2m26s TPMI 11.68
+C:4 I# 12500000   cy 18960510   IPC 0.28 IPCavg 0.58486 ByP%  21  5100 CPA ①4.97  ②16.19 ③41.74 Ⓜ127.22 LPM ⚙1.22 ①0.94  ②0.74  ③1.32  Ⓜ1.32   cAMT ①3.44  ②8.92  ③40.57 Ⓜ123.72 MST ①1.29  ②6.67  ③5.46  Ⓜ35.76  MSHR%  6  2  1 LoadByPH% 89 60 58 ⏱ 0h 2m27s TPMI 11.76
+C:6 I# 12500000   cy 19004925   IPC 0.28 IPCavg 0.58335 ByP%  22  4100 CPA ①4.97  ②16.23 ③40.54 Ⓜ129.84 LPM ⚙1.22 ①0.93  ②0.74  ③1.32  Ⓜ1.32   cAMT ①3.44  ②8.96  ③39.41 Ⓜ126.26 MST ①1.29  ②6.70  ③5.31  Ⓜ37.75  MSHR%  6  2  1 LoadByPH% 89 60 57 ⏱ 0h 2m27s TPMI 11.76
+C:1 I# 12500000   cy 19046401   IPC 0.28 IPCavg 0.58208 ByP%  23  5 98 CPA ①4.99  ②16.18 ③42.13 Ⓜ129.63 LPM ⚙1.20 ①0.93  ②0.74  ③1.32  Ⓜ1.32   cAMT ①3.45  ②8.82  ③40.95 Ⓜ126.07 MST ①1.29  ②6.56  ③5.52  Ⓜ36.85  MSHR%  6  2  2 LoadByPH% 89 61 56 ⏱ 0h 2m27s TPMI 11.76
+C:7 I# 12500000   cy 19046589   IPC 0.28 IPCavg 0.58212 ByP%  21  5100 CPA ①4.99  ②16.25 ③42.12 Ⓜ127.64 LPM ⚙1.18 ①0.93  ②0.73  ③1.32  Ⓜ1.32   cAMT ①3.44  ②8.85  ③40.95 Ⓜ124.13 MST ①1.28  ②6.57  ③5.52  Ⓜ36.91  MSHR%  6  2  1 LoadByPH% 89 61 55 ⏱ 0h 2m27s TPMI 11.76
+C:3 I# 12500000   cy 19053913   IPC 0.28 IPCavg 0.58186 ByP%  21  4100 CPA ①4.99  ②16.29 ③41.05 Ⓜ130.30 LPM ⚙1.21 ①0.93  ②0.74  ③1.32  Ⓜ1.32   cAMT ①3.44  ②8.95  ③39.91 Ⓜ126.74 MST ①1.29  ②6.69  ③5.38  Ⓜ37.92  MSHR%  6  2  0 LoadByPH% 89 60 56 ⏱ 0h 2m27s TPMI 11.76
+C:0 I# 12500000   cy 19068940   IPC 0.28 IPCavg 0.58138 ByP%  21  4100 CPA ①5.00  ②16.26 ③41.83 Ⓜ128.92 LPM ⚙1.22 ①0.93  ②0.75  ③1.32  Ⓜ1.32   cAMT ①3.46  ②8.99  ③40.67 Ⓜ125.38 MST ①1.30  ②6.72  ③5.49  Ⓜ37.42  MSHR%  6  2  0 LoadByPH% 89 61 54 ⏱ 0h 2m27s TPMI 11.76
+C:2 I# 12500000   cy 19076366   IPC 0.28 IPCavg 0.58119 ByP%  21  4 98 CPA ①5.00  ②16.30 ③41.14 Ⓜ128.25 LPM ⚙1.24 ①0.94  ②0.75  ③1.32  Ⓜ1.33   cAMT ①3.46  ②9.06  ③39.99 Ⓜ124.73 MST ①1.30  ②6.79  ③5.40  Ⓜ37.58  MSHR%  6  2  1 LoadByPH% 89 60 54 ⏱ 0h 2m27s TPMI 11.76
+C:5 I# 13000000   cy 20714743   IPC 0.28 IPCavg 0.55823 ByP%  20  4100 CPA ①5.16  ②17.52 ③41.65 Ⓜ128.99 LPM ⚙1.27 ①0.95  ②0.75  ③1.33  Ⓜ1.33   cAMT ①3.60  ②9.73  ③40.57 Ⓜ125.74 MST ①1.36  ②7.39  ③5.56  Ⓜ33.61  MSHR%  6  2  1 LoadByPH% 90 60 58 ⏱ 0h 2m35s TPMI 11.92
+C:4 I# 13000000   cy 20748853   IPC 0.28 IPCavg 0.55721 ByP%  21  5 98 CPA ①5.17  ②17.59 ③42.47 Ⓜ128.98 LPM ⚙1.27 ①0.95  ②0.75  ③1.33  Ⓜ1.33   cAMT ①3.61  ②9.75  ③41.37 Ⓜ125.76 MST ①1.37  ②7.41  ③5.68  Ⓜ33.29  MSHR%  6  2  0 LoadByPH% 90 60 59 ⏱ 0h 2m35s TPMI 11.92
+C:6 I# 13000000   cy 20793654   IPC 0.28 IPCavg 0.55588 ByP%  21  6 98 CPA ①5.18  ②17.63 ③41.38 Ⓜ131.29 LPM ⚙1.27 ①0.95  ②0.75  ③1.33  Ⓜ1.33   cAMT ①3.61  ②9.79  ③40.32 Ⓜ128.00 MST ①1.37  ②7.44  ③5.53  Ⓜ35.03  MSHR% 12  4  2 LoadByPH% 90 60 57 ⏱ 0h 2m35s TPMI 11.92
+C:1 I# 13000000   cy 20837683   IPC 0.28 IPCavg 0.55471 ByP%  22  4 98 CPA ①5.20  ②17.57 ③42.83 Ⓜ131.31 LPM ⚙1.25 ①0.94  ②0.74  ③1.33  Ⓜ1.33   cAMT ①3.62  ②9.64  ③41.73 Ⓜ128.03 MST ①1.37  ②7.29  ③5.72  Ⓜ34.10  MSHR% 12  4  2 LoadByPH% 90 60 56 ⏱ 0h 2m35s TPMI 11.92
+C:7 I# 13000000   cy 20839334   IPC 0.28 IPCavg 0.55470 ByP%  22  4100 CPA ①5.20  ②17.65 ③42.76 Ⓜ129.32 LPM ⚙1.23 ①0.94  ②0.74  ③1.33  Ⓜ1.33   cAMT ①3.61  ②9.68  ③41.66 Ⓜ126.08 MST ①1.36  ②7.31  ③5.71  Ⓜ34.23  MSHR%  6  2  1 LoadByPH% 90 60 56 ⏱ 0h 2m35s TPMI 11.92
+C:3 I# 13000000   cy 20846779   IPC 0.28 IPCavg 0.55448 ByP%  21  5100 CPA ①5.20  ②17.69 ③41.78 Ⓜ131.78 LPM ⚙1.26 ①0.94  ②0.75  ③1.33  Ⓜ1.33   cAMT ①3.61  ②9.81  ③40.71 Ⓜ128.50 MST ①1.37  ②7.45  ③5.58  Ⓜ35.23  MSHR%  6  2  0 LoadByPH% 90 60 57 ⏱ 0h 2m35s TPMI 11.92
+C:0 I# 13000000   cy 20862193   IPC 0.28 IPCavg 0.55405 ByP%  20  4100 CPA ①5.21  ②17.65 ③42.48 Ⓜ130.78 LPM ⚙1.29 ①0.95  ②0.76  ③1.34  Ⓜ1.34   cAMT ①3.63  ②9.86  ③41.39 Ⓜ127.52 MST ①1.38  ②7.50  ③5.67  Ⓜ34.90  MSHR%  6  2  1 LoadByPH% 90 60 55 ⏱ 0h 2m36s TPMI 12.00
+C:2 I# 13000000   cy 20868988   IPC 0.28 IPCavg 0.55391 ByP%  22  5100 CPA ①5.20  ②17.70 ③41.90 Ⓜ129.79 LPM ⚙1.29 ①0.95  ②0.76  ③1.34  Ⓜ1.34   cAMT ①3.63  ②9.91  ③40.82 Ⓜ126.55 MST ①1.38  ②7.55  ③5.60  Ⓜ34.85  MSHR%  6  2  2 LoadByPH% 90 60 55 ⏱ 0h 2m36s TPMI 12.00
+C:5 I# 13500000   cy 21456914   IPC 0.67 IPCavg 0.56242 ByP%  17  3 96 CPA ①5.18  ②17.03 ③42.06 Ⓜ126.83 LPM ⚙1.33 ①0.95  ②0.77  ③1.34  Ⓜ1.35   cAMT ①3.61  ②9.58  ③41.01 Ⓜ123.75 MST ①1.40  ②7.28  ③5.67  Ⓜ32.02  MSHR% 62  0  2 LoadByPH% 89 64 57 ⏱ 0h 2m39s TPMI 11.78
+C:4 I# 13500000   cy 21473754   IPC 0.69 IPCavg 0.56190 ByP%  18  4 94 CPA ①5.19  ②17.09 ③42.80 Ⓜ127.04 LPM ⚙1.31 ①0.95  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.60  ②9.59  ③41.73 Ⓜ123.97 MST ①1.39  ②7.29  ③5.78  Ⓜ31.85  MSHR% 62  0  5 LoadByPH% 89 63 58 ⏱ 0h 2m40s TPMI 11.85
+C:6 I# 13500000   cy 21527496   IPC 0.68 IPCavg 0.56037 ByP%  16  4 95 CPA ①5.20  ②17.14 ③41.84 Ⓜ129.22 LPM ⚙1.31 ①0.95  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.60  ②9.64  ③40.80 Ⓜ126.10 MST ①1.39  ②7.32  ③5.66  Ⓜ33.56  MSHR% 62  0  2 LoadByPH% 89 63 57 ⏱ 0h 2m41s TPMI 11.93
+C:7 I# 13500000   cy 21635074   IPC 0.63 IPCavg 0.55754 ByP%  14  4 95 CPA ①5.23  ②17.20 ③43.44 Ⓜ127.94 LPM ⚙1.29 ①0.94  ②0.76  ③1.34  Ⓜ1.34   cAMT ①3.62  ②9.58  ③42.35 Ⓜ124.86 MST ①1.39  ②7.25  ③5.89  Ⓜ32.74  MSHR% 62  0  4 LoadByPH% 89 63 55 ⏱ 0h 2m42s TPMI 12.00
+C:1 I# 13500000   cy 21669809   IPC 0.60 IPCavg 0.55657 ByP%  15  4 95 CPA ①5.24  ②17.15 ③43.57 Ⓜ130.04 LPM ⚙1.31 ①0.95  ②0.76  ③1.34  Ⓜ1.34   cAMT ①3.63  ②9.57  ③42.49 Ⓜ126.92 MST ①1.41  ②7.26  ③5.91  Ⓜ32.53  MSHR% 56  0  2 LoadByPH% 89 63 55 ⏱ 0h 2m43s TPMI 12.07
+C:3 I# 13500000   cy 21686702   IPC 0.60 IPCavg 0.55614 ByP%  13  5 94 CPA ①5.24  ②17.26 ③42.53 Ⓜ130.54 LPM ⚙1.33 ①0.95  ②0.77  ③1.34  Ⓜ1.35   cAMT ①3.63  ②9.73  ③41.47 Ⓜ127.42 MST ①1.41  ②7.41  ③5.77  Ⓜ33.68  MSHR% 62  0  0 LoadByPH% 89 63 56 ⏱ 0h 2m43s TPMI 12.07
+C:0 I# 13500000   cy 21700108   IPC 0.60 IPCavg 0.55578 ByP%  15  6 92 CPA ①5.25  ②17.23 ③43.13 Ⓜ129.38 LPM ⚙1.35 ①0.95  ②0.78  ③1.35  Ⓜ1.35   cAMT ①3.65  ②9.78  ③42.06 Ⓜ126.28 MST ①1.42  ②7.45  ③5.86  Ⓜ33.20  MSHR% 62  0  0 LoadByPH% 89 63 54 ⏱ 0h 2m43s TPMI 12.07
+C:2 I# 13500000   cy 21704475   IPC 0.60 IPCavg 0.55570 ByP%  14  5 94 CPA ①5.24  ②17.27 ③42.60 Ⓜ128.65 LPM ⚙1.36 ①0.96  ②0.78  ③1.35  Ⓜ1.35   cAMT ①3.65  ②9.82  ③41.55 Ⓜ125.57 MST ①1.43  ②7.50  ③5.78  Ⓜ33.28  MSHR% 62  0  3 LoadByPH% 89 63 54 ⏱ 0h 2m43s TPMI 12.07
+C:5 I# 14000002   cy 21800616   IPC 1.45 IPCavg 0.57717 ByP%  27  6 92 CPA ①5.11  ②16.20 ③42.26 Ⓜ126.43 LPM ⚙1.32 ①0.95  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.55  ②9.12  ③41.22 Ⓜ123.41 MST ①1.37  ②6.87  ③5.76  Ⓜ31.61  MSHR%  0  0  4 LoadByPH% 88 67 57 ⏱ 0h 2m45s TPMI 11.79
+C:4 I# 14000002   cy 21802423   IPC 1.52 IPCavg 0.57707 ByP%  33  6 95 CPA ①5.11  ②16.25 ③42.97 Ⓜ126.38 LPM ⚙1.29 ①0.94  ②0.76  ③1.34  Ⓜ1.34   cAMT ①3.54  ②9.12  ③41.90 Ⓜ123.37 MST ①1.36  ②6.87  ③5.85  Ⓜ31.47  MSHR%  0  0  2 LoadByPH% 88 67 58 ⏱ 0h 2m45s TPMI 11.79
+C:6 I# 14000003   cy 21868173   IPC 1.47 IPCavg 0.57519 ByP%  26  9 86 CPA ①5.12  ②16.33 ③42.12 Ⓜ128.53 LPM ⚙1.29 ①0.94  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.54  ②9.18  ③41.07 Ⓜ125.48 MST ①1.36  ②6.92  ③5.76  Ⓜ33.11  MSHR%  0  2  0 LoadByPH% 88 66 56 ⏱ 0h 2m46s TPMI 11.86
+C:7 I# 14000002   cy 21981147   IPC 1.44 IPCavg 0.57218 ByP%  32  7 91 CPA ①5.16  ②16.40 ③43.67 Ⓜ127.48 LPM ⚙1.27 ①0.94  ②0.76  ③1.34  Ⓜ1.34   cAMT ①3.56  ②9.14  ③42.60 Ⓜ124.47 MST ①1.37  ②6.87  ③5.99  Ⓜ32.40  MSHR%  0  0  2 LoadByPH% 88 67 55 ⏱ 0h 2m47s TPMI 11.93
+C:1 I# 14000003   cy 22034506   IPC 1.37 IPCavg 0.57070 ByP%  25 10 87 CPA ①5.17  ②16.36 ③43.88 Ⓜ129.65 LPM ⚙1.30 ①0.94  ②0.76  ③1.34  Ⓜ1.34   cAMT ①3.57  ②9.14  ③42.81 Ⓜ126.59 MST ①1.38  ②6.88  ③6.03  Ⓜ32.26  MSHR%  0  0  2 LoadByPH% 88 67 55 ⏱ 0h 2m48s TPMI 12.00
+C:3 I# 14000003   cy 22075607   IPC 1.29 IPCavg 0.56961 ByP%  26  6 89 CPA ①5.18  ②16.46 ③42.88 Ⓜ130.35 LPM ⚙1.32 ①0.95  ②0.77  ③1.34  Ⓜ1.35   cAMT ①3.58  ②9.29  ③41.83 Ⓜ127.30 MST ①1.39  ②7.03  ③5.90  Ⓜ33.27  MSHR%  0  0  2 LoadByPH% 88 67 56 ⏱ 0h 2m49s TPMI 12.07
+C:2 I# 14000002   cy 22088379   IPC 1.30 IPCavg 0.56930 ByP%  26  6 91 CPA ①5.18  ②16.47 ③42.91 Ⓜ128.42 LPM ⚙1.36 ①0.95  ②0.78  ③1.35  Ⓜ1.35   cAMT ①3.59  ②9.39  ③41.86 Ⓜ125.41 MST ①1.41  ②7.12  ③5.90  Ⓜ32.90  MSHR%  0  2  2 LoadByPH% 88 66 54 ⏱ 0h 2m49s TPMI 12.07
+C:0 I# 14000002   cy 22092320   IPC 1.27 IPCavg 0.56916 ByP%  27  8 89 CPA ①5.19  ②16.43 ③43.45 Ⓜ129.12 LPM ⚙1.35 ①0.95  ②0.78  ③1.35  Ⓜ1.35   cAMT ①3.60  ②9.34  ③42.39 Ⓜ126.09 MST ①1.40  ②7.07  ③5.98  Ⓜ32.70  MSHR%  0  0  3 LoadByPH% 88 67 54 ⏱ 0h 2m49s TPMI 12.07
+C:4 I# 14500004   cy 22239084   IPC 1.15 IPCavg 0.58875 ByP%  31 12 82 CPA ①5.07  ②15.61 ③43.19 Ⓜ125.35 LPM ⚙1.30 ①0.94  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.51  ②8.79  ③42.14 Ⓜ122.43 MST ①1.35  ②6.58  ③5.97  Ⓜ30.67  MSHR% 18  6  2 LoadByPH% 87 69 58 ⏱ 0h 2m51s TPMI 11.79
+C:5 I# 14500005   cy 22257241   IPC 1.09 IPCavg 0.58830 ByP%  31  8 89 CPA ①5.07  ②15.57 ③42.57 Ⓜ125.70 LPM ⚙1.34 ①0.95  ②0.77  ③1.35  Ⓜ1.35   cAMT ①3.52  ②8.81  ③41.54 Ⓜ122.76 MST ①1.37  ②6.60  ③5.88  Ⓜ30.80  MSHR% 18  2  1 LoadByPH% 87 70 57 ⏱ 0h 2m51s TPMI 11.79
+C:6 I# 14500004   cy 22305790   IPC 1.14 IPCavg 0.58684 ByP%  32 10 86 CPA ①5.07  ②15.68 ③42.40 Ⓜ127.60 LPM ⚙1.30 ①0.94  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.51  ②8.85  ③41.37 Ⓜ124.63 MST ①1.35  ②6.64  ③5.87  Ⓜ32.30  MSHR%  0  2  1 LoadByPH% 87 69 56 ⏱ 0h 2m52s TPMI 11.86
+C:7 I# 14500004   cy 22402608   IPC 1.19 IPCavg 0.58428 ByP%  28  9 91 CPA ①5.11  ②15.74 ③43.88 Ⓜ126.32 LPM ⚙1.28 ①0.94  ②0.76  ③1.34  Ⓜ1.34   cAMT ①3.52  ②8.81  ③42.82 Ⓜ123.39 MST ①1.35  ②6.57  ③6.09  Ⓜ31.64  MSHR% 18  4  2 LoadByPH% 87 69 55 ⏱ 0h 2m53s TPMI 11.93
+C:1 I# 14500004   cy 22441690   IPC 1.23 IPCavg 0.58319 ByP%  36  8 88 CPA ①5.11  ②15.67 ③44.02 Ⓜ128.42 LPM ⚙1.30 ①0.94  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.53  ②8.79  ③42.96 Ⓜ125.45 MST ①1.37  ②6.57  ③6.11  Ⓜ31.46  MSHR%  0  0  2 LoadByPH% 87 69 55 ⏱ 0h 2m54s TPMI 12.00
+C:3 I# 14500005   cy 22460766   IPC 1.30 IPCavg 0.58269 ByP%  28  7 88 CPA ①5.11  ②15.77 ③43.01 Ⓜ129.19 LPM ⚙1.32 ①0.94  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.53  ②8.92  ③41.97 Ⓜ126.21 MST ①1.37  ②6.71  ③5.97  Ⓜ32.55  MSHR% 62  0  0 LoadByPH% 87 69 56 ⏱ 0h 2m54s TPMI 12.00
+C:2 I# 14500002   cy 22515229   IPC 1.17 IPCavg 0.58125 ByP%  29 11 86 CPA ①5.13  ②15.80 ③43.15 Ⓜ127.51 LPM ⚙1.36 ①0.95  ②0.78  ③1.35  Ⓜ1.35   cAMT ①3.55  ②9.03  ③42.10 Ⓜ124.57 MST ①1.39  ②6.81  ③6.00  Ⓜ32.16  MSHR%  0  2  3 LoadByPH% 87 69 54 ⏱ 0h 2m55s TPMI 12.07
+C:0 I# 14500004   cy 22518867   IPC 1.17 IPCavg 0.58111 ByP%  29 10 85 CPA ①5.14  ②15.76 ③43.70 Ⓜ128.03 LPM ⚙1.35 ①0.95  ②0.78  ③1.35  Ⓜ1.35   cAMT ①3.56  ②8.99  ③42.65 Ⓜ125.08 MST ①1.39  ②6.77  ③6.08  Ⓜ31.91  MSHR%  0  0  2 LoadByPH% 87 69 54 ⏱ 0h 2m55s TPMI 12.07
+C:4 I# 15000001   cy 22588473   IPC 1.43 IPCavg 0.60239 ByP%  28 11 83 CPA ①5.00  ②14.99 ③43.39 Ⓜ124.63 LPM ⚙1.28 ①0.94  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.45  ②8.45  ③42.34 Ⓜ121.77 MST ①1.32  ②6.28  ③6.04  Ⓜ30.31  MSHR%  0  0  1 LoadByPH% 87 71 57 ⏱ 0h 2m56s TPMI 11.73
+C:5 I# 15000001   cy 22617815   IPC 1.39 IPCavg 0.60162 ByP%  25 10 87 CPA ①5.00  ②14.94 ③42.81 Ⓜ125.26 LPM ⚙1.33 ①0.95  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.47  ②8.46  ③41.78 Ⓜ122.38 MST ①1.34  ②6.30  ③5.96  Ⓜ30.45  MSHR%  0  0  0 LoadByPH% 87 72 57 ⏱ 0h 2m57s TPMI 11.80
+C:6 I# 15000001   cy 22646171   IPC 1.47 IPCavg 0.60072 ByP%  28  8 91 CPA ①5.01  ②15.05 ③42.57 Ⓜ126.69 LPM ⚙1.29 ①0.94  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.46  ②8.50  ③41.54 Ⓜ123.79 MST ①1.33  ②6.32  ③5.93  Ⓜ31.81  MSHR%  0  0  1 LoadByPH% 87 71 56 ⏱ 0h 2m57s TPMI 11.80
+C:7 I# 15000001   cy 22779004   IPC 1.33 IPCavg 0.59715 ByP%  27 10 86 CPA ①5.04  ②15.11 ③44.09 Ⓜ125.79 LPM ⚙1.27 ①0.94  ②0.76  ③1.34  Ⓜ1.34   cAMT ①3.47  ②8.47  ③43.03 Ⓜ122.92 MST ①1.33  ②6.28  ③6.16  Ⓜ31.14  MSHR%  0  0  3 LoadByPH% 87 71 55 ⏱ 0h 2m59s TPMI 11.93
+C:1 I# 15000001   cy 22813479   IPC 1.34 IPCavg 0.59617 ByP%  30  7 91 CPA ①5.05  ②15.06 ③44.24 Ⓜ127.87 LPM ⚙1.29 ①0.94  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.48  ②8.46  ③43.18 Ⓜ124.96 MST ①1.35  ②6.28  ③6.19  Ⓜ31.04  MSHR%  0  0  3 LoadByPH% 87 71 55 ⏱ 0h 3m 0s TPMI 12.00
+C:3 I# 15000001   cy 22818023   IPC 1.40 IPCavg 0.59607 ByP%  32  9 88 CPA ①5.05  ②15.14 ③43.17 Ⓜ128.91 LPM ⚙1.31 ①0.94  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.48  ②8.58  ③42.13 Ⓜ125.99 MST ①1.35  ②6.40  ③6.04  Ⓜ32.17  MSHR%  0  0  6 LoadByPH% 87 71 56 ⏱ 0h 3m 0s TPMI 12.00
+C:2 I# 15000001   cy 22907277   IPC 1.28 IPCavg 0.59368 ByP%  30  8 87 CPA ①5.07  ②15.18 ③43.43 Ⓜ127.06 LPM ⚙1.35 ①0.95  ②0.79  ③1.35  Ⓜ1.35   cAMT ①3.51  ②8.70  ③42.39 Ⓜ124.19 MST ①1.37  ②6.51  ③6.09  Ⓜ31.68  MSHR%  0  0  6 LoadByPH% 87 71 54 ⏱ 0h 3m 1s TPMI 12.07
+C:0 I# 15000001   cy 22909375   IPC 1.28 IPCavg 0.59358 ByP%  32  9 89 CPA ①5.08  ②15.14 ③44.02 Ⓜ127.63 LPM ⚙1.35 ①0.95  ②0.78  ③1.35  Ⓜ1.35   cAMT ①3.51  ②8.65  ③42.97 Ⓜ124.74 MST ①1.37  ②6.48  ③6.17  Ⓜ31.37  MSHR%  0  0  3 LoadByPH% 86 72 54 ⏱ 0h 3m 1s TPMI 12.07
+C:4 I# 15500003   cy 22986951   IPC 1.25 IPCavg 0.61422 ByP%  30 10 84 CPA ①4.95  ②14.43 ③43.62 Ⓜ124.00 LPM ⚙1.29 ①0.94  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.41  ②8.16  ③42.58 Ⓜ121.21 MST ①1.31  ②6.03  ③6.13  Ⓜ29.81  MSHR% 25  0  1 LoadByPH% 86 73 57 ⏱ 0h 3m 2s TPMI 11.74
+C:5 I# 15500003   cy 23035423   IPC 1.20 IPCavg 0.61292 ByP%  26 11 86 CPA ①4.96  ②14.41 ③43.13 Ⓜ124.72 LPM ⚙1.33 ①0.95  ②0.78  ③1.34  Ⓜ1.35   cAMT ①3.43  ②8.18  ③42.10 Ⓜ121.91 MST ①1.33  ②6.06  ③6.07  Ⓜ30.04  MSHR% 25  0  4 LoadByPH% 86 73 57 ⏱ 0h 3m 2s TPMI 11.74
+C:6 I# 15500003   cy 23049590   IPC 1.24 IPCavg 0.61241 ByP%  25  8 90 CPA ①4.96  ②14.51 ③42.84 Ⓜ126.05 LPM ⚙1.30 ①0.94  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.42  ②8.22  ③41.82 Ⓜ123.22 MST ①1.31  ②6.08  ③6.03  Ⓜ31.23  MSHR% 25  0  4 LoadByPH% 86 73 56 ⏱ 0h 3m 3s TPMI 11.81
+C:7 I# 15500003   cy 23160815   IPC 1.31 IPCavg 0.60943 ByP%  25  8 89 CPA ①4.99  ②14.54 ③44.26 Ⓜ125.10 LPM ⚙1.27 ①0.93  ②0.76  ③1.34  Ⓜ1.34   cAMT ①3.43  ②8.17  ③43.21 Ⓜ122.29 MST ①1.32  ②6.02  ③6.26  Ⓜ30.64  MSHR% 25  0  1 LoadByPH% 86 73 55 ⏱ 0h 3m 4s TPMI 11.87
+C:1 I# 15500003   cy 23208393   IPC 1.27 IPCavg 0.60809 ByP%  28  7 90 CPA ①5.00  ②14.51 ③44.44 Ⓜ127.17 LPM ⚙1.29 ①0.94  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.44  ②8.17  ③43.38 Ⓜ124.33 MST ①1.33  ②6.03  ③6.28  Ⓜ30.64  MSHR% 18  0  4 LoadByPH% 86 73 55 ⏱ 0h 3m 5s TPMI 11.94
+C:3 I# 15500003   cy 23217218   IPC 1.25 IPCavg 0.60787 ByP%  26  7 91 CPA ①5.00  ②14.59 ③43.43 Ⓜ128.23 LPM ⚙1.31 ①0.94  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.44  ②8.28  ③42.40 Ⓜ125.38 MST ①1.33  ②6.15  ③6.14  Ⓜ31.68  MSHR% 25  0  0 LoadByPH% 86 73 56 ⏱ 0h 3m 5s TPMI 11.94
+C:0 I# 15500003   cy 23295786   IPC 1.29 IPCavg 0.60573 ByP%  26  9 87 CPA ①5.03  ②14.57 ③44.23 Ⓜ126.73 LPM ⚙1.35 ①0.95  ②0.78  ③1.35  Ⓜ1.35   cAMT ①3.47  ②8.34  ③43.16 Ⓜ123.91 MST ①1.36  ②6.20  ③6.28  Ⓜ30.88  MSHR% 25  0  0 LoadByPH% 86 73 54 ⏱ 0h 3m 6s TPMI 12.00
+C:2 I# 15500003   cy 23297667   IPC 1.28 IPCavg 0.60572 ByP%  27 10 87 CPA ①5.02  ②14.62 ③43.62 Ⓜ126.31 LPM ⚙1.35 ①0.95  ②0.79  ③1.35  Ⓜ1.35   cAMT ①3.46  ②8.38  ③42.58 Ⓜ123.50 MST ①1.36  ②6.24  ③6.19  Ⓜ31.18  MSHR% 25  0  0 LoadByPH% 86 73 54 ⏱ 0h 3m 6s TPMI 12.00
+C:4 I# 16000000   cy 23333509   IPC 1.44 IPCavg 0.62708 ByP%  30 10 89 CPA ①4.89  ②13.95 ③43.74 Ⓜ123.50 LPM ⚙1.27 ①0.93  ②0.77  ③1.33  Ⓜ1.34   cAMT ①3.36  ②7.89  ③42.69 Ⓜ120.76 MST ①1.28  ②5.78  ③6.21  Ⓜ29.61  MSHR%  0  0  3 LoadByPH% 85 74 57 ⏱ 0h 3m 7s TPMI 11.69
+Finished CPU ;4; instr: ;14000004; cyc: 22324274; AVG IPC: ;0.62712; (Sim time: 0h3m7s);TPMI;11.69000
+C:5 I# 16000000   cy 23393083   IPC 1.40 IPCavg 0.62546 ByP%  27  9 86 CPA ①4.90  ②13.92 ③43.26 Ⓜ124.46 LPM ⚙1.32 ①0.94  ②0.78  ③1.34  Ⓜ1.34   cAMT ①3.38  ②7.91  ③42.23 Ⓜ121.70 MST ①1.31  ②5.82  ③6.15  Ⓜ29.95  MSHR%  0  0  0 LoadByPH% 85 75 57 ⏱ 0h 3m 8s TPMI 11.75
+Finished CPU ;5; instr: ;14000000; cyc: 22383286; AVG IPC: ;0.62547; (Sim time: 0h3m8s);TPMI;11.75000
+C:6 I# 16000000   cy 23411901   IPC 1.38 IPCavg 0.62483 ByP%  28  8 85 CPA ①4.90  ②14.02 ③43.04 Ⓜ125.48 LPM ⚙1.28 ①0.93  ②0.77  ③1.33  Ⓜ1.34   cAMT ①3.37  ②7.94  ③42.00 Ⓜ122.69 MST ①1.29  ②5.84  ③6.13  Ⓜ31.05  MSHR%  0  0  2 LoadByPH% 85 74 56 ⏱ 0h 3m 8s TPMI 11.75
+Finished CPU ;6; instr: ;14000004; cyc: 22403434; AVG IPC: ;0.62490; (Sim time: 0h3m8s);TPMI;11.75000
+C:7 I# 16000000   cy 23542050   IPC 1.31 IPCavg 0.62131 ByP%  35 10 83 CPA ①4.94  ②14.05 ③44.49 Ⓜ124.62 LPM ⚙1.26 ①0.93  ②0.76  ③1.33  Ⓜ1.34   cAMT ①3.39  ②7.90  ③43.41 Ⓜ121.87 MST ①1.30  ②5.79  ③6.36  Ⓜ30.29  MSHR%  0  0  5 LoadByPH% 85 75 55 ⏱ 0h 3m10s TPMI 11.88
+Finished CPU ;7; instr: ;14000004; cyc: 22532503; AVG IPC: ;0.62132; (Sim time: 0h3m10s);TPMI;11.87000
+C:3 I# 16000000   cy 23584283   IPC 1.36 IPCavg 0.62014 ByP%  28  6 89 CPA ①4.94  ②14.09 ③43.66 Ⓜ127.66 LPM ⚙1.30 ①0.94  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.39  ②8.01  ③42.60 Ⓜ124.85 MST ①1.31  ②5.91  ③6.25  Ⓜ31.39  MSHR%  0  0  1 LoadByPH% 85 74 56 ⏱ 0h 3m10s TPMI 11.88
+Finished CPU ;3; instr: ;14000000; cyc: 22574778; AVG IPC: ;0.62016; (Sim time: 0h3m10s);TPMI;11.87000
+C:1 I# 16000000   cy 23590391   IPC 1.31 IPCavg 0.61995 ByP%  27  6 90 CPA ①4.95  ②14.03 ③44.65 Ⓜ126.74 LPM ⚙1.29 ①0.94  ②0.77  ③1.34  Ⓜ1.34   cAMT ①3.40  ②7.91  ③43.57 Ⓜ123.94 MST ①1.31  ②5.80  ③6.39  Ⓜ30.37  MSHR%  0  0  3 LoadByPH% 85 75 55 ⏱ 0h 3m11s TPMI 11.94
+Finished CPU ;1; instr: ;14000002; cyc: 22581146; AVG IPC: ;0.61999; (Sim time: 0h3m11s);TPMI;11.94000
+C:0 I# 16000000   cy 23654282   IPC 1.39 IPCavg 0.61822 ByP%  34 12 82 CPA ①4.97  ②14.09 ③44.41 Ⓜ126.27 LPM ⚙1.33 ①0.94  ②0.78  ③1.34  Ⓜ1.35   cAMT ①3.42  ②8.07  ③43.34 Ⓜ123.50 MST ①1.33  ②5.96  ③6.37  Ⓜ30.60  MSHR%  0  0  2 LoadByPH% 85 75 54 ⏱ 0h 3m11s TPMI 11.94
+Finished CPU ;0; instr: ;14000000; cyc: 22644776; AVG IPC: ;0.61824; (Sim time: 0h3m11s);TPMI;11.94000
+C:2 I# 16000000   cy 23698510   IPC 1.25 IPCavg 0.61705 ByP%  30  8 87 CPA ①4.97  ②14.14 ③43.89 Ⓜ125.93 LPM ⚙1.35 ①0.94  ②0.79  ③1.35  Ⓜ1.35   cAMT ①3.42  ②8.12  ③42.84 Ⓜ123.17 MST ①1.34  ②6.01  ③6.30  Ⓜ30.72  MSHR%  0  0  5 LoadByPH% 85 74 54 ⏱ 0h 3m12s TPMI 12.00
+Finished CPU ;2; instr: ;14000000; cyc: 22688561; AVG IPC: ;0.61705; (Sim time: 0h3m12s);TPMI;12.00000
+
+[Trace Helper Stats]
+Core_0_io_trace_idle 0
+Core_0_total_produced 16128061
+Core_1_io_trace_idle 0
+Core_1_total_produced 16199580
+Core_2_io_trace_idle 0
+Core_2_total_produced 16094809
+Core_3_io_trace_idle 0
+Core_3_total_produced 16211008
+Core_4_io_trace_idle 0
+Core_4_total_produced 16538732
+Core_5_io_trace_idle 0
+Core_5_total_produced 16425114
+Core_6_io_trace_idle 0
+Core_6_total_produced 16400717
+Core_7_io_trace_idle 0
+Core_7_total_produced 16278079
+
+ChampSim completed all CPUs
+
+[ROI Statistics]
+Core_0_instructions 14000000
+Core_0_cycles 22644776
+Core_0_IPC 0.61824
+
+Core_;0;_;branch_prediction_accuracy;98.22203;
+Core_;0;_;branch_MPKI;0.71135;
+Core_;0;_;average_ROB_occupancy_at_mispredict;287.24143;
+
+Core_;0; L1D;_         ;MPKI;  26.07114;Core_;0; L1D;_;LOAD_MSHR_cap;    381586;Core_;0; L1D;_      ;RFO_cap;       235;Core_;0; L1D;_  ;Pf_MSHR_cap;         0;Core_;0; L1D;_;WrBk_MSHR_cap;         0;
+Core_;0; L1D;_ ;pureAdm_LOAD;    381586;Core_;0; L1D;_  ;pureAdm_RFO;         0;Core_;0; L1D;_   ;pureAdm_Pf;         0;Core_;0; L1D;_ ;pureAdm_WrBk;         0;
+Core_;0; L1D;_      ;byp_req;    875993;Core_;0; L1D;_   ;byp_issued;    162181;Core_;0; L1D;_          ;APC;   0.29236;Core_;0; L1D;_          ;LPM;   0.94117;Core_;0; L1D;_       ;C-AMAT;   3.42048;Core_;0; L1D;_          ;MST;   1.33348;
+Core_;0; L1D;_ ;total_access;   3804620;Core_;0; L1D;_    ;total_hit;   3439624;Core_;0; L1D;_   ;total_miss;    364996;L1D_total_HitR: 0.90407
+Core_;0; L1D;_        ;loads;   3268510;Core_;0; L1D;_     ;load_hit;   2940637;Core_;0; L1D;_    ;load_miss;    327873;L1D_load_HitR: 0.89969;
+Core_;0; L1D;_;load_wByP_acc;   3429446;Core_;0; L1D;_;load_wByP_hit;   2940637;Core_;0; L1D;_;load_wByP_byp;    160936;Core_;0; L1D;_;load_wByP_miss;    327873;L1D_load_wByP_HitR: 0.85747;
+Core_;0; L1D;_         ;RFOs;    536110;Core_;0; L1D;_      ;RFO_hit;    498987;Core_;0; L1D;_     ;RFO_miss;     37123;L1D_RFO_HitR: 0.93075;
+Core_;0; L1D;_   ;prefetches;         0;Core_;0; L1D;_ ;prefetch_hit;         0;Core_;0; L1D;_;prefetch_miss;         0;L1D_Pf_HitR: nan;
+Core_;0; L1D;_   ;writebacks;         0;Core_;0; L1D;_;writeback_hit;         0;Core_;0; L1D;_;writeback_miss;         0;L1D_writeback_HitR: nan;
+Core_;0; L1D;_ ;pf_requested;         0;Core_;0; L1D;_    ;pf_issued;         0;
+Core_;0; L1D;_    ;pf_useful;         0;Core_;0; L1D;_   ;pf_useless;         0;
+Core_;0; L1D;_      ;pf_late;         0;L1D_Useful Ratio: nan;
+Core_;0; L1D;_ ;avg_miss_lat;  64.39315;
+
+Core_;0; L1I;_         ;MPKI;   0.33593;Core_;0; L1I;_;LOAD_MSHR_cap;    335748;Core_;0; L1I;_      ;RFO_cap;         0;Core_;0; L1I;_  ;Pf_MSHR_cap;         0;Core_;0; L1I;_;WrBk_MSHR_cap;         0;
+Core_;0; L1I;_ ;pureAdm_LOAD;    335748;Core_;0; L1I;_  ;pureAdm_RFO;         0;Core_;0; L1I;_   ;pureAdm_Pf;         0;Core_;0; L1I;_ ;pureAdm_WrBk;         0;
+Core_;0; L1I;_      ;byp_req;         0;Core_;0; L1I;_   ;byp_issued;         0;Core_;0; L1I;_          ;APC;   0.44120;Core_;0; L1I;_          ;LPM;   0.39536;Core_;0; L1I;_       ;C-AMAT;   2.26656;Core_;0; L1I;_          ;MST;   0.10202;
+Core_;0; L1I;_ ;total_access;   2135576;Core_;0; L1I;_    ;total_hit;   2130873;Core_;0; L1I;_   ;total_miss;      4703;L1I_total_HitR: 0.99780
+Core_;0; L1I;_        ;loads;   2135576;Core_;0; L1I;_     ;load_hit;   2130873;Core_;0; L1I;_    ;load_miss;      4703;L1I_load_HitR: 0.99780;
+Core_;0; L1I;_;load_wByP_acc;   2135576;Core_;0; L1I;_;load_wByP_hit;   2130873;Core_;0; L1I;_;load_wByP_byp;         0;Core_;0; L1I;_;load_wByP_miss;      4703;L1I_load_wByP_HitR: 0.99780;
+Core_;0; L1I;_         ;RFOs;         0;Core_;0; L1I;_      ;RFO_hit;         0;Core_;0; L1I;_     ;RFO_miss;         0;L1I_RFO_HitR: nan;
+Core_;0; L1I;_   ;prefetches;         0;Core_;0; L1I;_ ;prefetch_hit;         0;Core_;0; L1I;_;prefetch_miss;         0;L1I_Pf_HitR: nan;
+Core_;0; L1I;_   ;writebacks;         0;Core_;0; L1I;_;writeback_hit;         0;Core_;0; L1I;_;writeback_miss;         0;L1I_writeback_HitR: nan;
+Core_;0; L1I;_ ;pf_requested;         0;Core_;0; L1I;_    ;pf_issued;         0;
+Core_;0; L1I;_    ;pf_useful;         0;Core_;0; L1I;_   ;pf_useless;         0;
+Core_;0; L1I;_      ;pf_late;         0;L1I_Useful Ratio: nan;
+Core_;0; L1I;_ ;avg_miss_lat; 238.12822;
+
+Core_;0; L2C;_         ;MPKI;  11.06936;Core_;0; L2C;_;LOAD_MSHR_cap;      2911;Core_;0; L2C;_      ;RFO_cap;         0;Core_;0; L2C;_  ;Pf_MSHR_cap;      4301;Core_;0; L2C;_;WrBk_MSHR_cap;         0;
+Core_;0; L2C;_ ;pureAdm_LOAD;      2911;Core_;0; L2C;_  ;pureAdm_RFO;         0;Core_;0; L2C;_   ;pureAdm_Pf;         0;Core_;0; L2C;_ ;pureAdm_WrBk;         0;
+Core_;0; L2C;_      ;byp_req;    103708;Core_;0; L2C;_   ;byp_issued;      6882;Core_;0; L2C;_          ;APC;   0.12389;Core_;0; L2C;_          ;LPM;   0.78309;Core_;0; L2C;_       ;C-AMAT;   8.07142;Core_;0; L2C;_          ;MST;   5.96166;
+Core_;0; L2C;_ ;total_access;   1355971;Core_;0; L2C;_    ;total_hit;   1201000;Core_;0; L2C;_   ;total_miss;    154971;L2C_total_HitR: 0.88571
+Core_;0; L2C;_        ;loads;    453660;Core_;0; L2C;_     ;load_hit;    345996;Core_;0; L2C;_    ;load_miss;    107664;L2C_load_HitR: 0.76268;
+Core_;0; L2C;_;load_wByP_acc;    460517;Core_;0; L2C;_;load_wByP_hit;    345996;Core_;0; L2C;_;load_wByP_byp;      6857;Core_;0; L2C;_;load_wByP_miss;    107664;L2C_load_wByP_HitR: 0.75132;
+Core_;0; L2C;_         ;RFOs;     37123;Core_;0; L2C;_      ;RFO_hit;      4156;Core_;0; L2C;_     ;RFO_miss;     32967;L2C_RFO_HitR: 0.11195;
+Core_;0; L2C;_   ;prefetches;    755195;Core_;0; L2C;_ ;prefetch_hit;    741648;Core_;0; L2C;_;prefetch_miss;     13547;L2C_Pf_HitR: 0.98206;
+Core_;0; L2C;_   ;writebacks;    109993;Core_;0; L2C;_;writeback_hit;    109200;Core_;0; L2C;_;writeback_miss;       793;L2C_writeback_HitR: 0.99279;
+Core_;0; L2C;_ ;pf_requested;   2180472;Core_;0; L2C;_    ;pf_issued;   2041243;
+Core_;0; L2C;_    ;pf_useful;     13959;Core_;0; L2C;_   ;pf_useless;      1067;
+Core_;0; L2C;_      ;pf_late;     14391;L2C_Useful Ratio: 0.00684;
+Core_;0; L2C;_ ;avg_miss_lat;225269.38108;
+
+Core_;0; LLC;_         ;MPKI;   6.03136;Core_;0; LLC;_;LOAD_MSHR_cap;         0;Core_;0; LLC;_      ;RFO_cap;         0;Core_;0; LLC;_  ;Pf_MSHR_cap;         0;Core_;0; LLC;_;WrBk_MSHR_cap;         0;
+Core_;0; LLC;_ ;pureAdm_LOAD;         0;Core_;0; LLC;_  ;pureAdm_RFO;         0;Core_;0; LLC;_   ;pureAdm_Pf;         0;Core_;0; LLC;_ ;pureAdm_WrBk;         0;
+Core_;0; LLC;_      ;byp_req;     36936;Core_;0; LLC;_   ;byp_issued;     34485;Core_;0; LLC;_          ;APC;   0.02307;Core_;0; LLC;_          ;LPM;   1.34292;Core_;0; LLC;_       ;C-AMAT;  43.34061;Core_;0; LLC;_          ;MST;   6.36744;
+Core_;0; LLC;_ ;total_access;    475745;Core_;0; LLC;_    ;total_hit;    391306;Core_;0; LLC;_   ;total_miss;     84439;LLC_total_HitR: 0.82251
+Core_;0; LLC;_        ;loads;     66221;Core_;0; LLC;_     ;load_hit;     55119;Core_;0; LLC;_    ;load_miss;     11102;LLC_load_HitR: 0.83235;
+Core_;0; LLC;_;load_wByP_acc;    100676;Core_;0; LLC;_;load_wByP_hit;     55119;Core_;0; LLC;_;load_wByP_byp;     34455;Core_;0; LLC;_;load_wByP_miss;     11102;LLC_load_wByP_HitR: 0.54749;
+Core_;0; LLC;_         ;RFOs;     32967;Core_;0; LLC;_      ;RFO_hit;        60;Core_;0; LLC;_     ;RFO_miss;     32907;LLC_RFO_HitR: 0.00182;
+Core_;0; LLC;_   ;prefetches;    278979;Core_;0; LLC;_ ;prefetch_hit;    242012;Core_;0; LLC;_;prefetch_miss;     36967;LLC_Pf_HitR: 0.86749;
+Core_;0; LLC;_   ;writebacks;     97578;Core_;0; LLC;_;writeback_hit;     94115;Core_;0; LLC;_;writeback_miss;      3463;LLC_writeback_HitR: 0.96451;
+Core_;0; LLC;_ ;pf_requested;         0;Core_;0; LLC;_    ;pf_issued;         0;
+Core_;0; LLC;_    ;pf_useful;    248568;Core_;0; LLC;_   ;pf_useless;     69969;
+Core_;0; LLC;_      ;pf_late;     76472;LLC_Useful Ratio: inf;
+Core_;0; LLC;_ ;avg_miss_lat;16012.63880;
+
+Core_0_major_page_fault 0
+Core_0_minor_page_fault 2327
+
+
+=== LPM Cycle Classification  CPU 0 (ROI) ===
+Lvl        h(hit)      m(miss)     x(mixed)      e(idle) |        omega       mu    kappa      phi |   LPMR_std   LPMR_byp |   C-AMAT      APC      MST      CPA
+ITLB      4280173         1635         2505     18208903 |      4284313   0.0010   0.3949   0.9996 |        n/a        n/a |      n/a      n/a      n/a      n/a
+DTLB      4806628        12640        21066     17652789 |      4840334   0.0070   0.3750   0.9974 |        n/a        n/a |      n/a      n/a      n/a      n/a
+STLB        40841            0            0     22433284 |        40841   0.0000   0.0000   1.0000 |        n/a        n/a |      n/a      n/a      n/a      n/a
+L1I       6148943       292835        64041     15987396 |      6505819   0.0549   0.8206   0.9550 |        n/a        n/a |      n/a      n/a      n/a      n/a
+L1D       4704488      6037810      4745117      7005848 |     15487415   0.6962   0.5599   0.6101 |   0.941172   0.941172 |   3.4205   0.2924   1.3335   4.9678
+L2C       2317198      9517809      1051045      9607202 |     12886052   0.8202   0.9006   0.2614 |   0.783087   0.783087 |   8.0714   0.1239   5.9617  14.0891
+LLC       2751908      3246601     16099784       546539 |     22098293   0.8755   0.1678   0.8531 |   1.342916   1.342916 |  43.3406   0.0231   6.3674  44.4125
+DRAM         6413      5488190     16653520       497941 |     22148123   0.9997   0.2479   0.7522 |   1.345944   1.345944 | 123.4952   0.0081  30.6015 126.2717
+Global LPMR_std: 1.332156  LPMR_byp: 1.332156
+
+=== ByPLatTracker CPU 0 ===
+Lvl      mshr_avg    mshr_pk byp_infl_avg     byp_pk    mlp_avg     mlp_pk      samples
+L1D         0.024          8        1.809          7      1.833          9       162181
+L2C         3.059         41        1.180          4      4.239         42         6882
+LLC        10.255        105        1.199          9     11.454        107        34485
+Core_;0;DRAM;_;APC;0.00810;Core_;0;DRAM;_;LPM;1.34594;Core_;0;DRAM;_;C-AMAT;123.49520;Core_;0;DRAM;_;MST;30.60147;
+Core_1_instructions 14000002
+Core_1_cycles 22581146
+Core_1_IPC 0.61999
+
+Core_;1;_;branch_prediction_accuracy;98.22279;
+Core_;1;_;branch_MPKI;0.70758;
+Core_;1;_;average_ROB_occupancy_at_mispredict;287.24151;
+
+Core_;1; L1D;_         ;MPKI;  26.15185;Core_;1; L1D;_;LOAD_MSHR_cap;    393380;Core_;1; L1D;_      ;RFO_cap;       230;Core_;1; L1D;_  ;Pf_MSHR_cap;         0;Core_;1; L1D;_;WrBk_MSHR_cap;         0;
+Core_;1; L1D;_ ;pureAdm_LOAD;    393380;Core_;1; L1D;_  ;pureAdm_RFO;         0;Core_;1; L1D;_   ;pureAdm_Pf;         0;Core_;1; L1D;_ ;pureAdm_WrBk;         0;
+Core_;1; L1D;_      ;byp_req;    893803;Core_;1; L1D;_   ;byp_issued;    162429;Core_;1; L1D;_          ;APC;   0.29409;Core_;1; L1D;_          ;LPM;   0.93589;Core_;1; L1D;_       ;C-AMAT;   3.40037;Core_;1; L1D;_          ;MST;   1.31468;
+Core_;1; L1D;_ ;total_access;   3809309;Core_;1; L1D;_    ;total_hit;   3443183;Core_;1; L1D;_   ;total_miss;    366126;L1D_total_HitR: 0.90389
+Core_;1; L1D;_        ;loads;   3270532;Core_;1; L1D;_     ;load_hit;   2941133;Core_;1; L1D;_    ;load_miss;    329399;L1D_load_HitR: 0.89928;
+Core_;1; L1D;_;load_wByP_acc;   3428360;Core_;1; L1D;_;load_wByP_hit;   2941133;Core_;1; L1D;_;load_wByP_byp;    157828;Core_;1; L1D;_;load_wByP_miss;    329399;L1D_load_wByP_HitR: 0.85788;
+Core_;1; L1D;_         ;RFOs;    538777;Core_;1; L1D;_      ;RFO_hit;    502050;Core_;1; L1D;_     ;RFO_miss;     36727;L1D_RFO_HitR: 0.93183;
+Core_;1; L1D;_   ;prefetches;         0;Core_;1; L1D;_ ;prefetch_hit;         0;Core_;1; L1D;_;prefetch_miss;         0;L1D_Pf_HitR: nan;
+Core_;1; L1D;_   ;writebacks;         0;Core_;1; L1D;_;writeback_hit;         0;Core_;1; L1D;_;writeback_miss;         0;L1D_writeback_HitR: nan;
+Core_;1; L1D;_ ;pf_requested;         0;Core_;1; L1D;_    ;pf_issued;         0;
+Core_;1; L1D;_    ;pf_useful;         0;Core_;1; L1D;_   ;pf_useless;         0;
+Core_;1; L1D;_      ;pf_late;         0;L1D_Useful Ratio: nan;
+Core_;1; L1D;_ ;avg_miss_lat;  64.03024;
+
+Core_;1; L1I;_         ;MPKI;   0.33629;Core_;1; L1I;_;LOAD_MSHR_cap;    366050;Core_;1; L1I;_      ;RFO_cap;         0;Core_;1; L1I;_  ;Pf_MSHR_cap;         0;Core_;1; L1I;_;WrBk_MSHR_cap;         0;
+Core_;1; L1I;_ ;pureAdm_LOAD;    366050;Core_;1; L1I;_  ;pureAdm_RFO;         0;Core_;1; L1I;_   ;pureAdm_Pf;         0;Core_;1; L1I;_ ;pureAdm_WrBk;         0;
+Core_;1; L1I;_      ;byp_req;         0;Core_;1; L1I;_   ;byp_issued;         0;Core_;1; L1I;_          ;APC;   0.44191;Core_;1; L1I;_          ;LPM;   0.39422;Core_;1; L1I;_       ;C-AMAT;   2.26291;Core_;1; L1I;_          ;MST;   0.09762;
+Core_;1; L1I;_ ;total_access;   2134492;Core_;1; L1I;_    ;total_hit;   2129784;Core_;1; L1I;_   ;total_miss;      4708;L1I_total_HitR: 0.99779
+Core_;1; L1I;_        ;loads;   2134492;Core_;1; L1I;_     ;load_hit;   2129784;Core_;1; L1I;_    ;load_miss;      4708;L1I_load_HitR: 0.99779;
+Core_;1; L1I;_;load_wByP_acc;   2134492;Core_;1; L1I;_;load_wByP_hit;   2129784;Core_;1; L1I;_;load_wByP_byp;         0;Core_;1; L1I;_;load_wByP_miss;      4708;L1I_load_wByP_HitR: 0.99779;
+Core_;1; L1I;_         ;RFOs;         0;Core_;1; L1I;_      ;RFO_hit;         0;Core_;1; L1I;_     ;RFO_miss;         0;L1I_RFO_HitR: nan;
+Core_;1; L1I;_   ;prefetches;         0;Core_;1; L1I;_ ;prefetch_hit;         0;Core_;1; L1I;_;prefetch_miss;         0;L1I_Pf_HitR: nan;
+Core_;1; L1I;_   ;writebacks;         0;Core_;1; L1I;_;writeback_hit;         0;Core_;1; L1I;_;writeback_miss;         0;L1I_writeback_HitR: nan;
+Core_;1; L1I;_ ;pf_requested;         0;Core_;1; L1I;_    ;pf_issued;         0;
+Core_;1; L1I;_    ;pf_useful;         0;Core_;1; L1I;_   ;pf_useless;         0;
+Core_;1; L1I;_      ;pf_late;         0;L1I_Useful Ratio: nan;
+Core_;1; L1I;_ ;avg_miss_lat; 242.24681;
+
+Core_;1; L2C;_         ;MPKI;  11.07678;Core_;1; L2C;_;LOAD_MSHR_cap;      1248;Core_;1; L2C;_      ;RFO_cap;         0;Core_;1; L2C;_  ;Pf_MSHR_cap;      2170;Core_;1; L2C;_;WrBk_MSHR_cap;         0;
+Core_;1; L2C;_ ;pureAdm_LOAD;      1248;Core_;1; L2C;_  ;pureAdm_RFO;         0;Core_;1; L2C;_   ;pureAdm_Pf;         0;Core_;1; L2C;_ ;pureAdm_WrBk;         0;
+Core_;1; L2C;_      ;byp_req;    102892;Core_;1; L2C;_   ;byp_issued;      6523;Core_;1; L2C;_          ;APC;   0.12644;Core_;1; L2C;_          ;LPM;   0.76797;Core_;1; L2C;_       ;C-AMAT;   7.90868;Core_;1; L2C;_          ;MST;   5.80300;
+Core_;1; L2C;_ ;total_access;   1356472;Core_;1; L2C;_    ;total_hit;   1201397;Core_;1; L2C;_   ;total_miss;    155075;L2C_total_HitR: 0.88568
+Core_;1; L2C;_        ;loads;    453548;Core_;1; L2C;_     ;load_hit;    345446;Core_;1; L2C;_    ;load_miss;    108102;L2C_load_HitR: 0.76165;
+Core_;1; L2C;_;load_wByP_acc;    460029;Core_;1; L2C;_;load_wByP_hit;    345446;Core_;1; L2C;_;load_wByP_byp;      6481;Core_;1; L2C;_;load_wByP_miss;    108102;L2C_load_wByP_HitR: 0.75092;
+Core_;1; L2C;_         ;RFOs;     36726;Core_;1; L2C;_      ;RFO_hit;      3756;Core_;1; L2C;_     ;RFO_miss;     32970;L2C_RFO_HitR: 0.10227;
+Core_;1; L2C;_   ;prefetches;    756205;Core_;1; L2C;_ ;prefetch_hit;    742914;Core_;1; L2C;_;prefetch_miss;     13291;L2C_Pf_HitR: 0.98242;
+Core_;1; L2C;_   ;writebacks;    109993;Core_;1; L2C;_;writeback_hit;    109281;Core_;1; L2C;_;writeback_miss;       712;L2C_writeback_HitR: 0.99353;
+Core_;1; L2C;_ ;pf_requested;   2195829;Core_;1; L2C;_    ;pf_issued;   2056538;
+Core_;1; L2C;_    ;pf_useful;     13529;Core_;1; L2C;_   ;pf_useless;      1099;
+Core_;1; L2C;_      ;pf_late;     13735;L2C_Useful Ratio: 0.00658;
+Core_;1; L2C;_ ;avg_miss_lat;242364.95403;
+
+Core_;1; LLC;_         ;MPKI;   6.05093;Core_;1; LLC;_;LOAD_MSHR_cap;         0;Core_;1; LLC;_      ;RFO_cap;         0;Core_;1; LLC;_  ;Pf_MSHR_cap;         0;Core_;1; LLC;_;WrBk_MSHR_cap;         0;
+Core_;1; LLC;_ ;pureAdm_LOAD;         0;Core_;1; LLC;_  ;pureAdm_RFO;         0;Core_;1; LLC;_   ;pureAdm_Pf;         0;Core_;1; LLC;_ ;pureAdm_WrBk;         0;
+Core_;1; LLC;_      ;byp_req;     36284;Core_;1; LLC;_   ;byp_issued;     34092;Core_;1; LLC;_          ;APC;   0.02295;Core_;1; LLC;_          ;LPM;   1.33787;Core_;1; LLC;_       ;C-AMAT;  43.56857;Core_;1; LLC;_          ;MST;   6.39525;
+Core_;1; LLC;_ ;total_access;    472803;Core_;1; LLC;_    ;total_hit;    388090;Core_;1; LLC;_   ;total_miss;     84713;LLC_total_HitR: 0.82083
+Core_;1; LLC;_        ;loads;     67361;Core_;1; LLC;_     ;load_hit;     56492;Core_;1; LLC;_    ;load_miss;     10869;LLC_load_HitR: 0.83865;
+Core_;1; LLC;_;load_wByP_acc;    101377;Core_;1; LLC;_;load_wByP_hit;     56492;Core_;1; LLC;_;load_wByP_byp;     34016;Core_;1; LLC;_;load_wByP_miss;     10869;LLC_load_wByP_HitR: 0.55725;
+Core_;1; LLC;_         ;RFOs;     32970;Core_;1; LLC;_      ;RFO_hit;        87;Core_;1; LLC;_     ;RFO_miss;     32883;LLC_RFO_HitR: 0.00264;
+Core_;1; LLC;_   ;prefetches;    276708;Core_;1; LLC;_ ;prefetch_hit;    238879;Core_;1; LLC;_;prefetch_miss;     37829;LLC_Pf_HitR: 0.86329;
+Core_;1; LLC;_   ;writebacks;     95764;Core_;1; LLC;_;writeback_hit;     92632;Core_;1; LLC;_;writeback_miss;      3132;LLC_writeback_HitR: 0.96729;
+Core_;1; LLC;_ ;pf_requested;         0;Core_;1; LLC;_    ;pf_issued;         0;
+Core_;1; LLC;_    ;pf_useful;    248568;Core_;1; LLC;_   ;pf_useless;     69969;
+Core_;1; LLC;_      ;pf_late;     76472;LLC_Useful Ratio: inf;
+Core_;1; LLC;_ ;avg_miss_lat;15960.84672;
+
+Core_1_major_page_fault 0
+Core_1_minor_page_fault 2327
+
+
+=== LPM Cycle Classification  CPU 1 (ROI) ===
+Lvl        h(hit)      m(miss)     x(mixed)      e(idle) |        omega       mu    kappa      phi |   LPMR_std   LPMR_byp |   C-AMAT      APC      MST      CPA
+ITLB      4278015         1634         2496     18147432 |      4282145   0.0010   0.3956   0.9996 |        n/a        n/a |      n/a      n/a      n/a      n/a
+DTLB      4807829        12580        21139     17588050 |      4841548   0.0070   0.3731   0.9974 |        n/a        n/a |      n/a      n/a      n/a      n/a
+STLB        40844            0            0     22370669 |        40844   0.0000   0.0000   1.0000 |        n/a        n/a |      n/a      n/a      n/a      n/a
+L1I       6143608       280087        69171     15936711 |      6492866   0.0538   0.8019   0.9569 |        n/a        n/a |      n/a      n/a      n/a      n/a
+L1D       4770817      5959570      4683785      7015435 |     15414172   0.6905   0.5599   0.6134 |   0.935892   0.935892 |   3.4004   0.2941   1.3147   4.9480
+L2C       2330480      9280888      1037193      9781055 |     12648561   0.8158   0.8995   0.2662 |   0.767974   0.767974 |   7.9087   0.1264   5.8030  14.0244
+LLC       2751501      3234386     16048831       546484 |     22034718   0.8751   0.1677   0.8532 |   1.337867   1.337867 |  43.5686   0.0230   6.3953  44.6491
+DRAM         6106      5411666     16666414       498248 |     22084186   0.9997   0.2451   0.7550 |   1.340870   1.340870 | 123.9417   0.0081  30.3716 126.7380
+Global LPMR_std: 1.289353  LPMR_byp: 1.289353
+
+=== ByPLatTracker CPU 1 ===
+Lvl      mshr_avg    mshr_pk byp_infl_avg     byp_pk    mlp_avg     mlp_pk      samples
+L1D         0.019          8        1.814          7      1.833         10       162429
+L2C         3.273         40        1.164          5      4.438         41         6523
+LLC        10.563         90        1.198          9     11.761         94        34092
+Core_;1;DRAM;_;APC;0.00807;Core_;1;DRAM;_;LPM;1.34087;Core_;1;DRAM;_;C-AMAT;123.94173;Core_;1;DRAM;_;MST;30.37156;
+Core_2_instructions 14000000
+Core_2_cycles 22688561
+Core_2_IPC 0.61705
+
+Core_;2;_;branch_prediction_accuracy;98.22127;
+Core_;2;_;branch_MPKI;0.71479;
+Core_;2;_;average_ROB_occupancy_at_mispredict;287.02478;
+
+Core_;2; L1D;_         ;MPKI;  26.25629;Core_;2; L1D;_;LOAD_MSHR_cap;    384585;Core_;2; L1D;_      ;RFO_cap;       142;Core_;2; L1D;_  ;Pf_MSHR_cap;         0;Core_;2; L1D;_;WrBk_MSHR_cap;         0;
+Core_;2; L1D;_ ;pureAdm_LOAD;    384585;Core_;2; L1D;_  ;pureAdm_RFO;         0;Core_;2; L1D;_   ;pureAdm_Pf;         0;Core_;2; L1D;_ ;pureAdm_WrBk;         0;
+Core_;2; L1D;_      ;byp_req;    869003;Core_;2; L1D;_   ;byp_issued;    153581;Core_;2; L1D;_          ;APC;   0.29197;Core_;2; L1D;_          ;LPM;   0.94404;Core_;2; L1D;_       ;C-AMAT;   3.42496;Core_;2; L1D;_          ;MST;   1.34105;
+Core_;2; L1D;_ ;total_access;   3812392;Core_;2; L1D;_    ;total_hit;   3444804;Core_;2; L1D;_   ;total_miss;    367588;L1D_total_HitR: 0.90358
+Core_;2; L1D;_        ;loads;   3275490;Core_;2; L1D;_     ;load_hit;   2944653;Core_;2; L1D;_    ;load_miss;    330837;L1D_load_HitR: 0.89900;
+Core_;2; L1D;_;load_wByP_acc;   3429071;Core_;2; L1D;_;load_wByP_hit;   2944653;Core_;2; L1D;_;load_wByP_byp;    153581;Core_;2; L1D;_;load_wByP_miss;    330837;L1D_load_wByP_HitR: 0.85873;
+Core_;2; L1D;_         ;RFOs;    536902;Core_;2; L1D;_      ;RFO_hit;    500151;Core_;2; L1D;_     ;RFO_miss;     36751;L1D_RFO_HitR: 0.93155;
+Core_;2; L1D;_   ;prefetches;         0;Core_;2; L1D;_ ;prefetch_hit;         0;Core_;2; L1D;_;prefetch_miss;         0;L1D_Pf_HitR: nan;
+Core_;2; L1D;_   ;writebacks;         0;Core_;2; L1D;_;writeback_hit;         0;Core_;2; L1D;_;writeback_miss;         0;L1D_writeback_HitR: nan;
+Core_;2; L1D;_ ;pf_requested;         0;Core_;2; L1D;_    ;pf_issued;         0;
+Core_;2; L1D;_    ;pf_useful;         0;Core_;2; L1D;_   ;pf_useless;         0;
+Core_;2; L1D;_      ;pf_late;         0;L1D_Useful Ratio: nan;
+Core_;2; L1D;_ ;avg_miss_lat;  64.17490;
+
+Core_;2; L1I;_         ;MPKI;   0.33629;Core_;2; L1I;_;LOAD_MSHR_cap;    333243;Core_;2; L1I;_      ;RFO_cap;         0;Core_;2; L1I;_  ;Pf_MSHR_cap;         0;Core_;2; L1I;_;WrBk_MSHR_cap;         0;
+Core_;2; L1I;_ ;pureAdm_LOAD;    333243;Core_;2; L1I;_  ;pureAdm_RFO;         0;Core_;2; L1I;_   ;pureAdm_Pf;         0;Core_;2; L1I;_ ;pureAdm_WrBk;         0;
+Core_;2; L1I;_      ;byp_req;         0;Core_;2; L1I;_   ;byp_issued;         0;Core_;2; L1I;_          ;APC;   0.44116;Core_;2; L1I;_          ;LPM;   0.39557;Core_;2; L1I;_       ;C-AMAT;   2.26674;Core_;2; L1I;_          ;MST;   0.10158;
+Core_;2; L1I;_ ;total_access;   2136814;Core_;2; L1I;_    ;total_hit;   2132106;Core_;2; L1I;_   ;total_miss;      4708;L1I_total_HitR: 0.99780
+Core_;2; L1I;_        ;loads;   2136814;Core_;2; L1I;_     ;load_hit;   2132106;Core_;2; L1I;_    ;load_miss;      4708;L1I_load_HitR: 0.99780;
+Core_;2; L1I;_;load_wByP_acc;   2136814;Core_;2; L1I;_;load_wByP_hit;   2132106;Core_;2; L1I;_;load_wByP_byp;         0;Core_;2; L1I;_;load_wByP_miss;      4708;L1I_load_wByP_HitR: 0.99780;
+Core_;2; L1I;_         ;RFOs;         0;Core_;2; L1I;_      ;RFO_hit;         0;Core_;2; L1I;_     ;RFO_miss;         0;L1I_RFO_HitR: nan;
+Core_;2; L1I;_   ;prefetches;         0;Core_;2; L1I;_ ;prefetch_hit;         0;Core_;2; L1I;_;prefetch_miss;         0;L1I_Pf_HitR: nan;
+Core_;2; L1I;_   ;writebacks;         0;Core_;2; L1I;_;writeback_hit;         0;Core_;2; L1I;_;writeback_miss;         0;L1I_writeback_HitR: nan;
+Core_;2; L1I;_ ;pf_requested;         0;Core_;2; L1I;_    ;pf_issued;         0;
+Core_;2; L1I;_    ;pf_useful;         0;Core_;2; L1I;_   ;pf_useless;         0;
+Core_;2; L1I;_      ;pf_late;         0;L1I_Useful Ratio: nan;
+Core_;2; L1I;_ ;avg_miss_lat; 236.28144;
+
+Core_;2; L2C;_         ;MPKI;  11.16386;Core_;2; L2C;_;LOAD_MSHR_cap;      2036;Core_;2; L2C;_      ;RFO_cap;         0;Core_;2; L2C;_  ;Pf_MSHR_cap;      3917;Core_;2; L2C;_;WrBk_MSHR_cap;         0;
+Core_;2; L2C;_ ;pureAdm_LOAD;      2036;Core_;2; L2C;_  ;pureAdm_RFO;         0;Core_;2; L2C;_   ;pureAdm_Pf;         0;Core_;2; L2C;_ ;pureAdm_WrBk;         0;
+Core_;2; L2C;_      ;byp_req;    102536;Core_;2; L2C;_   ;byp_issued;      7038;Core_;2; L2C;_          ;APC;   0.12311;Core_;2; L2C;_          ;LPM;   0.78691;Core_;2; L2C;_       ;C-AMAT;   8.12315;Core_;2; L2C;_          ;MST;   6.01350;
+Core_;2; L2C;_ ;total_access;   1350624;Core_;2; L2C;_    ;total_hit;   1194330;Core_;2; L2C;_   ;total_miss;    156294;L2C_total_HitR: 0.88428
+Core_;2; L2C;_        ;loads;    451123;Core_;2; L2C;_     ;load_hit;    343213;Core_;2; L2C;_    ;load_miss;    107910;L2C_load_HitR: 0.76080;
+Core_;2; L2C;_;load_wByP_acc;    458161;Core_;2; L2C;_;load_wByP_hit;    343213;Core_;2; L2C;_;load_wByP_byp;      7038;Core_;2; L2C;_;load_wByP_miss;    107910;L2C_load_wByP_HitR: 0.74911;
+Core_;2; L2C;_         ;RFOs;     36747;Core_;2; L2C;_      ;RFO_hit;      3782;Core_;2; L2C;_     ;RFO_miss;     32965;L2C_RFO_HitR: 0.10292;
+Core_;2; L2C;_   ;prefetches;    752755;Core_;2; L2C;_ ;prefetch_hit;    738233;Core_;2; L2C;_;prefetch_miss;     14522;L2C_Pf_HitR: 0.98071;
+Core_;2; L2C;_   ;writebacks;    109999;Core_;2; L2C;_;writeback_hit;    109102;Core_;2; L2C;_;writeback_miss;       897;L2C_writeback_HitR: 0.99185;
+Core_;2; L2C;_ ;pf_requested;   2172731;Core_;2; L2C;_    ;pf_issued;   2037109;
+Core_;2; L2C;_    ;pf_useful;     14519;Core_;2; L2C;_   ;pf_useless;      1351;
+Core_;2; L2C;_      ;pf_late;     14904;L2C_Useful Ratio: 0.00713;
+Core_;2; L2C;_ ;avg_miss_lat;231581.70356;
+
+Core_;2; LLC;_         ;MPKI;   5.98450;Core_;2; LLC;_;LOAD_MSHR_cap;         0;Core_;2; LLC;_      ;RFO_cap;         0;Core_;2; LLC;_  ;Pf_MSHR_cap;         0;Core_;2; LLC;_;WrBk_MSHR_cap;         0;
+Core_;2; LLC;_ ;pureAdm_LOAD;         0;Core_;2; LLC;_  ;pureAdm_RFO;         0;Core_;2; LLC;_   ;pureAdm_Pf;         0;Core_;2; LLC;_ ;pureAdm_WrBk;         0;
+Core_;2; LLC;_      ;byp_req;     37047;Core_;2; LLC;_   ;byp_issued;     34746;Core_;2; LLC;_          ;APC;   0.02335;Core_;2; LLC;_          ;LPM;   1.34560;Core_;2; LLC;_       ;C-AMAT;  42.83541;Core_;2; LLC;_          ;MST;   6.30132;
+Core_;2; LLC;_ ;total_access;    486448;Core_;2; LLC;_    ;total_hit;    402665;Core_;2; LLC;_   ;total_miss;     83783;LLC_total_HitR: 0.82777
+Core_;2; LLC;_        ;loads;     65789;Core_;2; LLC;_     ;load_hit;     54896;Core_;2; LLC;_    ;load_miss;     10893;LLC_load_HitR: 0.83443;
+Core_;2; LLC;_;load_wByP_acc;    100535;Core_;2; LLC;_;load_wByP_hit;     54896;Core_;2; LLC;_;load_wByP_byp;     34746;Core_;2; LLC;_;load_wByP_miss;     10893;LLC_load_wByP_HitR: 0.54604;
+Core_;2; LLC;_         ;RFOs;     32965;Core_;2; LLC;_      ;RFO_hit;        48;Core_;2; LLC;_     ;RFO_miss;     32917;LLC_RFO_HitR: 0.00146;
+Core_;2; LLC;_   ;prefetches;    289001;Core_;2; LLC;_ ;prefetch_hit;    251023;Core_;2; LLC;_;prefetch_miss;     37978;LLC_Pf_HitR: 0.86859;
+Core_;2; LLC;_   ;writebacks;     98693;Core_;2; LLC;_;writeback_hit;     96698;Core_;2; LLC;_;writeback_miss;      1995;LLC_writeback_HitR: 0.97979;
+Core_;2; LLC;_ ;pf_requested;         0;Core_;2; LLC;_    ;pf_issued;         0;
+Core_;2; LLC;_    ;pf_useful;    248568;Core_;2; LLC;_   ;pf_useless;     69969;
+Core_;2; LLC;_      ;pf_late;     76472;LLC_Useful Ratio: inf;
+Core_;2; LLC;_ ;avg_miss_lat;16138.01377;
+
+Core_2_major_page_fault 0
+Core_2_minor_page_fault 2327
+
+
+=== LPM Cycle Classification  CPU 2 (ROI) ===
+Lvl        h(hit)      m(miss)     x(mixed)      e(idle) |        omega       mu    kappa      phi |   LPMR_std   LPMR_byp |   C-AMAT      APC      MST      CPA
+ITLB      4281781         1649         2497     18251065 |      4285927   0.0010   0.3977   0.9996 |        n/a        n/a |      n/a      n/a      n/a      n/a
+DTLB      4807566        12592        21115     17695712 |      4841273   0.0070   0.3736   0.9974 |        n/a        n/a |      n/a      n/a      n/a      n/a
+STLB        40833            0            0     22475361 |        40833   0.0000   0.0000   1.0000 |        n/a        n/a |      n/a      n/a      n/a      n/a
+L1I       6153592       291693        63705     16027940 |      6508990   0.0546   0.8208   0.9552 |        n/a        n/a |      n/a      n/a      n/a      n/a
+L1D       4681023      6082277      4770535      7003157 |     15533835   0.6987   0.5604   0.6084 |   0.944035   0.944035 |   3.4250   0.2920   1.3410   4.9690
+L2C       2307705      9585553      1055084      9588650 |     12948342   0.8218   0.9008   0.2597 |   0.786908   0.786908 |   8.1231   0.1231   6.0135  14.1386
+LLC       2752964      3257128     16131361       547164 |     22141453   0.8757   0.1680   0.8529 |   1.345599   1.345599 |  42.8354   0.0233   6.3013  43.8940
+DRAM         6641      5534779     16650716       497713 |     22192136   0.9997   0.2495   0.7506 |   1.348679   1.348679 | 123.1685   0.0081  30.7186 125.9309
+Global LPMR_std: 1.348145  LPMR_byp: 1.348145
+
+=== ByPLatTracker CPU 2 ===
+Lvl      mshr_avg    mshr_pk byp_infl_avg     byp_pk    mlp_avg     mlp_pk      samples
+L1D         0.021          6        1.798          7      1.819          9       153581
+L2C         3.548         24        1.165          4      4.714         25         7038
+LLC        10.390         92        1.190          9     11.580         93        34746
+Core_;2;DRAM;_;APC;0.00812;Core_;2;DRAM;_;LPM;1.34868;Core_;2;DRAM;_;C-AMAT;123.16853;Core_;2;DRAM;_;MST;30.71857;
+Core_3_instructions 14000000
+Core_3_cycles 22574778
+Core_3_IPC 0.62016
+
+Core_;3;_;branch_prediction_accuracy;98.22110;
+Core_;3;_;branch_MPKI;0.70784;
+Core_;3;_;average_ROB_occupancy_at_mispredict;287.11237;
+
+Core_;3; L1D;_         ;MPKI;  26.24464;Core_;3; L1D;_;LOAD_MSHR_cap;    358209;Core_;3; L1D;_      ;RFO_cap;       261;Core_;3; L1D;_  ;Pf_MSHR_cap;         0;Core_;3; L1D;_;WrBk_MSHR_cap;         0;
+Core_;3; L1D;_ ;pureAdm_LOAD;    358209;Core_;3; L1D;_  ;pureAdm_RFO;         0;Core_;3; L1D;_   ;pureAdm_Pf;         0;Core_;3; L1D;_ ;pureAdm_WrBk;         0;
+Core_;3; L1D;_      ;byp_req;    856674;Core_;3; L1D;_   ;byp_issued;    159034;Core_;3; L1D;_          ;APC;   0.29459;Core_;3; L1D;_          ;LPM;   0.93537;Core_;3; L1D;_       ;C-AMAT;   3.39454;Core_;3; L1D;_          ;MST;   1.31429;
+Core_;3; L1D;_ ;total_access;   3812736;Core_;3; L1D;_    ;total_hit;   3445311;Core_;3; L1D;_   ;total_miss;    367425;L1D_total_HitR: 0.90363
+Core_;3; L1D;_        ;loads;   3276145;Core_;3; L1D;_     ;load_hit;   2945904;Core_;3; L1D;_    ;load_miss;    330241;L1D_load_HitR: 0.89920;
+Core_;3; L1D;_;load_wByP_acc;   3429842;Core_;3; L1D;_;load_wByP_hit;   2945904;Core_;3; L1D;_;load_wByP_byp;    153697;Core_;3; L1D;_;load_wByP_miss;    330241;L1D_load_wByP_HitR: 0.85890;
+Core_;3; L1D;_         ;RFOs;    536591;Core_;3; L1D;_      ;RFO_hit;    499407;Core_;3; L1D;_     ;RFO_miss;     37184;L1D_RFO_HitR: 0.93070;
+Core_;3; L1D;_   ;prefetches;         0;Core_;3; L1D;_ ;prefetch_hit;         0;Core_;3; L1D;_;prefetch_miss;         0;L1D_Pf_HitR: nan;
+Core_;3; L1D;_   ;writebacks;         0;Core_;3; L1D;_;writeback_hit;         0;Core_;3; L1D;_;writeback_miss;         0;L1D_writeback_HitR: nan;
+Core_;3; L1D;_ ;pf_requested;         0;Core_;3; L1D;_    ;pf_issued;         0;
+Core_;3; L1D;_    ;pf_useful;         0;Core_;3; L1D;_   ;pf_useless;         0;
+Core_;3; L1D;_      ;pf_late;         0;L1D_Useful Ratio: nan;
+Core_;3; L1D;_ ;avg_miss_lat;  62.93785;
+
+Core_;3; L1I;_         ;MPKI;   0.33621;Core_;3; L1I;_;LOAD_MSHR_cap;    370184;Core_;3; L1I;_      ;RFO_cap;         0;Core_;3; L1I;_  ;Pf_MSHR_cap;         0;Core_;3; L1I;_;WrBk_MSHR_cap;         0;
+Core_;3; L1I;_ ;pureAdm_LOAD;    370184;Core_;3; L1I;_  ;pureAdm_RFO;         0;Core_;3; L1I;_   ;pureAdm_Pf;         0;Core_;3; L1I;_ ;pureAdm_WrBk;         0;
+Core_;3; L1I;_      ;byp_req;         0;Core_;3; L1I;_   ;byp_issued;         0;Core_;3; L1I;_          ;APC;   0.44169;Core_;3; L1I;_          ;LPM;   0.39488;Core_;3; L1I;_       ;C-AMAT;   2.26404;Core_;3; L1I;_          ;MST;   0.09693;
+Core_;3; L1I;_ ;total_access;   2136317;Core_;3; L1I;_    ;total_hit;   2131610;Core_;3; L1I;_   ;total_miss;      4707;L1I_total_HitR: 0.99780
+Core_;3; L1I;_        ;loads;   2136317;Core_;3; L1I;_     ;load_hit;   2131610;Core_;3; L1I;_    ;load_miss;      4707;L1I_load_HitR: 0.99780;
+Core_;3; L1I;_;load_wByP_acc;   2136317;Core_;3; L1I;_;load_wByP_hit;   2131610;Core_;3; L1I;_;load_wByP_byp;         0;Core_;3; L1I;_;load_wByP_miss;      4707;L1I_load_wByP_HitR: 0.99780;
+Core_;3; L1I;_         ;RFOs;         0;Core_;3; L1I;_      ;RFO_hit;         0;Core_;3; L1I;_     ;RFO_miss;         0;L1I_RFO_HitR: nan;
+Core_;3; L1I;_   ;prefetches;         0;Core_;3; L1I;_ ;prefetch_hit;         0;Core_;3; L1I;_;prefetch_miss;         0;L1I_Pf_HitR: nan;
+Core_;3; L1I;_   ;writebacks;         0;Core_;3; L1I;_;writeback_hit;         0;Core_;3; L1I;_;writeback_miss;         0;L1I_writeback_HitR: nan;
+Core_;3; L1I;_ ;pf_requested;         0;Core_;3; L1I;_    ;pf_issued;         0;
+Core_;3; L1I;_    ;pf_useful;         0;Core_;3; L1I;_   ;pf_useless;         0;
+Core_;3; L1I;_      ;pf_late;         0;L1I_Useful Ratio: nan;
+Core_;3; L1I;_ ;avg_miss_lat; 242.40025;
+
+Core_;3; L2C;_         ;MPKI;  11.13000;Core_;3; L2C;_;LOAD_MSHR_cap;      1355;Core_;3; L2C;_      ;RFO_cap;         0;Core_;3; L2C;_  ;Pf_MSHR_cap;      2342;Core_;3; L2C;_;WrBk_MSHR_cap;         0;
+Core_;3; L2C;_ ;pureAdm_LOAD;      1355;Core_;3; L2C;_  ;pureAdm_RFO;         0;Core_;3; L2C;_   ;pureAdm_Pf;         0;Core_;3; L2C;_ ;pureAdm_WrBk;         0;
+Core_;3; L2C;_      ;byp_req;    102256;Core_;3; L2C;_   ;byp_issued;      6295;Core_;3; L2C;_          ;APC;   0.12480;Core_;3; L2C;_          ;LPM;   0.77451;Core_;3; L2C;_       ;C-AMAT;   8.01283;Core_;3; L2C;_          ;MST;   5.90703;
+Core_;3; L2C;_ ;total_access;   1348674;Core_;3; L2C;_    ;total_hit;   1192854;Core_;3; L2C;_   ;total_miss;    155820;L2C_total_HitR: 0.88446
+Core_;3; L2C;_        ;loads;    450738;Core_;3; L2C;_     ;load_hit;    342592;Core_;3; L2C;_    ;load_miss;    108146;L2C_load_HitR: 0.76007;
+Core_;3; L2C;_;load_wByP_acc;    456946;Core_;3; L2C;_;load_wByP_hit;    342592;Core_;3; L2C;_;load_wByP_byp;      6208;Core_;3; L2C;_;load_wByP_miss;    108146;L2C_load_wByP_HitR: 0.74974;
+Core_;3; L2C;_         ;RFOs;     37183;Core_;3; L2C;_      ;RFO_hit;      4215;Core_;3; L2C;_     ;RFO_miss;     32968;L2C_RFO_HitR: 0.11336;
+Core_;3; L2C;_   ;prefetches;    750758;Core_;3; L2C;_ ;prefetch_hit;    736829;Core_;3; L2C;_;prefetch_miss;     13929;L2C_Pf_HitR: 0.98145;
+Core_;3; L2C;_   ;writebacks;    109995;Core_;3; L2C;_;writeback_hit;    109218;Core_;3; L2C;_;writeback_miss;       777;L2C_writeback_HitR: 0.99294;
+Core_;3; L2C;_ ;pf_requested;   2201432;Core_;3; L2C;_    ;pf_issued;   2063315;
+Core_;3; L2C;_    ;pf_useful;     14208;Core_;3; L2C;_   ;pf_useless;      1194;
+Core_;3; L2C;_      ;pf_late;     14534;L2C_Useful Ratio: 0.00689;
+Core_;3; L2C;_ ;avg_miss_lat;229612.35108;
+
+Core_;3; LLC;_         ;MPKI;   5.97079;Core_;3; LLC;_;LOAD_MSHR_cap;         0;Core_;3; LLC;_      ;RFO_cap;         0;Core_;3; LLC;_  ;Pf_MSHR_cap;         0;Core_;3; LLC;_;WrBk_MSHR_cap;         0;
+Core_;3; LLC;_ ;pureAdm_LOAD;         0;Core_;3; LLC;_  ;pureAdm_RFO;         0;Core_;3; LLC;_   ;pureAdm_Pf;         0;Core_;3; LLC;_ ;pureAdm_WrBk;         0;
+Core_;3; LLC;_      ;byp_req;     35744;Core_;3; LLC;_   ;byp_issued;     33613;Core_;3; LLC;_          ;APC;   0.02347;Core_;3; LLC;_          ;LPM;   1.33817;Core_;3; LLC;_       ;C-AMAT;  42.60317;Core_;3; LLC;_          ;MST;   6.25065;
+Core_;3; LLC;_ ;total_access;    483525;Core_;3; LLC;_    ;total_hit;    399934;Core_;3; LLC;_   ;total_miss;     83591;LLC_total_HitR: 0.82712
+Core_;3; LLC;_        ;loads;     66929;Core_;3; LLC;_     ;load_hit;     56694;Core_;3; LLC;_    ;load_miss;     10235;LLC_load_HitR: 0.84708;
+Core_;3; LLC;_;load_wByP_acc;    100389;Core_;3; LLC;_;load_wByP_hit;     56694;Core_;3; LLC;_;load_wByP_byp;     33460;Core_;3; LLC;_;load_wByP_miss;     10235;LLC_load_wByP_HitR: 0.56474;
+Core_;3; LLC;_         ;RFOs;     32968;Core_;3; LLC;_      ;RFO_hit;        64;Core_;3; LLC;_     ;RFO_miss;     32904;LLC_RFO_HitR: 0.00194;
+Core_;3; LLC;_   ;prefetches;    287793;Core_;3; LLC;_ ;prefetch_hit;    251634;Core_;3; LLC;_;prefetch_miss;     36159;LLC_Pf_HitR: 0.87436;
+Core_;3; LLC;_   ;writebacks;     95835;Core_;3; LLC;_;writeback_hit;     91542;Core_;3; LLC;_;writeback_miss;      4293;LLC_writeback_HitR: 0.95520;
+Core_;3; LLC;_ ;pf_requested;         0;Core_;3; LLC;_    ;pf_issued;         0;
+Core_;3; LLC;_    ;pf_useful;    248568;Core_;3; LLC;_   ;pf_useless;     69969;
+Core_;3; LLC;_      ;pf_late;     76472;LLC_Useful Ratio: inf;
+Core_;3; LLC;_ ;avg_miss_lat;16175.08115;
+
+Core_3_major_page_fault 0
+Core_3_minor_page_fault 2334
+
+
+=== LPM Cycle Classification  CPU 3 (ROI) ===
+Lvl        h(hit)      m(miss)     x(mixed)      e(idle) |        omega       mu    kappa      phi |   LPMR_std   LPMR_byp |   C-AMAT      APC      MST      CPA
+ITLB      4281169         1627         2518     18137937 |      4285314   0.0010   0.3925   0.9996 |        n/a        n/a |      n/a      n/a      n/a      n/a
+DTLB      4808023        12579        21127     17581396 |      4841729   0.0070   0.3732   0.9974 |        n/a        n/a |      n/a      n/a      n/a      n/a
+STLB        40847            0            0     22364549 |        40847   0.0000   0.0000   1.0000 |        n/a        n/a |      n/a      n/a      n/a      n/a
+L1I       6152147       278291        69891     15922921 |      6500329   0.0536   0.7993   0.9572 |        n/a        n/a |      n/a      n/a      n/a      n/a
+L1D       4705011      5961663      4731052      7025561 |     15397726   0.6944   0.5575   0.6128 |   0.935371   0.935371 |   3.3945   0.2946   1.3143   4.9434
+L2C       2312704      9399079      1037979      9673526 |     12749762   0.8186   0.9005   0.2628 |   0.774514   0.774514 |   8.0128   0.1248   5.9070  14.0923
+LLC       2751208      3231967     16045263       546395 |     22028438   0.8751   0.1677   0.8533 |   1.338169   1.338169 |  42.6032   0.0235   6.2506  43.6599
+DRAM         7798      5551014     16520697       496556 |     22079509   0.9996   0.2515   0.7486 |   1.341272   1.341272 | 124.8439   0.0080  31.3870 127.6515
+Global LPMR_std: 1.300293  LPMR_byp: 1.300293
+
+=== ByPLatTracker CPU 3 ===
+Lvl      mshr_avg    mshr_pk byp_infl_avg     byp_pk    mlp_avg     mlp_pk      samples
+L1D         0.031          8        1.807          7      1.839          9       159034
+L2C         2.965         38        1.162          5      4.127         39         6295
+LLC        10.361         96        1.186          8     11.547         97        33613
+Core_;3;DRAM;_;APC;0.00801;Core_;3;DRAM;_;LPM;1.34127;Core_;3;DRAM;_;C-AMAT;124.84385;Core_;3;DRAM;_;MST;31.38702;
+Core_4_instructions 14000004
+Core_4_cycles 22324274
+Core_4_IPC 0.62712
+
+Core_;4;_;branch_prediction_accuracy;98.22544;
+Core_;4;_;branch_MPKI;0.69410;
+Core_;4;_;average_ROB_occupancy_at_mispredict;287.16736;
+
+Core_;4; L1D;_         ;MPKI;  26.14871;Core_;4; L1D;_;LOAD_MSHR_cap;    337137;Core_;4; L1D;_      ;RFO_cap;       199;Core_;4; L1D;_  ;Pf_MSHR_cap;         0;Core_;4; L1D;_;WrBk_MSHR_cap;         0;
+Core_;4; L1D;_ ;pureAdm_LOAD;    337137;Core_;4; L1D;_  ;pureAdm_RFO;         0;Core_;4; L1D;_   ;pureAdm_Pf;         0;Core_;4; L1D;_ ;pureAdm_WrBk;         0;
+Core_;4; L1D;_      ;byp_req;    861692;Core_;4; L1D;_   ;byp_issued;    171363;Core_;4; L1D;_          ;APC;   0.29743;Core_;4; L1D;_          ;LPM;   0.93226;Core_;4; L1D;_       ;C-AMAT;   3.36211;Core_;4; L1D;_          ;MST;   1.28421;
+Core_;4; L1D;_ ;total_access;   3809969;Core_;4; L1D;_    ;total_hit;   3443887;Core_;4; L1D;_   ;total_miss;    366082;L1D_total_HitR: 0.90391
+Core_;4; L1D;_        ;loads;   3273025;Core_;4; L1D;_     ;load_hit;   2943894;Core_;4; L1D;_    ;load_miss;    329131;L1D_load_HitR: 0.89944;
+Core_;4; L1D;_;load_wByP_acc;   3430313;Core_;4; L1D;_;load_wByP_hit;   2943894;Core_;4; L1D;_;load_wByP_byp;    157288;Core_;4; L1D;_;load_wByP_miss;    329131;L1D_load_wByP_HitR: 0.85820;
+Core_;4; L1D;_         ;RFOs;    536944;Core_;4; L1D;_      ;RFO_hit;    499993;Core_;4; L1D;_     ;RFO_miss;     36951;L1D_RFO_HitR: 0.93118;
+Core_;4; L1D;_   ;prefetches;         0;Core_;4; L1D;_ ;prefetch_hit;         0;Core_;4; L1D;_;prefetch_miss;         0;L1D_Pf_HitR: nan;
+Core_;4; L1D;_   ;writebacks;         0;Core_;4; L1D;_;writeback_hit;         0;Core_;4; L1D;_;writeback_miss;         0;L1D_writeback_HitR: nan;
+Core_;4; L1D;_ ;pf_requested;         0;Core_;4; L1D;_    ;pf_issued;         0;
+Core_;4; L1D;_    ;pf_useful;         0;Core_;4; L1D;_   ;pf_useless;         0;
+Core_;4; L1D;_      ;pf_late;         0;L1D_Useful Ratio: nan;
+Core_;4; L1D;_ ;avg_miss_lat;  63.12897;
+
+Core_;4; L1I;_         ;MPKI;   0.33614;Core_;4; L1I;_;LOAD_MSHR_cap;    301718;Core_;4; L1I;_      ;RFO_cap;         0;Core_;4; L1I;_  ;Pf_MSHR_cap;         0;Core_;4; L1I;_;WrBk_MSHR_cap;         0;
+Core_;4; L1I;_ ;pureAdm_LOAD;    301718;Core_;4; L1I;_  ;pureAdm_RFO;         0;Core_;4; L1I;_   ;pureAdm_Pf;         0;Core_;4; L1I;_ ;pureAdm_WrBk;         0;
+Core_;4; L1I;_      ;byp_req;         0;Core_;4; L1I;_   ;byp_issued;         0;Core_;4; L1I;_          ;APC;   0.44341;Core_;4; L1I;_          ;LPM;   0.39571;Core_;4; L1I;_       ;C-AMAT;   2.25525;Core_;4; L1I;_          ;MST;   0.09472;
+Core_;4; L1I;_ ;total_access;   2134219;Core_;4; L1I;_    ;total_hit;   2129513;Core_;4; L1I;_   ;total_miss;      4706;L1I_total_HitR: 0.99779
+Core_;4; L1I;_        ;loads;   2134219;Core_;4; L1I;_     ;load_hit;   2129513;Core_;4; L1I;_    ;load_miss;      4706;L1I_load_HitR: 0.99779;
+Core_;4; L1I;_;load_wByP_acc;   2134219;Core_;4; L1I;_;load_wByP_hit;   2129513;Core_;4; L1I;_;load_wByP_byp;         0;Core_;4; L1I;_;load_wByP_miss;      4706;L1I_load_wByP_HitR: 0.99779;
+Core_;4; L1I;_         ;RFOs;         0;Core_;4; L1I;_      ;RFO_hit;         0;Core_;4; L1I;_     ;RFO_miss;         0;L1I_RFO_HitR: nan;
+Core_;4; L1I;_   ;prefetches;         0;Core_;4; L1I;_ ;prefetch_hit;         0;Core_;4; L1I;_;prefetch_miss;         0;L1I_Pf_HitR: nan;
+Core_;4; L1I;_   ;writebacks;         0;Core_;4; L1I;_;writeback_hit;         0;Core_;4; L1I;_;writeback_miss;         0;L1I_writeback_HitR: nan;
+Core_;4; L1I;_ ;pf_requested;         0;Core_;4; L1I;_    ;pf_issued;         0;
+Core_;4; L1I;_    ;pf_useful;         0;Core_;4; L1I;_   ;pf_useless;         0;
+Core_;4; L1I;_      ;pf_late;         0;L1I_Useful Ratio: nan;
+Core_;4; L1I;_ ;avg_miss_lat; 224.27964;
+
+Core_;4; L2C;_         ;MPKI;  11.13114;Core_;4; L2C;_;LOAD_MSHR_cap;       912;Core_;4; L2C;_      ;RFO_cap;         0;Core_;4; L2C;_  ;Pf_MSHR_cap;      2038;Core_;4; L2C;_;WrBk_MSHR_cap;         0;
+Core_;4; L2C;_ ;pureAdm_LOAD;       912;Core_;4; L2C;_  ;pureAdm_RFO;         0;Core_;4; L2C;_   ;pureAdm_Pf;         0;Core_;4; L2C;_ ;pureAdm_WrBk;         0;
+Core_;4; L2C;_      ;byp_req;    105969;Core_;4; L2C;_   ;byp_issued;      7008;Core_;4; L2C;_          ;APC;   0.12681;Core_;4; L2C;_          ;LPM;   0.76687;Core_;4; L2C;_       ;C-AMAT;   7.88565;Core_;4; L2C;_          ;MST;   5.78328;
+Core_;4; L2C;_ ;total_access;   1347042;Core_;4; L2C;_    ;total_hit;   1191206;Core_;4; L2C;_   ;total_miss;    155836;L2C_total_HitR: 0.88431
+Core_;4; L2C;_        ;loads;    451638;Core_;4; L2C;_     ;load_hit;    342999;Core_;4; L2C;_    ;load_miss;    108639;L2C_load_HitR: 0.75946;
+Core_;4; L2C;_;load_wByP_acc;    458405;Core_;4; L2C;_;load_wByP_hit;    342999;Core_;4; L2C;_;load_wByP_byp;      6767;Core_;4; L2C;_;load_wByP_miss;    108639;L2C_load_wByP_HitR: 0.74824;
+Core_;4; L2C;_         ;RFOs;     36947;Core_;4; L2C;_      ;RFO_hit;      3985;Core_;4; L2C;_     ;RFO_miss;     32962;L2C_RFO_HitR: 0.10786;
+Core_;4; L2C;_   ;prefetches;    748467;Core_;4; L2C;_ ;prefetch_hit;    735000;Core_;4; L2C;_;prefetch_miss;     13467;L2C_Pf_HitR: 0.98201;
+Core_;4; L2C;_   ;writebacks;    109990;Core_;4; L2C;_;writeback_hit;    109222;Core_;4; L2C;_;writeback_miss;       768;L2C_writeback_HitR: 0.99302;
+Core_;4; L2C;_ ;pf_requested;   2243182;Core_;4; L2C;_    ;pf_issued;   2094901;
+Core_;4; L2C;_    ;pf_useful;     13519;Core_;4; L2C;_   ;pf_useless;      1280;
+Core_;4; L2C;_      ;pf_late;     13728;L2C_Useful Ratio: 0.00645;
+Core_;4; L2C;_ ;avg_miss_lat;231618.13519;
+
+Core_;4; LLC;_         ;MPKI;   6.12593;Core_;4; LLC;_;LOAD_MSHR_cap;         0;Core_;4; LLC;_      ;RFO_cap;         0;Core_;4; LLC;_  ;Pf_MSHR_cap;         0;Core_;4; LLC;_;WrBk_MSHR_cap;         0;
+Core_;4; LLC;_ ;pureAdm_LOAD;         0;Core_;4; LLC;_  ;pureAdm_RFO;         0;Core_;4; LLC;_   ;pureAdm_Pf;         0;Core_;4; LLC;_ ;pureAdm_WrBk;         0;
+Core_;4; LLC;_      ;byp_req;     36192;Core_;4; LLC;_   ;byp_issued;     33869;Core_;4; LLC;_          ;APC;   0.02342;Core_;4; LLC;_          ;LPM;   1.33259;Core_;4; LLC;_       ;C-AMAT;  42.69023;Core_;4; LLC;_          ;MST;   6.21310;
+Core_;4; LLC;_ ;total_access;    479147;Core_;4; LLC;_    ;total_hit;    393384;Core_;4; LLC;_   ;total_miss;     85763;LLC_total_HitR: 0.82101
+Core_;4; LLC;_        ;loads;     69126;Core_;4; LLC;_     ;load_hit;     59314;Core_;4; LLC;_    ;load_miss;      9812;LLC_load_HitR: 0.85806;
+Core_;4; LLC;_;load_wByP_acc;    102272;Core_;4; LLC;_;load_wByP_hit;     59314;Core_;4; LLC;_;load_wByP_byp;     33146;Core_;4; LLC;_;load_wByP_miss;      9812;LLC_load_wByP_HitR: 0.57996;
+Core_;4; LLC;_         ;RFOs;     32962;Core_;4; LLC;_      ;RFO_hit;        71;Core_;4; LLC;_     ;RFO_miss;     32891;LLC_RFO_HitR: 0.00215;
+Core_;4; LLC;_   ;prefetches;    279495;Core_;4; LLC;_ ;prefetch_hit;    239454;Core_;4; LLC;_;prefetch_miss;     40041;LLC_Pf_HitR: 0.85674;
+Core_;4; LLC;_   ;writebacks;     97564;Core_;4; LLC;_;writeback_hit;     94545;Core_;4; LLC;_;writeback_miss;      3019;LLC_writeback_HitR: 0.96906;
+Core_;4; LLC;_ ;pf_requested;         0;Core_;4; LLC;_    ;pf_issued;         0;
+Core_;4; LLC;_    ;pf_useful;    248568;Core_;4; LLC;_   ;pf_useless;     69969;
+Core_;4; LLC;_      ;pf_late;     76472;LLC_Useful Ratio: inf;
+Core_;4; LLC;_ ;avg_miss_lat;15765.43740;
+
+Core_4_major_page_fault 0
+Core_4_minor_page_fault 2343
+
+
+=== LPM Cycle Classification  CPU 4 (ROI) ===
+Lvl        h(hit)      m(miss)     x(mixed)      e(idle) |        omega       mu    kappa      phi |   LPMR_std   LPMR_byp |   C-AMAT      APC      MST      CPA
+ITLB      4275537         1620         2509     17893057 |      4279666   0.0010   0.3923   0.9996 |        n/a        n/a |      n/a      n/a      n/a      n/a
+DTLB      4808870        12607        21121     17330026 |      4842598   0.0070   0.3738   0.9974 |        n/a        n/a |      n/a      n/a      n/a      n/a
+STLB        40850            0            0     22113878 |        40850   0.0000   0.0000   1.0000 |        n/a        n/a |      n/a      n/a      n/a      n/a
+L1I       6139857       271750        58490     15702625 |      6470097   0.0510   0.8229   0.9580 |        n/a        n/a |      n/a      n/a      n/a      n/a
+L1D       4695935      5822251      4724722      6929788 |     15242908   0.6919   0.5520   0.6180 |   0.932263   0.932263 |   3.3621   0.2974   1.2842   4.8906
+L2C       2324562      9195719      1018322      9634102 |     12538603   0.8146   0.9003   0.2666 |   0.766866   0.766866 |   7.8857   0.1268   5.7833  13.9446
+LLC       2744259      3171062     15873045       535963 |     21788366   0.8740   0.1665   0.8545 |   1.332586   1.332586 |  42.6902   0.0234   6.2131  43.7403
+DRAM         7456      5351657     16471483       494965 |     21830596   0.9997   0.2452   0.7549 |   1.335168   1.335168 | 120.7591   0.0083  29.6035 123.4971
+Global LPMR_std: 1.272005  LPMR_byp: 1.272005
+
+=== ByPLatTracker CPU 4 ===
+Lvl      mshr_avg    mshr_pk byp_infl_avg     byp_pk    mlp_avg     mlp_pk      samples
+L1D         0.020          8        1.876          7      1.896          9       171363
+L2C         3.123         32        1.209          4      4.332         33         7008
+LLC        10.068        103        1.197          9     11.265        104        33869
+Core_;4;DRAM;_;APC;0.00828;Core_;4;DRAM;_;LPM;1.33517;Core_;4;DRAM;_;C-AMAT;120.75914;Core_;4;DRAM;_;MST;29.60347;
+Core_5_instructions 14000000
+Core_5_cycles 22383286
+Core_5_IPC 0.62547
+
+Core_;5;_;branch_prediction_accuracy;98.22382;
+Core_;5;_;branch_MPKI;0.69880;
+Core_;5;_;average_ROB_occupancy_at_mispredict;287.27850;
+
+Core_;5; L1D;_         ;MPKI;  26.61193;Core_;5; L1D;_;LOAD_MSHR_cap;    343772;Core_;5; L1D;_      ;RFO_cap;       185;Core_;5; L1D;_  ;Pf_MSHR_cap;         0;Core_;5; L1D;_;WrBk_MSHR_cap;         0;
+Core_;5; L1D;_ ;pureAdm_LOAD;    343772;Core_;5; L1D;_  ;pureAdm_RFO;         0;Core_;5; L1D;_   ;pureAdm_Pf;         0;Core_;5; L1D;_ ;pureAdm_WrBk;         0;
+Core_;5; L1D;_      ;byp_req;    858284;Core_;5; L1D;_   ;byp_issued;    158669;Core_;5; L1D;_          ;APC;   0.29551;Core_;5; L1D;_          ;LPM;   0.94300;Core_;5; L1D;_       ;C-AMAT;   3.38395;Core_;5; L1D;_          ;MST;   1.30843;
+Core_;5; L1D;_ ;total_access;   3816885;Core_;5; L1D;_    ;total_hit;   3444318;Core_;5; L1D;_   ;total_miss;    372567;L1D_total_HitR: 0.90239
+Core_;5; L1D;_        ;loads;   3279063;Core_;5; L1D;_     ;load_hit;   2942950;Core_;5; L1D;_    ;load_miss;    336113;L1D_load_HitR: 0.89750;
+Core_;5; L1D;_;load_wByP_acc;   3427453;Core_;5; L1D;_;load_wByP_hit;   2942950;Core_;5; L1D;_;load_wByP_byp;    148390;Core_;5; L1D;_;load_wByP_miss;    336113;L1D_load_wByP_HitR: 0.85864;
+Core_;5; L1D;_         ;RFOs;    537822;Core_;5; L1D;_      ;RFO_hit;    501368;Core_;5; L1D;_     ;RFO_miss;     36454;L1D_RFO_HitR: 0.93222;
+Core_;5; L1D;_   ;prefetches;         0;Core_;5; L1D;_ ;prefetch_hit;         0;Core_;5; L1D;_;prefetch_miss;         0;L1D_Pf_HitR: nan;
+Core_;5; L1D;_   ;writebacks;         0;Core_;5; L1D;_;writeback_hit;         0;Core_;5; L1D;_;writeback_miss;         0;L1D_writeback_HitR: nan;
+Core_;5; L1D;_ ;pf_requested;         0;Core_;5; L1D;_    ;pf_issued;         0;
+Core_;5; L1D;_    ;pf_useful;         0;Core_;5; L1D;_   ;pf_useless;         0;
+Core_;5; L1D;_      ;pf_late;         0;L1D_Useful Ratio: nan;
+Core_;5; L1D;_ ;avg_miss_lat;  63.38240;
+
+Core_;5; L1I;_         ;MPKI;   0.33650;Core_;5; L1I;_;LOAD_MSHR_cap;    290257;Core_;5; L1I;_      ;RFO_cap;         0;Core_;5; L1I;_  ;Pf_MSHR_cap;         0;Core_;5; L1I;_;WrBk_MSHR_cap;         0;
+Core_;5; L1I;_ ;pureAdm_LOAD;    290257;Core_;5; L1I;_  ;pureAdm_RFO;         0;Core_;5; L1I;_   ;pureAdm_Pf;         0;Core_;5; L1I;_ ;pureAdm_WrBk;         0;
+Core_;5; L1I;_      ;byp_req;         0;Core_;5; L1I;_   ;byp_issued;         0;Core_;5; L1I;_          ;APC;   0.44469;Core_;5; L1I;_          ;LPM;   0.39638;Core_;5; L1I;_       ;C-AMAT;   2.24878;Core_;5; L1I;_          ;MST;   0.08579;
+Core_;5; L1I;_ ;total_access;   2136838;Core_;5; L1I;_    ;total_hit;   2132127;Core_;5; L1I;_   ;total_miss;      4711;L1I_total_HitR: 0.99780
+Core_;5; L1I;_        ;loads;   2136838;Core_;5; L1I;_     ;load_hit;   2132127;Core_;5; L1I;_    ;load_miss;      4711;L1I_load_HitR: 0.99780;
+Core_;5; L1I;_;load_wByP_acc;   2136838;Core_;5; L1I;_;load_wByP_hit;   2132127;Core_;5; L1I;_;load_wByP_byp;         0;Core_;5; L1I;_;load_wByP_miss;      4711;L1I_load_wByP_HitR: 0.99780;
+Core_;5; L1I;_         ;RFOs;         0;Core_;5; L1I;_      ;RFO_hit;         0;Core_;5; L1I;_     ;RFO_miss;         0;L1I_RFO_HitR: nan;
+Core_;5; L1I;_   ;prefetches;         0;Core_;5; L1I;_ ;prefetch_hit;         0;Core_;5; L1I;_;prefetch_miss;         0;L1I_Pf_HitR: nan;
+Core_;5; L1I;_   ;writebacks;         0;Core_;5; L1I;_;writeback_hit;         0;Core_;5; L1I;_;writeback_miss;         0;L1I_writeback_HitR: nan;
+Core_;5; L1I;_ ;pf_requested;         0;Core_;5; L1I;_    ;pf_issued;         0;
+Core_;5; L1I;_    ;pf_useful;         0;Core_;5; L1I;_   ;pf_useless;         0;
+Core_;5; L1I;_      ;pf_late;         0;L1I_Useful Ratio: nan;
+Core_;5; L1I;_ ;avg_miss_lat; 208.75632;
+
+Core_;5; L2C;_         ;MPKI;  11.14386;Core_;5; L2C;_;LOAD_MSHR_cap;      1746;Core_;5; L2C;_      ;RFO_cap;         0;Core_;5; L2C;_  ;Pf_MSHR_cap;      3073;Core_;5; L2C;_;WrBk_MSHR_cap;         0;
+Core_;5; L2C;_ ;pureAdm_LOAD;      1746;Core_;5; L2C;_  ;pureAdm_RFO;         0;Core_;5; L2C;_   ;pureAdm_Pf;         0;Core_;5; L2C;_ ;pureAdm_WrBk;         0;
+Core_;5; L2C;_      ;byp_req;    103892;Core_;5; L2C;_   ;byp_issued;      6845;Core_;5; L2C;_          ;APC;   0.12637;Core_;5; L2C;_          ;LPM;   0.77554;Core_;5; L2C;_       ;C-AMAT;   7.91337;Core_;5; L2C;_          ;MST;   5.81874;
+Core_;5; L2C;_ ;total_access;   1353678;Core_;5; L2C;_    ;total_hit;   1197664;Core_;5; L2C;_   ;total_miss;    156014;L2C_total_HitR: 0.88475
+Core_;5; L2C;_        ;loads;    452208;Core_;5; L2C;_     ;load_hit;    344658;Core_;5; L2C;_    ;load_miss;    107550;L2C_load_HitR: 0.76217;
+Core_;5; L2C;_;load_wByP_acc;    458868;Core_;5; L2C;_;load_wByP_hit;    344658;Core_;5; L2C;_;load_wByP_byp;      6660;Core_;5; L2C;_;load_wByP_miss;    107550;L2C_load_wByP_HitR: 0.75110;
+Core_;5; L2C;_         ;RFOs;     36449;Core_;5; L2C;_      ;RFO_hit;      3485;Core_;5; L2C;_     ;RFO_miss;     32964;L2C_RFO_HitR: 0.09561;
+Core_;5; L2C;_   ;prefetches;    755029;Core_;5; L2C;_ ;prefetch_hit;    740338;Core_;5; L2C;_;prefetch_miss;     14691;L2C_Pf_HitR: 0.98054;
+Core_;5; L2C;_   ;writebacks;    109992;Core_;5; L2C;_;writeback_hit;    109183;Core_;5; L2C;_;writeback_miss;       809;L2C_writeback_HitR: 0.99264;
+Core_;5; L2C;_ ;pf_requested;   2248272;Core_;5; L2C;_    ;pf_issued;   2105352;
+Core_;5; L2C;_    ;pf_useful;     14745;Core_;5; L2C;_   ;pf_useless;      1368;
+Core_;5; L2C;_      ;pf_late;     14548;L2C_Useful Ratio: 0.00700;
+Core_;5; L2C;_ ;avg_miss_lat;236771.01110;
+
+Core_;5; LLC;_         ;MPKI;   6.15007;Core_;5; LLC;_;LOAD_MSHR_cap;         0;Core_;5; LLC;_      ;RFO_cap;         0;Core_;5; LLC;_  ;Pf_MSHR_cap;         0;Core_;5; LLC;_;WrBk_MSHR_cap;         0;
+Core_;5; LLC;_ ;pureAdm_LOAD;         0;Core_;5; LLC;_  ;pureAdm_RFO;         0;Core_;5; LLC;_   ;pureAdm_Pf;         0;Core_;5; LLC;_ ;pureAdm_WrBk;         0;
+Core_;5; LLC;_      ;byp_req;     35735;Core_;5; LLC;_   ;byp_issued;     33364;Core_;5; LLC;_          ;APC;   0.02368;Core_;5; LLC;_          ;LPM;   1.34101;Core_;5; LLC;_       ;C-AMAT;  42.22879;Core_;5; LLC;_          ;MST;   6.15427;
+Core_;5; LLC;_ ;total_access;    487261;Core_;5; LLC;_    ;total_hit;    401160;Core_;5; LLC;_   ;total_miss;     86101;LLC_total_HitR: 0.82330
+Core_;5; LLC;_        ;loads;     67322;Core_;5; LLC;_     ;load_hit;     57285;Core_;5; LLC;_    ;load_miss;     10037;LLC_load_HitR: 0.85091;
+Core_;5; LLC;_;load_wByP_acc;    100214;Core_;5; LLC;_;load_wByP_hit;     57285;Core_;5; LLC;_;load_wByP_byp;     32892;Core_;5; LLC;_;load_wByP_miss;     10037;LLC_load_wByP_HitR: 0.57163;
+Core_;5; LLC;_         ;RFOs;     32964;Core_;5; LLC;_      ;RFO_hit;        80;Core_;5; LLC;_     ;RFO_miss;     32884;LLC_RFO_HitR: 0.00243;
+Core_;5; LLC;_   ;prefetches;    288171;Core_;5; LLC;_ ;prefetch_hit;    247712;Core_;5; LLC;_;prefetch_miss;     40459;LLC_Pf_HitR: 0.85960;
+Core_;5; LLC;_   ;writebacks;     98804;Core_;5; LLC;_;writeback_hit;     96083;Core_;5; LLC;_;writeback_miss;      2721;LLC_writeback_HitR: 0.97246;
+Core_;5; LLC;_ ;pf_requested;         0;Core_;5; LLC;_    ;pf_issued;         0;
+Core_;5; LLC;_    ;pf_useful;    248568;Core_;5; LLC;_   ;pf_useless;     69969;
+Core_;5; LLC;_      ;pf_late;     76472;LLC_Useful Ratio: inf;
+Core_;5; LLC;_ ;avg_miss_lat;15703.54825;
+
+Core_5_major_page_fault 0
+Core_5_minor_page_fault 2340
+
+
+=== LPM Cycle Classification  CPU 5 (ROI) ===
+Lvl        h(hit)      m(miss)     x(mixed)      e(idle) |        omega       mu    kappa      phi |   LPMR_std   LPMR_byp |   C-AMAT      APC      MST      CPA
+ITLB      4281714         1632         2503     17945868 |      4285849   0.0010   0.3947   0.9996 |        n/a        n/a |      n/a      n/a      n/a      n/a
+DTLB      4810281        12612        21098     17387676 |      4843991   0.0070   0.3741   0.9974 |        n/a        n/a |      n/a      n/a      n/a      n/a
+STLB        40840            0            0     22173053 |        40840   0.0000   0.0000   1.0000 |        n/a        n/a |      n/a      n/a      n/a      n/a
+L1I       6154712       246358        56542     15774105 |      6457612   0.0469   0.8133   0.9618 |        n/a        n/a |      n/a      n/a      n/a      n/a
+L1D       4684542      5940166      4738152      6868857 |     15362860   0.6951   0.5563   0.6133 |   0.942996   0.942996 |   3.3839   0.2955   1.3084   4.8969
+L2C       2317751      9290390      1026614      9596972 |     12634755   0.8166   0.9005   0.2647 |   0.775540   0.775540 |   7.9134   0.1264   5.8187  13.9241
+LLC       2744799      3183929     15918461       536152 |     21847189   0.8744   0.1667   0.8543 |   1.341013   1.341013 |  42.2288   0.0237   6.1543  43.2651
+DRAM         5707      5387463     16494689       496714 |     21887859   0.9997   0.2462   0.7539 |   1.343510   1.343510 | 121.7033   0.0082  29.9560 124.4652
+Global LPMR_std: 1.317613  LPMR_byp: 1.317613
+
+=== ByPLatTracker CPU 5 ===
+Lvl      mshr_avg    mshr_pk byp_infl_avg     byp_pk    mlp_avg     mlp_pk      samples
+L1D         0.019          6        1.821          6      1.840          8       158669
+L2C         3.056         32        1.184          5      4.240         33         6845
+LLC        10.067         91        1.194          8     11.260         92        33364
+Core_;5;DRAM;_;APC;0.00822;Core_;5;DRAM;_;LPM;1.34351;Core_;5;DRAM;_;C-AMAT;121.70334;Core_;5;DRAM;_;MST;29.95598;
+Core_6_instructions 14000004
+Core_6_cycles 22403434
+Core_6_IPC 0.62490
+
+Core_;6;_;branch_prediction_accuracy;98.22385;
+Core_;6;_;branch_MPKI;0.69909;
+Core_;6;_;average_ROB_occupancy_at_mispredict;287.19274;
+
+Core_;6; L1D;_         ;MPKI;  26.39142;Core_;6; L1D;_;LOAD_MSHR_cap;    366871;Core_;6; L1D;_      ;RFO_cap;       119;Core_;6; L1D;_  ;Pf_MSHR_cap;         0;Core_;6; L1D;_;WrBk_MSHR_cap;         0;
+Core_;6; L1D;_ ;pureAdm_LOAD;    366871;Core_;6; L1D;_  ;pureAdm_RFO;         0;Core_;6; L1D;_   ;pureAdm_Pf;         0;Core_;6; L1D;_ ;pureAdm_WrBk;         0;
+Core_;6; L1D;_      ;byp_req;    876132;Core_;6; L1D;_   ;byp_issued;    157400;Core_;6; L1D;_          ;APC;   0.29676;Core_;6; L1D;_          ;LPM;   0.93459;Core_;6; L1D;_       ;C-AMAT;   3.36969;Core_;6; L1D;_          ;MST;   1.29242;
+Core_;6; L1D;_ ;total_access;   3818872;Core_;6; L1D;_    ;total_hit;   3449392;Core_;6; L1D;_   ;total_miss;    369480;L1D_total_HitR: 0.90325
+Core_;6; L1D;_        ;loads;   3280839;Core_;6; L1D;_     ;load_hit;   2947964;Core_;6; L1D;_    ;load_miss;    332875;L1D_load_HitR: 0.89854;
+Core_;6; L1D;_;load_wByP_acc;   3428351;Core_;6; L1D;_;load_wByP_hit;   2947964;Core_;6; L1D;_;load_wByP_byp;    147512;Core_;6; L1D;_;load_wByP_miss;    332875;L1D_load_wByP_HitR: 0.85988;
+Core_;6; L1D;_         ;RFOs;    538033;Core_;6; L1D;_      ;RFO_hit;    501428;Core_;6; L1D;_     ;RFO_miss;     36605;L1D_RFO_HitR: 0.93197;
+Core_;6; L1D;_   ;prefetches;         0;Core_;6; L1D;_ ;prefetch_hit;         0;Core_;6; L1D;_;prefetch_miss;         0;L1D_Pf_HitR: nan;
+Core_;6; L1D;_   ;writebacks;         0;Core_;6; L1D;_;writeback_hit;         0;Core_;6; L1D;_;writeback_miss;         0;L1D_writeback_HitR: nan;
+Core_;6; L1D;_ ;pf_requested;         0;Core_;6; L1D;_    ;pf_issued;         0;
+Core_;6; L1D;_    ;pf_useful;         0;Core_;6; L1D;_   ;pf_useless;         0;
+Core_;6; L1D;_      ;pf_late;         0;L1D_Useful Ratio: nan;
+Core_;6; L1D;_ ;avg_miss_lat;  63.14496;
+
+Core_;6; L1I;_         ;MPKI;   0.33636;Core_;6; L1I;_;LOAD_MSHR_cap;    329743;Core_;6; L1I;_      ;RFO_cap;         0;Core_;6; L1I;_  ;Pf_MSHR_cap;         0;Core_;6; L1I;_;WrBk_MSHR_cap;         0;
+Core_;6; L1I;_ ;pureAdm_LOAD;    329743;Core_;6; L1I;_  ;pureAdm_RFO;         0;Core_;6; L1I;_   ;pureAdm_Pf;         0;Core_;6; L1I;_ ;pureAdm_WrBk;         0;
+Core_;6; L1I;_      ;byp_req;         0;Core_;6; L1I;_   ;byp_issued;         0;Core_;6; L1I;_          ;APC;   0.44204;Core_;6; L1I;_          ;LPM;   0.39667;Core_;6; L1I;_       ;C-AMAT;   2.26226;Core_;6; L1I;_          ;MST;   0.09709;
+Core_;6; L1I;_ ;total_access;   2136973;Core_;6; L1I;_    ;total_hit;   2132264;Core_;6; L1I;_   ;total_miss;      4709;L1I_total_HitR: 0.99780
+Core_;6; L1I;_        ;loads;   2136973;Core_;6; L1I;_     ;load_hit;   2132264;Core_;6; L1I;_    ;load_miss;      4709;L1I_load_HitR: 0.99780;
+Core_;6; L1I;_;load_wByP_acc;   2136973;Core_;6; L1I;_;load_wByP_hit;   2132264;Core_;6; L1I;_;load_wByP_byp;         0;Core_;6; L1I;_;load_wByP_miss;      4709;L1I_load_wByP_HitR: 0.99780;
+Core_;6; L1I;_         ;RFOs;         0;Core_;6; L1I;_      ;RFO_hit;         0;Core_;6; L1I;_     ;RFO_miss;         0;L1I_RFO_HitR: nan;
+Core_;6; L1I;_   ;prefetches;         0;Core_;6; L1I;_ ;prefetch_hit;         0;Core_;6; L1I;_;prefetch_miss;         0;L1I_Pf_HitR: nan;
+Core_;6; L1I;_   ;writebacks;         0;Core_;6; L1I;_;writeback_hit;         0;Core_;6; L1I;_;writeback_miss;         0;L1I_writeback_HitR: nan;
+Core_;6; L1I;_ ;pf_requested;         0;Core_;6; L1I;_    ;pf_issued;         0;
+Core_;6; L1I;_    ;pf_useful;         0;Core_;6; L1I;_   ;pf_useless;         0;
+Core_;6; L1I;_      ;pf_late;         0;L1I_Useful Ratio: nan;
+Core_;6; L1I;_ ;avg_miss_lat; 234.56955;
+
+Core_;6; L2C;_         ;MPKI;  11.15657;Core_;6; L2C;_;LOAD_MSHR_cap;      1143;Core_;6; L2C;_      ;RFO_cap;         0;Core_;6; L2C;_  ;Pf_MSHR_cap;      1892;Core_;6; L2C;_;WrBk_MSHR_cap;         0;
+Core_;6; L2C;_ ;pureAdm_LOAD;      1143;Core_;6; L2C;_  ;pureAdm_RFO;         0;Core_;6; L2C;_   ;pureAdm_Pf;         0;Core_;6; L2C;_ ;pureAdm_WrBk;         0;
+Core_;6; L2C;_      ;byp_req;    103497;Core_;6; L2C;_   ;byp_issued;      6552;Core_;6; L2C;_          ;APC;   0.12592;Core_;6; L2C;_          ;LPM;   0.76992;Core_;6; L2C;_       ;C-AMAT;   7.94176;Core_;6; L2C;_          ;MST;   5.83469;
+Core_;6; L2C;_ ;total_access;   1347282;Core_;6; L2C;_    ;total_hit;   1191090;Core_;6; L2C;_   ;total_miss;    156192;L2C_total_HitR: 0.88407
+Core_;6; L2C;_        ;loads;    449358;Core_;6; L2C;_     ;load_hit;    341086;Core_;6; L2C;_    ;load_miss;    108272;L2C_load_HitR: 0.75905;
+Core_;6; L2C;_;load_wByP_acc;    455728;Core_;6; L2C;_;load_wByP_hit;    341086;Core_;6; L2C;_;load_wByP_byp;      6370;Core_;6; L2C;_;load_wByP_miss;    108272;L2C_load_wByP_HitR: 0.74844;
+Core_;6; L2C;_         ;RFOs;     36602;Core_;6; L2C;_      ;RFO_hit;      3638;Core_;6; L2C;_     ;RFO_miss;     32964;L2C_RFO_HitR: 0.09939;
+Core_;6; L2C;_   ;prefetches;    751336;Core_;6; L2C;_ ;prefetch_hit;    737096;Core_;6; L2C;_;prefetch_miss;     14240;L2C_Pf_HitR: 0.98105;
+Core_;6; L2C;_   ;writebacks;    109986;Core_;6; L2C;_;writeback_hit;    109270;Core_;6; L2C;_;writeback_miss;       716;L2C_writeback_HitR: 0.99349;
+Core_;6; L2C;_ ;pf_requested;   2229921;Core_;6; L2C;_    ;pf_issued;   2089440;
+Core_;6; L2C;_    ;pf_useful;     14618;Core_;6; L2C;_   ;pf_useless;      1156;
+Core_;6; L2C;_      ;pf_late;     14665;L2C_Useful Ratio: 0.00700;
+Core_;6; L2C;_ ;avg_miss_lat;240582.12841;
+
+Core_;6; LLC;_         ;MPKI;   6.03128;Core_;6; LLC;_;LOAD_MSHR_cap;         0;Core_;6; LLC;_      ;RFO_cap;         0;Core_;6; LLC;_  ;Pf_MSHR_cap;         0;Core_;6; LLC;_;WrBk_MSHR_cap;         0;
+Core_;6; LLC;_ ;pureAdm_LOAD;         0;Core_;6; LLC;_  ;pureAdm_RFO;         0;Core_;6; LLC;_   ;pureAdm_Pf;         0;Core_;6; LLC;_ ;pureAdm_WrBk;         0;
+Core_;6; LLC;_      ;byp_req;     35774;Core_;6; LLC;_   ;byp_issued;     33490;Core_;6; LLC;_          ;APC;   0.02381;Core_;6; LLC;_          ;LPM;   1.33470;Core_;6; LLC;_       ;C-AMAT;  41.99820;Core_;6; LLC;_          ;MST;   6.12820;
+Core_;6; LLC;_ ;total_access;    485279;Core_;6; LLC;_    ;total_hit;    400841;Core_;6; LLC;_   ;total_miss;     84438;LLC_total_HitR: 0.82600
+Core_;6; LLC;_        ;loads;     67439;Core_;6; LLC;_     ;load_hit;     56946;Core_;6; LLC;_    ;load_miss;     10493;LLC_load_HitR: 0.84441;
+Core_;6; LLC;_;load_wByP_acc;    100513;Core_;6; LLC;_;load_wByP_hit;     56946;Core_;6; LLC;_;load_wByP_byp;     33074;Core_;6; LLC;_;load_wByP_miss;     10493;LLC_load_wByP_HitR: 0.56655;
+Core_;6; LLC;_         ;RFOs;     32964;Core_;6; LLC;_      ;RFO_hit;        63;Core_;6; LLC;_     ;RFO_miss;     32901;LLC_RFO_HitR: 0.00191;
+Core_;6; LLC;_   ;prefetches;    288349;Core_;6; LLC;_ ;prefetch_hit;    250356;Core_;6; LLC;_;prefetch_miss;     37993;LLC_Pf_HitR: 0.86824;
+Core_;6; LLC;_   ;writebacks;     96527;Core_;6; LLC;_;writeback_hit;     93476;Core_;6; LLC;_;writeback_miss;      3051;LLC_writeback_HitR: 0.96839;
+Core_;6; LLC;_ ;pf_requested;         0;Core_;6; LLC;_    ;pf_issued;         0;
+Core_;6; LLC;_    ;pf_useful;    248568;Core_;6; LLC;_   ;pf_useless;     69969;
+Core_;6; LLC;_      ;pf_late;     76472;LLC_Useful Ratio: inf;
+Core_;6; LLC;_ ;avg_miss_lat;16012.82844;
+
+Core_6_major_page_fault 0
+Core_6_minor_page_fault 2340
+
+
+=== LPM Cycle Classification  CPU 6 (ROI) ===
+Lvl        h(hit)      m(miss)     x(mixed)      e(idle) |        omega       mu    kappa      phi |   LPMR_std   LPMR_byp |   C-AMAT      APC      MST      CPA
+ITLB      4282189         1635         2495     17965546 |      4286319   0.0010   0.3959   0.9996 |        n/a        n/a |      n/a      n/a      n/a      n/a
+DTLB      4809750        12621        21085     17408385 |      4843456   0.0070   0.3744   0.9974 |        n/a        n/a |      n/a      n/a      n/a      n/a
+STLB        40827            0            0     22192930 |        40827   0.0000   0.0000   1.0000 |        n/a        n/a |      n/a      n/a      n/a      n/a
+L1I       6155687       278863        63045     15754270 |      6497595   0.0526   0.8156   0.9571 |        n/a        n/a |      n/a      n/a      n/a      n/a
+L1D       4700529      5871559      4736706      6943071 |     15308794   0.6930   0.5535   0.6165 |   0.934585   0.934585 |   3.3697   0.2968   1.2924   4.8980
+L2C       2313567      9265504      1032472      9640330 |     12611543   0.8166   0.8997   0.2653 |   0.769921   0.769921 |   7.9418   0.1259   5.8347  14.0125
+LLC       2747894      3190125     15924772       540698 |     21862791   0.8743   0.1669   0.8541 |   1.334700   1.334700 |  41.9982   0.0238   6.1282  43.0369
+DRAM         6175      5545619     16356199       496728 |     21907993   0.9997   0.2532   0.7469 |   1.337459   1.337459 | 122.6954   0.0082  31.0581 125.4773
+Global LPMR_std: 1.284486  LPMR_byp: 1.284486
+
+=== ByPLatTracker CPU 6 ===
+Lvl      mshr_avg    mshr_pk byp_infl_avg     byp_pk    mlp_avg     mlp_pk      samples
+L1D         0.022          7        1.835          7      1.857          8       157400
+L2C         2.913         20        1.193          5      4.106         21         6552
+LLC        10.077        110        1.195          9     11.272        111        33490
+Core_;6;DRAM;_;APC;0.00815;Core_;6;DRAM;_;LPM;1.33746;Core_;6;DRAM;_;C-AMAT;122.69536;Core_;6;DRAM;_;MST;31.05815;
+Core_7_instructions 14000004
+Core_7_cycles 22532503
+Core_7_IPC 0.62132
+
+Core_;7;_;branch_prediction_accuracy;98.22179;
+Core_;7;_;branch_MPKI;0.70611;
+Core_;7;_;average_ROB_occupancy_at_mispredict;287.14428;
+
+Core_;7; L1D;_         ;MPKI;  26.18464;Core_;7; L1D;_;LOAD_MSHR_cap;    403260;Core_;7; L1D;_      ;RFO_cap;       268;Core_;7; L1D;_  ;Pf_MSHR_cap;         0;Core_;7; L1D;_;WrBk_MSHR_cap;         0;
+Core_;7; L1D;_ ;pureAdm_LOAD;    403260;Core_;7; L1D;_  ;pureAdm_RFO;         0;Core_;7; L1D;_   ;pureAdm_Pf;         0;Core_;7; L1D;_ ;pureAdm_WrBk;         0;
+Core_;7; L1D;_      ;byp_req;    907468;Core_;7; L1D;_   ;byp_issued;    163624;Core_;7; L1D;_          ;APC;   0.29536;Core_;7; L1D;_          ;LPM;   0.93048;Core_;7; L1D;_       ;C-AMAT;   3.38569;Core_;7; L1D;_          ;MST;   1.29886;
+Core_;7; L1D;_ ;total_access;   3809449;Core_;7; L1D;_    ;total_hit;   3442864;Core_;7; L1D;_   ;total_miss;    366585;L1D_total_HitR: 0.90377
+Core_;7; L1D;_        ;loads;   3270749;Core_;7; L1D;_     ;load_hit;   2940902;Core_;7; L1D;_    ;load_miss;    329847;L1D_load_HitR: 0.89915;
+Core_;7; L1D;_;load_wByP_acc;   3427505;Core_;7; L1D;_;load_wByP_hit;   2940902;Core_;7; L1D;_;load_wByP_byp;    156756;Core_;7; L1D;_;load_wByP_miss;    329847;L1D_load_wByP_HitR: 0.85803;
+Core_;7; L1D;_         ;RFOs;    538700;Core_;7; L1D;_      ;RFO_hit;    501962;Core_;7; L1D;_     ;RFO_miss;     36738;L1D_RFO_HitR: 0.93180;
+Core_;7; L1D;_   ;prefetches;         0;Core_;7; L1D;_ ;prefetch_hit;         0;Core_;7; L1D;_;prefetch_miss;         0;L1D_Pf_HitR: nan;
+Core_;7; L1D;_   ;writebacks;         0;Core_;7; L1D;_;writeback_hit;         0;Core_;7; L1D;_;writeback_miss;         0;L1D_writeback_HitR: nan;
+Core_;7; L1D;_ ;pf_requested;         0;Core_;7; L1D;_    ;pf_issued;         0;
+Core_;7; L1D;_    ;pf_useful;         0;Core_;7; L1D;_   ;pf_useless;         0;
+Core_;7; L1D;_      ;pf_late;         0;L1D_Useful Ratio: nan;
+Core_;7; L1D;_ ;avg_miss_lat;  64.23579;
+
+Core_;7; L1I;_         ;MPKI;   0.33614;Core_;7; L1I;_;LOAD_MSHR_cap;    343117;Core_;7; L1I;_      ;RFO_cap;         0;Core_;7; L1I;_  ;Pf_MSHR_cap;         0;Core_;7; L1I;_;WrBk_MSHR_cap;         0;
+Core_;7; L1I;_ ;pureAdm_LOAD;    343117;Core_;7; L1I;_  ;pureAdm_RFO;         0;Core_;7; L1I;_   ;pureAdm_Pf;         0;Core_;7; L1I;_ ;pureAdm_WrBk;         0;
+Core_;7; L1I;_      ;byp_req;         0;Core_;7; L1I;_   ;byp_issued;         0;Core_;7; L1I;_          ;APC;   0.44205;Core_;7; L1I;_          ;LPM;   0.39352;Core_;7; L1I;_       ;C-AMAT;   2.26220;Core_;7; L1I;_          ;MST;   0.09875;
+Core_;7; L1I;_ ;total_access;   2134236;Core_;7; L1I;_    ;total_hit;   2129530;Core_;7; L1I;_   ;total_miss;      4706;L1I_total_HitR: 0.99779
+Core_;7; L1I;_        ;loads;   2134236;Core_;7; L1I;_     ;load_hit;   2129530;Core_;7; L1I;_    ;load_miss;      4706;L1I_load_HitR: 0.99779;
+Core_;7; L1I;_;load_wByP_acc;   2134236;Core_;7; L1I;_;load_wByP_hit;   2129530;Core_;7; L1I;_;load_wByP_byp;         0;Core_;7; L1I;_;load_wByP_miss;      4706;L1I_load_wByP_HitR: 0.99779;
+Core_;7; L1I;_         ;RFOs;         0;Core_;7; L1I;_      ;RFO_hit;         0;Core_;7; L1I;_     ;RFO_miss;         0;L1I_RFO_HitR: nan;
+Core_;7; L1I;_   ;prefetches;         0;Core_;7; L1I;_ ;prefetch_hit;         0;Core_;7; L1I;_;prefetch_miss;         0;L1I_Pf_HitR: nan;
+Core_;7; L1I;_   ;writebacks;         0;Core_;7; L1I;_;writeback_hit;         0;Core_;7; L1I;_;writeback_miss;         0;L1I_writeback_HitR: nan;
+Core_;7; L1I;_ ;pf_requested;         0;Core_;7; L1I;_    ;pf_issued;         0;
+Core_;7; L1I;_    ;pf_useful;         0;Core_;7; L1I;_   ;pf_useless;         0;
+Core_;7; L1I;_      ;pf_late;         0;L1I_Useful Ratio: nan;
+Core_;7; L1I;_ ;avg_miss_lat; 239.07862;
+
+Core_;7; L2C;_         ;MPKI;  11.07614;Core_;7; L2C;_;LOAD_MSHR_cap;      2516;Core_;7; L2C;_      ;RFO_cap;         0;Core_;7; L2C;_  ;Pf_MSHR_cap;      4090;Core_;7; L2C;_;WrBk_MSHR_cap;         0;
+Core_;7; L2C;_ ;pureAdm_LOAD;      2516;Core_;7; L2C;_  ;pureAdm_RFO;         0;Core_;7; L2C;_   ;pureAdm_Pf;         0;Core_;7; L2C;_ ;pureAdm_WrBk;         0;
+Core_;7; L2C;_      ;byp_req;    105140;Core_;7; L2C;_   ;byp_issued;      7684;Core_;7; L2C;_          ;APC;   0.12652;Core_;7; L2C;_          ;LPM;   0.76330;Core_;7; L2C;_       ;C-AMAT;   7.90404;Core_;7; L2C;_          ;MST;   5.78694;
+Core_;7; L2C;_ ;total_access;   1350602;Core_;7; L2C;_    ;total_hit;   1195536;Core_;7; L2C;_   ;total_miss;    155066;L2C_total_HitR: 0.88519
+Core_;7; L2C;_        ;loads;    452830;Core_;7; L2C;_     ;load_hit;    345364;Core_;7; L2C;_    ;load_miss;    107466;L2C_load_HitR: 0.76268;
+Core_;7; L2C;_;load_wByP_acc;    460382;Core_;7; L2C;_;load_wByP_hit;    345364;Core_;7; L2C;_;load_wByP_byp;      7552;Core_;7; L2C;_;load_wByP_miss;    107466;L2C_load_wByP_HitR: 0.75017;
+Core_;7; L2C;_         ;RFOs;     36736;Core_;7; L2C;_      ;RFO_hit;      3771;Core_;7; L2C;_     ;RFO_miss;     32965;L2C_RFO_HitR: 0.10265;
+Core_;7; L2C;_   ;prefetches;    751041;Core_;7; L2C;_ ;prefetch_hit;    737351;Core_;7; L2C;_;prefetch_miss;     13690;L2C_Pf_HitR: 0.98177;
+Core_;7; L2C;_   ;writebacks;    109995;Core_;7; L2C;_;writeback_hit;    109050;Core_;7; L2C;_;writeback_miss;       945;L2C_writeback_HitR: 0.99141;
+Core_;7; L2C;_ ;pf_requested;   2203504;Core_;7; L2C;_    ;pf_issued;   2061360;
+Core_;7; L2C;_    ;pf_useful;     13855;Core_;7; L2C;_   ;pf_useless;      1363;
+Core_;7; L2C;_      ;pf_late;     14186;L2C_Useful Ratio: 0.00672;
+Core_;7; L2C;_ ;avg_miss_lat;248606.30555;
+
+Core_;7; LLC;_         ;MPKI;   6.10800;Core_;7; LLC;_;LOAD_MSHR_cap;         0;Core_;7; LLC;_      ;RFO_cap;         0;Core_;7; LLC;_  ;Pf_MSHR_cap;         0;Core_;7; LLC;_;WrBk_MSHR_cap;         0;
+Core_;7; LLC;_ ;pureAdm_LOAD;         0;Core_;7; LLC;_  ;pureAdm_RFO;         0;Core_;7; LLC;_   ;pureAdm_Pf;         0;Core_;7; LLC;_ ;pureAdm_WrBk;         0;
+Core_;7; LLC;_      ;byp_req;     36924;Core_;7; LLC;_   ;byp_issued;     34278;Core_;7; LLC;_          ;APC;   0.02304;Core_;7; LLC;_          ;LPM;   1.33304;Core_;7; LLC;_       ;C-AMAT;  43.40947;Core_;7; LLC;_          ;MST;   6.36125;
+Core_;7; LLC;_ ;total_access;    473848;Core_;7; LLC;_    ;total_hit;    388336;Core_;7; LLC;_   ;total_miss;     85512;LLC_total_HitR: 0.81954
+Core_;7; LLC;_        ;loads;     67444;Core_;7; LLC;_     ;load_hit;     56211;Core_;7; LLC;_    ;load_miss;     11233;LLC_load_HitR: 0.83345;
+Core_;7; LLC;_;load_wByP_acc;    101429;Core_;7; LLC;_;load_wByP_hit;     56211;Core_;7; LLC;_;load_wByP_byp;     33985;Core_;7; LLC;_;load_wByP_miss;     11233;LLC_load_wByP_HitR: 0.55419;
+Core_;7; LLC;_         ;RFOs;     32965;Core_;7; LLC;_      ;RFO_hit;        65;Core_;7; LLC;_     ;RFO_miss;     32900;LLC_RFO_HitR: 0.00197;
+Core_;7; LLC;_   ;prefetches;    276780;Core_;7; LLC;_ ;prefetch_hit;    237062;Core_;7; LLC;_;prefetch_miss;     39718;LLC_Pf_HitR: 0.85650;
+Core_;7; LLC;_   ;writebacks;     96659;Core_;7; LLC;_;writeback_hit;     94998;Core_;7; LLC;_;writeback_miss;      1661;LLC_writeback_HitR: 0.98282;
+Core_;7; LLC;_ ;pf_requested;         0;Core_;7; LLC;_    ;pf_issued;         0;
+Core_;7; LLC;_    ;pf_useful;    248568;Core_;7; LLC;_   ;pf_useless;     69969;
+Core_;7; LLC;_      ;pf_late;     76472;LLC_Useful Ratio: inf;
+Core_;7; LLC;_ ;avg_miss_lat;15811.71307;
+
+Core_7_major_page_fault 0
+Core_7_minor_page_fault 2339
+
+
+=== LPM Cycle Classification  CPU 7 (ROI) ===
+Lvl        h(hit)      m(miss)     x(mixed)      e(idle) |        omega       mu    kappa      phi |   LPMR_std   LPMR_byp |   C-AMAT      APC      MST      CPA
+ITLB      4277397         1612         2526     18099399 |      4281535   0.0010   0.3896   0.9996 |        n/a        n/a |      n/a      n/a      n/a      n/a
+DTLB      4808724        12625        21085     17538479 |      4842434   0.0070   0.3745   0.9974 |        n/a        n/a |      n/a      n/a      n/a      n/a
+STLB        40835            0            0     22318910 |        40835   0.0000   0.0000   1.0000 |        n/a        n/a |      n/a      n/a      n/a      n/a
+L1I       6141785       283327        65353     15890469 |      6490465   0.0537   0.8126   0.9563 |        n/a        n/a |      n/a      n/a      n/a      n/a
+L1D       4781251      5887556      4678012      7034115 |     15346819   0.6885   0.5572   0.6164 |   0.930484   0.930484 |   3.3857   0.2954   1.2989   4.9375
+L2C       2330715      9217285      1041356      9791580 |     12589356   0.8149   0.8985   0.2679 |   0.763298   0.763298 |   7.9040   0.1265   5.7869  14.0515
+LLC       2750835      3221891     16013605       546227 |     21986331   0.8749   0.1675   0.8535 |   1.333040   1.333040 |  43.4095   0.0230   6.3613  44.4879
+DRAM         5789      5477280     16552156       498565 |     22035225   0.9997   0.2486   0.7514 |   1.336004   1.336004 | 121.8675   0.0082  30.2925 124.6248
+Global LPMR_std: 1.264893  LPMR_byp: 1.264893
+
+=== ByPLatTracker CPU 7 ===
+Lvl      mshr_avg    mshr_pk byp_infl_avg     byp_pk    mlp_avg     mlp_pk      samples
+L1D         0.019          8        1.808          7      1.827         11       163624
+L2C         3.160         30        1.172          4      4.332         31         7684
+LLC        10.727         98        1.207          7     11.934         99        34278
+Core_;7;DRAM;_;APC;0.00821;Core_;7;DRAM;_;LPM;1.33600;Core_;7;DRAM;_;C-AMAT;121.86748;Core_;7;DRAM;_;MST;30.29251;
+ All Calls: 4234557
+ Critical Calls: 4234557
+------------------
+Depth Distribution
+------------------
+depth 0: 0
+depth 1: 3439262
+depth 2: 2984362
+depth 3: 2557978
+depth 4: 2091633
+depth 5: 1594014
+depth 6: 1180920
+depth 7: 936779
+depth 8: 711846
+depth 9: 550191
+depth 10: 318240
+depth 11: 140346
+depth 12: 37219
+depth 13: 6185
+depth 14: 147
+depth 15: 136
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+Total: 16549258
+-----------------------------
+-----------------------------
+	Captured at Filter
+-----------------------------
+depth 0: 0
+depth 1: 379053
+depth 2: 303756
+depth 3: 233794
+depth 4: 142605
+depth 5: 81763
+depth 6: 40819
+depth 7: 17074
+depth 8: 8726
+depth 9: 5918
+depth 10: 3102
+depth 11: 1370
+depth 12: 529
+depth 13: 101
+depth 14: 4
+depth 15: 3
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+-----------------------------
+-----------------------------
+		Lost at Page
+-----------------------------
+depth 0: 0
+depth 1: 240909
+depth 2: 306895
+depth 3: 382378
+depth 4: 399734
+depth 5: 367895
+depth 6: 276952
+depth 7: 178053
+depth 8: 133228
+depth 9: 111757
+depth 10: 71176
+depth 11: 35289
+depth 12: 12090
+depth 13: 2013
+depth 14: 59
+depth 15: 63
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+-----------------------------
+-----------------------------
+	Lost due to PQ Size
+-----------------------------
+1126085
+-----------------------------
+ST read accesses: 3797166
+ST write accesses: 83573
+PT read accesses: 116191327
+PT write accesses: 5569188
+FILTER read accesses: 21911417
+FILTER write accesses: 3685995
+GHR read accesses: 14407534
+GHR write accesses: 2254078
+GHR counter read accesses: 98034030
+GHR counter write accesses: 6343347
+ST tag read accesses: 1535970404
+ST tag write accesses: 54448154
+ All Calls: 4234557
+ Critical Calls: 4234557
+------------------
+Depth Distribution
+------------------
+depth 0: 0
+depth 1: 3439262
+depth 2: 2984362
+depth 3: 2557978
+depth 4: 2091633
+depth 5: 1594014
+depth 6: 1180920
+depth 7: 936779
+depth 8: 711846
+depth 9: 550191
+depth 10: 318240
+depth 11: 140346
+depth 12: 37219
+depth 13: 6185
+depth 14: 147
+depth 15: 136
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+Total: 16549258
+-----------------------------
+-----------------------------
+	Captured at Filter
+-----------------------------
+depth 0: 0
+depth 1: 379053
+depth 2: 303756
+depth 3: 233794
+depth 4: 142605
+depth 5: 81763
+depth 6: 40819
+depth 7: 17074
+depth 8: 8726
+depth 9: 5918
+depth 10: 3102
+depth 11: 1370
+depth 12: 529
+depth 13: 101
+depth 14: 4
+depth 15: 3
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+-----------------------------
+-----------------------------
+		Lost at Page
+-----------------------------
+depth 0: 0
+depth 1: 240909
+depth 2: 306895
+depth 3: 382378
+depth 4: 399734
+depth 5: 367895
+depth 6: 276952
+depth 7: 178053
+depth 8: 133228
+depth 9: 111757
+depth 10: 71176
+depth 11: 35289
+depth 12: 12090
+depth 13: 2013
+depth 14: 59
+depth 15: 63
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+-----------------------------
+-----------------------------
+	Lost due to PQ Size
+-----------------------------
+1126085
+-----------------------------
+ST read accesses: 3797166
+ST write accesses: 83573
+PT read accesses: 116191327
+PT write accesses: 5569188
+FILTER read accesses: 21911417
+FILTER write accesses: 3685995
+GHR read accesses: 14407534
+GHR write accesses: 2254078
+GHR counter read accesses: 98034030
+GHR counter write accesses: 6343347
+ST tag read accesses: 1535970404
+ST tag write accesses: 54448154
+ All Calls: 4234557
+ Critical Calls: 4234557
+------------------
+Depth Distribution
+------------------
+depth 0: 0
+depth 1: 3439262
+depth 2: 2984362
+depth 3: 2557978
+depth 4: 2091633
+depth 5: 1594014
+depth 6: 1180920
+depth 7: 936779
+depth 8: 711846
+depth 9: 550191
+depth 10: 318240
+depth 11: 140346
+depth 12: 37219
+depth 13: 6185
+depth 14: 147
+depth 15: 136
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+Total: 16549258
+-----------------------------
+-----------------------------
+	Captured at Filter
+-----------------------------
+depth 0: 0
+depth 1: 379053
+depth 2: 303756
+depth 3: 233794
+depth 4: 142605
+depth 5: 81763
+depth 6: 40819
+depth 7: 17074
+depth 8: 8726
+depth 9: 5918
+depth 10: 3102
+depth 11: 1370
+depth 12: 529
+depth 13: 101
+depth 14: 4
+depth 15: 3
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+-----------------------------
+-----------------------------
+		Lost at Page
+-----------------------------
+depth 0: 0
+depth 1: 240909
+depth 2: 306895
+depth 3: 382378
+depth 4: 399734
+depth 5: 367895
+depth 6: 276952
+depth 7: 178053
+depth 8: 133228
+depth 9: 111757
+depth 10: 71176
+depth 11: 35289
+depth 12: 12090
+depth 13: 2013
+depth 14: 59
+depth 15: 63
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+-----------------------------
+-----------------------------
+	Lost due to PQ Size
+-----------------------------
+1126085
+-----------------------------
+ST read accesses: 3797166
+ST write accesses: 83573
+PT read accesses: 116191327
+PT write accesses: 5569188
+FILTER read accesses: 21911417
+FILTER write accesses: 3685995
+GHR read accesses: 14407534
+GHR write accesses: 2254078
+GHR counter read accesses: 98034030
+GHR counter write accesses: 6343347
+ST tag read accesses: 1535970404
+ST tag write accesses: 54448154
+ All Calls: 4234557
+ Critical Calls: 4234557
+------------------
+Depth Distribution
+------------------
+depth 0: 0
+depth 1: 3439262
+depth 2: 2984362
+depth 3: 2557978
+depth 4: 2091633
+depth 5: 1594014
+depth 6: 1180920
+depth 7: 936779
+depth 8: 711846
+depth 9: 550191
+depth 10: 318240
+depth 11: 140346
+depth 12: 37219
+depth 13: 6185
+depth 14: 147
+depth 15: 136
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+Total: 16549258
+-----------------------------
+-----------------------------
+	Captured at Filter
+-----------------------------
+depth 0: 0
+depth 1: 379053
+depth 2: 303756
+depth 3: 233794
+depth 4: 142605
+depth 5: 81763
+depth 6: 40819
+depth 7: 17074
+depth 8: 8726
+depth 9: 5918
+depth 10: 3102
+depth 11: 1370
+depth 12: 529
+depth 13: 101
+depth 14: 4
+depth 15: 3
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+-----------------------------
+-----------------------------
+		Lost at Page
+-----------------------------
+depth 0: 0
+depth 1: 240909
+depth 2: 306895
+depth 3: 382378
+depth 4: 399734
+depth 5: 367895
+depth 6: 276952
+depth 7: 178053
+depth 8: 133228
+depth 9: 111757
+depth 10: 71176
+depth 11: 35289
+depth 12: 12090
+depth 13: 2013
+depth 14: 59
+depth 15: 63
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+-----------------------------
+-----------------------------
+	Lost due to PQ Size
+-----------------------------
+1126085
+-----------------------------
+ST read accesses: 3797166
+ST write accesses: 83573
+PT read accesses: 116191327
+PT write accesses: 5569188
+FILTER read accesses: 21911417
+FILTER write accesses: 3685995
+GHR read accesses: 14407534
+GHR write accesses: 2254078
+GHR counter read accesses: 98034030
+GHR counter write accesses: 6343347
+ST tag read accesses: 1535970404
+ST tag write accesses: 54448154
+ All Calls: 4234557
+ Critical Calls: 4234557
+------------------
+Depth Distribution
+------------------
+depth 0: 0
+depth 1: 3439262
+depth 2: 2984362
+depth 3: 2557978
+depth 4: 2091633
+depth 5: 1594014
+depth 6: 1180920
+depth 7: 936779
+depth 8: 711846
+depth 9: 550191
+depth 10: 318240
+depth 11: 140346
+depth 12: 37219
+depth 13: 6185
+depth 14: 147
+depth 15: 136
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+Total: 16549258
+-----------------------------
+-----------------------------
+	Captured at Filter
+-----------------------------
+depth 0: 0
+depth 1: 379053
+depth 2: 303756
+depth 3: 233794
+depth 4: 142605
+depth 5: 81763
+depth 6: 40819
+depth 7: 17074
+depth 8: 8726
+depth 9: 5918
+depth 10: 3102
+depth 11: 1370
+depth 12: 529
+depth 13: 101
+depth 14: 4
+depth 15: 3
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+-----------------------------
+-----------------------------
+		Lost at Page
+-----------------------------
+depth 0: 0
+depth 1: 240909
+depth 2: 306895
+depth 3: 382378
+depth 4: 399734
+depth 5: 367895
+depth 6: 276952
+depth 7: 178053
+depth 8: 133228
+depth 9: 111757
+depth 10: 71176
+depth 11: 35289
+depth 12: 12090
+depth 13: 2013
+depth 14: 59
+depth 15: 63
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+-----------------------------
+-----------------------------
+	Lost due to PQ Size
+-----------------------------
+1126085
+-----------------------------
+ST read accesses: 3797166
+ST write accesses: 83573
+PT read accesses: 116191327
+PT write accesses: 5569188
+FILTER read accesses: 21911417
+FILTER write accesses: 3685995
+GHR read accesses: 14407534
+GHR write accesses: 2254078
+GHR counter read accesses: 98034030
+GHR counter write accesses: 6343347
+ST tag read accesses: 1535970404
+ST tag write accesses: 54448154
+ All Calls: 4234557
+ Critical Calls: 4234557
+------------------
+Depth Distribution
+------------------
+depth 0: 0
+depth 1: 3439262
+depth 2: 2984362
+depth 3: 2557978
+depth 4: 2091633
+depth 5: 1594014
+depth 6: 1180920
+depth 7: 936779
+depth 8: 711846
+depth 9: 550191
+depth 10: 318240
+depth 11: 140346
+depth 12: 37219
+depth 13: 6185
+depth 14: 147
+depth 15: 136
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+Total: 16549258
+-----------------------------
+-----------------------------
+	Captured at Filter
+-----------------------------
+depth 0: 0
+depth 1: 379053
+depth 2: 303756
+depth 3: 233794
+depth 4: 142605
+depth 5: 81763
+depth 6: 40819
+depth 7: 17074
+depth 8: 8726
+depth 9: 5918
+depth 10: 3102
+depth 11: 1370
+depth 12: 529
+depth 13: 101
+depth 14: 4
+depth 15: 3
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+-----------------------------
+-----------------------------
+		Lost at Page
+-----------------------------
+depth 0: 0
+depth 1: 240909
+depth 2: 306895
+depth 3: 382378
+depth 4: 399734
+depth 5: 367895
+depth 6: 276952
+depth 7: 178053
+depth 8: 133228
+depth 9: 111757
+depth 10: 71176
+depth 11: 35289
+depth 12: 12090
+depth 13: 2013
+depth 14: 59
+depth 15: 63
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+-----------------------------
+-----------------------------
+	Lost due to PQ Size
+-----------------------------
+1126085
+-----------------------------
+ST read accesses: 3797166
+ST write accesses: 83573
+PT read accesses: 116191327
+PT write accesses: 5569188
+FILTER read accesses: 21911417
+FILTER write accesses: 3685995
+GHR read accesses: 14407534
+GHR write accesses: 2254078
+GHR counter read accesses: 98034030
+GHR counter write accesses: 6343347
+ST tag read accesses: 1535970404
+ST tag write accesses: 54448154
+ All Calls: 4234557
+ Critical Calls: 4234557
+------------------
+Depth Distribution
+------------------
+depth 0: 0
+depth 1: 3439262
+depth 2: 2984362
+depth 3: 2557978
+depth 4: 2091633
+depth 5: 1594014
+depth 6: 1180920
+depth 7: 936779
+depth 8: 711846
+depth 9: 550191
+depth 10: 318240
+depth 11: 140346
+depth 12: 37219
+depth 13: 6185
+depth 14: 147
+depth 15: 136
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+Total: 16549258
+-----------------------------
+-----------------------------
+	Captured at Filter
+-----------------------------
+depth 0: 0
+depth 1: 379053
+depth 2: 303756
+depth 3: 233794
+depth 4: 142605
+depth 5: 81763
+depth 6: 40819
+depth 7: 17074
+depth 8: 8726
+depth 9: 5918
+depth 10: 3102
+depth 11: 1370
+depth 12: 529
+depth 13: 101
+depth 14: 4
+depth 15: 3
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+-----------------------------
+-----------------------------
+		Lost at Page
+-----------------------------
+depth 0: 0
+depth 1: 240909
+depth 2: 306895
+depth 3: 382378
+depth 4: 399734
+depth 5: 367895
+depth 6: 276952
+depth 7: 178053
+depth 8: 133228
+depth 9: 111757
+depth 10: 71176
+depth 11: 35289
+depth 12: 12090
+depth 13: 2013
+depth 14: 59
+depth 15: 63
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+-----------------------------
+-----------------------------
+	Lost due to PQ Size
+-----------------------------
+1126085
+-----------------------------
+ST read accesses: 3797166
+ST write accesses: 83573
+PT read accesses: 116191327
+PT write accesses: 5569188
+FILTER read accesses: 21911417
+FILTER write accesses: 3685995
+GHR read accesses: 14407534
+GHR write accesses: 2254078
+GHR counter read accesses: 98034030
+GHR counter write accesses: 6343347
+ST tag read accesses: 1535970404
+ST tag write accesses: 54448154
+ All Calls: 4234557
+ Critical Calls: 4234557
+------------------
+Depth Distribution
+------------------
+depth 0: 0
+depth 1: 3439262
+depth 2: 2984362
+depth 3: 2557978
+depth 4: 2091633
+depth 5: 1594014
+depth 6: 1180920
+depth 7: 936779
+depth 8: 711846
+depth 9: 550191
+depth 10: 318240
+depth 11: 140346
+depth 12: 37219
+depth 13: 6185
+depth 14: 147
+depth 15: 136
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+Total: 16549258
+-----------------------------
+-----------------------------
+	Captured at Filter
+-----------------------------
+depth 0: 0
+depth 1: 379053
+depth 2: 303756
+depth 3: 233794
+depth 4: 142605
+depth 5: 81763
+depth 6: 40819
+depth 7: 17074
+depth 8: 8726
+depth 9: 5918
+depth 10: 3102
+depth 11: 1370
+depth 12: 529
+depth 13: 101
+depth 14: 4
+depth 15: 3
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+-----------------------------
+-----------------------------
+		Lost at Page
+-----------------------------
+depth 0: 0
+depth 1: 240909
+depth 2: 306895
+depth 3: 382378
+depth 4: 399734
+depth 5: 367895
+depth 6: 276952
+depth 7: 178053
+depth 8: 133228
+depth 9: 111757
+depth 10: 71176
+depth 11: 35289
+depth 12: 12090
+depth 13: 2013
+depth 14: 59
+depth 15: 63
+depth 16: 0
+depth 17: 0
+depth 18: 0
+depth 19: 0
+depth 20: 0
+depth 21: 0
+depth 22: 0
+depth 23: 0
+depth 24: 0
+depth 25: 0
+depth 26: 0
+depth 27: 0
+depth 28: 0
+depth 29: 0
+-----------------------------
+-----------------------------
+	Lost due to PQ Size
+-----------------------------
+1126085
+-----------------------------
+ST read accesses: 3797166
+ST write accesses: 83573
+PT read accesses: 116191327
+PT write accesses: 5569188
+FILTER read accesses: 21911417
+FILTER write accesses: 3685995
+GHR read accesses: 14407534
+GHR write accesses: 2254078
+GHR counter read accesses: 98034030
+GHR counter write accesses: 6343347
+ST tag read accesses: 1535970404
+ST tag write accesses: 54448154
+Channel_;0;_;RQ_row_buffer_hit	;224891;Channel_;0;_;RQ_row_buffer_miss	;145864;Channel_;0;_;WQ_row_buffer_hit	;39786;Channel_;0;_;WQ_row_buffer_miss	;72708;Channel_;0;_;WQ_full	;0;Channel_;0;_;dbus_congested	;803857;
+
+Channel_;1;_;RQ_row_buffer_hit	;217121;Channel_;1;_;RQ_row_buffer_miss	;141014;Channel_;1;_;WQ_row_buffer_hit	;39667;Channel_;1;_;WQ_row_buffer_miss	;72564;Channel_;1;_;WQ_full	;0;Channel_;1;_;dbus_congested	;803857;
+
+Channel_;2;_;RQ_row_buffer_hit	;213275;Channel_;2;_;RQ_row_buffer_miss	;144306;Channel_;2;_;WQ_row_buffer_hit	;41480;Channel_;2;_;WQ_row_buffer_miss	;71432;Channel_;2;_;WQ_full	;0;Channel_;2;_;dbus_congested	;803857;
+
+Channel_;3;_;RQ_row_buffer_hit	;217726;Channel_;3;_;RQ_row_buffer_miss	;144981;Channel_;3;_;WQ_row_buffer_hit	;40557;Channel_;3;_;WQ_row_buffer_miss	;72708;Channel_;3;_;WQ_full	;0;Channel_;3;_;dbus_congested	;803857;
+
+avg_congested_cycle 8
+
+EzSearch AVG IPC Core	:0:0.61824: L2-Pf-HR :0.98206 : L2-HR :0.88663 Uful:0.00684
+EzSearch AVG IPC Core	:1:0.61999: L2-Pf-HR :0.98242 : L2-HR :0.88769 Uful:0.00658
+EzSearch AVG IPC Core	:2:0.61705: L2-Pf-HR :0.98071 : L2-HR :0.88428 Uful:0.00713
+EzSearch AVG IPC Core	:3:0.62016: L2-Pf-HR :0.98145 : L2-HR :0.88648 Uful:0.00689
+EzSearch AVG IPC Core	:4:0.62712: L2-Pf-HR :0.98201 : L2-HR :0.88846 Uful:0.00645
+EzSearch AVG IPC Core	:5:0.62547: L2-Pf-HR :0.98054 : L2-HR :0.88822 Uful:0.00700
+EzSearch AVG IPC Core	:6:0.62490: L2-Pf-HR :0.98105 : L2-HR :0.88736 Uful:0.00700
+EzSearch AVG IPC Core	:7:0.62132: L2-Pf-HR :0.98177 : L2-HR :0.88708 Uful:0.00672
+OffChipPred	;Hermes:TTP;
+Core_0_execution_checksum 140038115682937
+Core_1_execution_checksum 140038115682937
+Core_2_execution_checksum 140038115682937
+Core_3_execution_checksum 140038115682937
+Core_4_execution_checksum 140038115682937
+Core_5_execution_checksum 140038115682937
+Core_6_execution_checksum 140038115682937
+Core_7_execution_checksum 140038115682937
+Core_0_offchip_pred_true_pos 12959
+Core_0_offchip_pred_false_pos 198920
+Core_0_offchip_pred_false_neg 5020
+Core_0_offchip_pred_precision 6.11623
+Core_0_offchip_pred_recall 72.07854
+Core_0_ddrp_total 211807
+Core_0_ddrp_issued_direct 109207
+Core_0_ddrp_issued_merged 102381
+Core_0_ddrp_dram_rq_full 219
+Core_0_ddrp_dram_mshr_full 0
+ocp_ttp_train_called 6393369
+ocp_ttp_train_not_offchip 6375390
+ocp_ttp_train_not_offchip_and_in_catalog 6275095
+ocp_ttp_train_not_offchip_and_added_in_catalog 100295
+ocp_ttp_train_went_offchip 17979
+ocp_ttp_train_went_offchip_and_not_in_catalog 12842
+ocp_ttp_train_went_offchip_and_deleted_from_catalog 5137
+
+ocp_ttp_llc_eviction_called 87919
+ocp_ttp_llc_eviction_physical_tag_not_found 77295
+ocp_ttp_llc_eviction_deleted_from_catalog_cache 10624
+ocp_ttp_llc_eviction_found_in_rev_index_not_found_in_catalog 0
+
+Core_1_offchip_pred_true_pos 12727
+Core_1_offchip_pred_false_pos 195172
+Core_1_offchip_pred_false_neg 4979
+Core_1_offchip_pred_precision 6.12172
+Core_1_offchip_pred_recall 71.87959
+Core_1_ddrp_total 207838
+Core_1_ddrp_issued_direct 107913
+Core_1_ddrp_issued_merged 99536
+Core_1_ddrp_dram_rq_full 389
+Core_1_ddrp_dram_mshr_full 0
+ocp_ttp_train_called 6427572
+ocp_ttp_train_not_offchip 6409866
+ocp_ttp_train_not_offchip_and_in_catalog 6310673
+ocp_ttp_train_not_offchip_and_added_in_catalog 99193
+ocp_ttp_train_went_offchip 17706
+ocp_ttp_train_went_offchip_and_not_in_catalog 12602
+ocp_ttp_train_went_offchip_and_deleted_from_catalog 5104
+
+ocp_ttp_llc_eviction_called 87428
+ocp_ttp_llc_eviction_physical_tag_not_found 78107
+ocp_ttp_llc_eviction_deleted_from_catalog_cache 9321
+ocp_ttp_llc_eviction_found_in_rev_index_not_found_in_catalog 0
+
+Core_2_offchip_pred_true_pos 12507
+Core_2_offchip_pred_false_pos 198016
+Core_2_offchip_pred_false_neg 5106
+Core_2_offchip_pred_precision 5.94092
+Core_2_offchip_pred_recall 71.01005
+Core_2_ddrp_total 210455
+Core_2_ddrp_issued_direct 108650
+Core_2_ddrp_issued_merged 101488
+Core_2_ddrp_dram_rq_full 317
+Core_2_ddrp_dram_mshr_full 0
+ocp_ttp_train_called 6362672
+ocp_ttp_train_not_offchip 6345059
+ocp_ttp_train_not_offchip_and_in_catalog 6245471
+ocp_ttp_train_not_offchip_and_added_in_catalog 99588
+ocp_ttp_train_went_offchip 17613
+ocp_ttp_train_went_offchip_and_not_in_catalog 12379
+ocp_ttp_train_went_offchip_and_deleted_from_catalog 5234
+
+ocp_ttp_llc_eviction_called 87553
+ocp_ttp_llc_eviction_physical_tag_not_found 77444
+ocp_ttp_llc_eviction_deleted_from_catalog_cache 10109
+ocp_ttp_llc_eviction_found_in_rev_index_not_found_in_catalog 0
+
+Core_3_offchip_pred_true_pos 12647
+Core_3_offchip_pred_false_pos 195626
+Core_3_offchip_pred_false_neg 4511
+Core_3_offchip_pred_precision 6.07232
+Core_3_offchip_pred_recall 73.70906
+Core_3_ddrp_total 208245
+Core_3_ddrp_issued_direct 108072
+Core_3_ddrp_issued_merged 99766
+Core_3_ddrp_dram_rq_full 407
+Core_3_ddrp_dram_mshr_full 0
+ocp_ttp_train_called 6433185
+ocp_ttp_train_not_offchip 6416027
+ocp_ttp_train_not_offchip_and_in_catalog 6316701
+ocp_ttp_train_not_offchip_and_added_in_catalog 99326
+ocp_ttp_train_went_offchip 17158
+ocp_ttp_train_went_offchip_and_not_in_catalog 12559
+ocp_ttp_train_went_offchip_and_deleted_from_catalog 4599
+
+ocp_ttp_llc_eviction_called 86555
+ocp_ttp_llc_eviction_physical_tag_not_found 76593
+ocp_ttp_llc_eviction_deleted_from_catalog_cache 9962
+ocp_ttp_llc_eviction_found_in_rev_index_not_found_in_catalog 0
+
+Core_4_offchip_pred_true_pos 12613
+Core_4_offchip_pred_false_pos 203505
+Core_4_offchip_pred_false_neg 4624
+Core_4_offchip_pred_precision 5.83616
+Core_4_offchip_pred_recall 73.17399
+Core_4_ddrp_total 216053
+Core_4_ddrp_issued_direct 111396
+Core_4_ddrp_issued_merged 104628
+Core_4_ddrp_dram_rq_full 29
+Core_4_ddrp_dram_mshr_full 0
+ocp_ttp_train_called 6555318
+ocp_ttp_train_not_offchip 6538081
+ocp_ttp_train_not_offchip_and_in_catalog 6436440
+ocp_ttp_train_not_offchip_and_added_in_catalog 101641
+ocp_ttp_train_went_offchip 17237
+ocp_ttp_train_went_offchip_and_not_in_catalog 12480
+ocp_ttp_train_went_offchip_and_deleted_from_catalog 4757
+
+ocp_ttp_llc_eviction_called 89692
+ocp_ttp_llc_eviction_physical_tag_not_found 78475
+ocp_ttp_llc_eviction_deleted_from_catalog_cache 11217
+ocp_ttp_llc_eviction_found_in_rev_index_not_found_in_catalog 0
+
+Core_5_offchip_pred_true_pos 12786
+Core_5_offchip_pred_false_pos 199602
+Core_5_offchip_pred_false_neg 4519
+Core_5_offchip_pred_precision 6.02011
+Core_5_offchip_pred_recall 73.88616
+Core_5_ddrp_total 212307
+Core_5_ddrp_issued_direct 110215
+Core_5_ddrp_issued_merged 101923
+Core_5_ddrp_dram_rq_full 169
+Core_5_ddrp_dram_mshr_full 0
+ocp_ttp_train_called 6513622
+ocp_ttp_train_not_offchip 6496317
+ocp_ttp_train_not_offchip_and_in_catalog 6395731
+ocp_ttp_train_not_offchip_and_added_in_catalog 100586
+ocp_ttp_train_went_offchip 17305
+ocp_ttp_train_went_offchip_and_not_in_catalog 12647
+ocp_ttp_train_went_offchip_and_deleted_from_catalog 4658
+
+ocp_ttp_llc_eviction_called 89033
+ocp_ttp_llc_eviction_physical_tag_not_found 78854
+ocp_ttp_llc_eviction_deleted_from_catalog_cache 10179
+ocp_ttp_llc_eviction_found_in_rev_index_not_found_in_catalog 0
+
+Core_6_offchip_pred_true_pos 12835
+Core_6_offchip_pred_false_pos 201153
+Core_6_offchip_pred_false_neg 4856
+Core_6_offchip_pred_precision 5.99800
+Core_6_offchip_pred_recall 72.55101
+Core_6_ddrp_total 213918
+Core_6_ddrp_issued_direct 110322
+Core_6_ddrp_issued_merged 103456
+Core_6_ddrp_dram_rq_full 140
+Core_6_ddrp_dram_mshr_full 0
+ocp_ttp_train_called 6509985
+ocp_ttp_train_not_offchip 6492294
+ocp_ttp_train_not_offchip_and_in_catalog 6391320
+ocp_ttp_train_not_offchip_and_added_in_catalog 100974
+ocp_ttp_train_went_offchip 17691
+ocp_ttp_train_went_offchip_and_not_in_catalog 12691
+ocp_ttp_train_went_offchip_and_deleted_from_catalog 5000
+
+ocp_ttp_llc_eviction_called 87745
+ocp_ttp_llc_eviction_physical_tag_not_found 77243
+ocp_ttp_llc_eviction_deleted_from_catalog_cache 10502
+ocp_ttp_llc_eviction_found_in_rev_index_not_found_in_catalog 0
+
+Core_7_offchip_pred_true_pos 13140
+Core_7_offchip_pred_false_pos 199023
+Core_7_offchip_pred_false_neg 5186
+Core_7_offchip_pred_precision 6.19335
+Core_7_offchip_pred_recall 71.70141
+Core_7_ddrp_total 212098
+Core_7_ddrp_issued_direct 109561
+Core_7_ddrp_issued_merged 102097
+Core_7_ddrp_dram_rq_full 440
+Core_7_ddrp_dram_mshr_full 0
+ocp_ttp_train_called 6447525
+ocp_ttp_train_not_offchip 6429199
+ocp_ttp_train_not_offchip_and_in_catalog 6328704
+ocp_ttp_train_not_offchip_and_added_in_catalog 100495
+ocp_ttp_train_went_offchip 18326
+ocp_ttp_train_went_offchip_and_not_in_catalog 12997
+ocp_ttp_train_went_offchip_and_deleted_from_catalog 5329
+
+ocp_ttp_llc_eviction_called 89420
+ocp_ttp_llc_eviction_physical_tag_not_found 79085
+ocp_ttp_llc_eviction_deleted_from_catalog_cache 10335
+ocp_ttp_llc_eviction_found_in_rev_index_not_found_in_catalog 0
+
+FINAL ROI CORE AVG IPC: ;0.62178;

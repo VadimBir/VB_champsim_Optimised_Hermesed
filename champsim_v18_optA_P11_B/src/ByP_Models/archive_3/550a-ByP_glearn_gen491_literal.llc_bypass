@@ -1,0 +1,44 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+#include <cmath>
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 550a — literal gen491 applied at LLC
+// Same structure: bypass LLC IFF log(sqrt(C-AMAT(LLC)+phi(LLC))) > |log(kappa(DRAM))|
+// DRAM has no kappa tracker -> use MST(DRAM)/C-AMAT(DRAM) as kappa proxy
+
+inline bool llc_bypass_init_550a[NUM_CPUS] = {};
+
+#define SHALL_LLC_BYPASS_DEFINED
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init_550a[cpu]) return;
+    cout << "LLC Bypass [550a-glearn-gen491-literal]:\n"
+         << "  Bypass IFF log(sqrt(C-AMAT(LLC)+phi(LLC))) > |log(kappa_proxy(DRAM))|" << endl;
+    llc_bypass_init_550a[cpu] = true;
+}
+
+inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    llc_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    double camat_llc  = lpm[cpu][LPM_LLC].wsm.camat_activeMemCyDivAccesses;
+    double phi_llc    = get_phi_short(cpu, LPM_LLC);
+    double camat_dram = lpm[cpu][LPM_DRAM].wsm.camat_activeMemCyDivAccesses;
+    double mst_dram   = lpm[cpu][LPM_DRAM].wsm.mst_pureMissCyDivAccesses;
+
+    if (camat_llc + phi_llc <= 1.0) return false;
+    if (camat_dram < 1.0) return false;
+
+    // kappa proxy for DRAM = mst/camat = pure-miss fraction of active cycles
+    double kappa_dram = (camat_dram > 1e-6) ? (mst_dram / camat_dram) : 1.0;
+    if (kappa_dram < 1e-6 || kappa_dram >= 1.0) return false;
+
+    double lhs = log(sqrt(camat_llc + phi_llc));
+    double rhs = fabs(log(kappa_dram));
+
+    return (lhs > rhs);
+}

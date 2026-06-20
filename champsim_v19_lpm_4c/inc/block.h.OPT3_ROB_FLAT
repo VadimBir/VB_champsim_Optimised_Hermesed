@@ -1,0 +1,754 @@
+#ifndef BLOCK_H
+#define BLOCK_H
+
+#include "champsim.h"
+#include "instruction.h"
+#include "set.h"
+#ifdef USE_HERMES
+#include "hermes/offchip_pred_base_helper.h"
+#endif
+
+// extra
+#include <ostream>
+#include <execinfo.h>
+#include <stdlib.h>
+
+#include <execinfo.h>
+#include <dlfcn.h>
+#include <cxxabi.h>
+#include <cstdio>
+#include <cstdlib>
+
+// CACHE BLOCK
+class BLOCK
+{
+public:
+    uint8_t valid : 2,
+        prefetch : 2,
+        dirty : 2,
+        used : 2;
+    uint8_t l1_bypassed;
+    uint8_t l2_bypassed;
+    uint8_t llc_bypassed;
+    // int delta,
+    //     depth,
+    //     signature,
+    //     confidence;
+
+    uint64_t address,
+        full_addr,
+        tag,
+        data,
+        instr_id;
+    int cpu;
+
+    // replacement state
+    uint32_t lru;
+
+    BLOCK()
+    {
+        valid = 0;
+        prefetch = 0;
+        dirty = 0;
+        used = 0;
+
+        // delta = 0;
+        // depth = 0;
+        // signature = 0;
+        // confidence = 0;
+
+        l1_bypassed = 0;
+        l2_bypassed = 0;
+        llc_bypassed = 0;
+
+        address = 0;
+        full_addr = 0;
+        tag = 0;
+        data = 0;
+        cpu = 0;
+        instr_id = 0;
+
+        lru = 0;
+    };
+};
+
+// DRAM CACHE BLOCK
+class DRAM_ARRAY
+{
+public:
+    BLOCK **block;
+
+    DRAM_ARRAY()
+    {
+        block = NULL;
+    };
+};
+
+// message packet
+#include "svector.h"
+#define SMALL_VECTOR_SIZE 32
+
+// Lightweight ROB dependency set — replaces fastset (68 bytes) for rob_index tracking
+// Uses svector with 8 inline elements (no heap alloc for typical small sets)
+struct RobDepSet {
+    std::vector<uint16_t> entries;
+
+    void insert(uint16_t val) {
+        auto it = entries.begin();
+        for (; it != entries.end() && *it < val; ++it);
+        if (it != entries.end() && *it == val) return;
+        entries.insert(it, val);
+    }
+    void join(RobDepSet& other, int) {
+        for (auto v : other.entries) insert(v);
+    }
+    void clear() { entries.clear(); }
+    bool empty() const { return entries.empty(); }
+    auto begin() { return entries.begin(); }
+    auto end() { return entries.end(); }
+    auto begin() const { return entries.begin(); }
+    auto end() const { return entries.end(); }
+};
+
+class alignas(64) PACKET
+{
+public:
+    uint32_t pf_metadata;
+    uint8_t asid[2];
+    uint32_t data_index;
+    uint64_t instruction_pa, data_pa, data, instr_id, ip;
+    uint32_t event_cycle, cycle_enqueued;
+
+
+    uint8_t l1_bypassed = 0;
+    uint8_t l2_bypassed = 0;
+    uint8_t llc_bypassed = 0;
+    uint8_t pf_merged_from_upper = 0; // PF from upper level merged into bypassed MSHR
+    uint8_t exist_lvls = 0;
+
+    int pf_origin_level : 4, rob_index : 12;
+    uint8_t instruction : 2, tlb_access : 2, scheduled : 2, translated : 2, fetched : 2, prefetched : 2, drc_tag_read : 2, fill_level : 5;
+    uint8_t is_producer : 2, instr_merged : 2, load_merged : 2, store_merged : 2, returned : 2, type : 2, cpu : 4;
+    uint16_t lq_index : 12, sq_index : 12;
+#ifdef USE_HERMES
+    uint16_t rob_position;
+    uint8_t went_offchip_pred;
+#endif
+    // Original fields unchanged
+    RobDepSet rob_index_depend_on_me;
+    LQ_fastset lq_index_depend_on_me;
+    SQ_fastset sq_index_depend_on_me;
+
+
+    // AddressProxy with null pointer safety
+    struct AddressProxy
+    {
+        uint64_t tmpAddrProxy = 0;
+
+        ankerl::svector<uint64_t, SMALL_VECTOR_SIZE> *vec_ptr;
+        uint32_t index;
+        mutable uint64_t fallback_value; // For when vec_ptr is null
+
+        AddressProxy() : vec_ptr(nullptr), index(0), fallback_value(0) {}
+        AddressProxy(ankerl::svector<uint64_t, SMALL_VECTOR_SIZE> *ptr, uint32_t idx) : vec_ptr(ptr), index(idx), fallback_value(0) {}
+
+        // Safe access with null checks
+        operator uint64_t &()
+        {
+            if (!vec_ptr || index >= vec_ptr->size())
+                return fallback_value;
+            return (*vec_ptr)[index];
+        }
+        operator const uint64_t &() const
+        {
+            if (!vec_ptr || index >= vec_ptr->size())
+                return fallback_value;
+            return (*vec_ptr)[index];
+        }
+
+        AddressProxy &operator=(uint64_t val)
+        {
+            if (vec_ptr && index < vec_ptr->size())
+                (*vec_ptr)[index] = val;
+            else
+                fallback_value = val;
+            tmpAddrProxy = val;
+            return *this;
+        }
+        AddressProxy &operator=(const AddressProxy &other)
+        {
+
+            if (vec_ptr && index < vec_ptr->size() && other.vec_ptr && other.index < other.vec_ptr->size())
+            {
+                (*vec_ptr)[index] = (*other.vec_ptr)[other.index];
+            }
+            else if (other.vec_ptr && other.index < other.vec_ptr->size())
+            {
+                fallback_value = (*other.vec_ptr)[other.index];
+            }
+            else
+            {
+                fallback_value = other.fallback_value;
+            }
+            tmpAddrProxy = fallback_value;
+            return *this;
+        }
+
+        bool operator==(uint64_t val) const
+        {
+            if (!vec_ptr || index >= vec_ptr->size())
+                return fallback_value == val;
+            return (*vec_ptr)[index] == val;
+        }
+        bool operator!=(uint64_t val) const
+        {
+            if (!vec_ptr || index >= vec_ptr->size())
+                return fallback_value != val;
+            return (*vec_ptr)[index] != val;
+        }
+        bool operator==(int val) const
+        {
+            if (!vec_ptr || index >= vec_ptr->size())
+                return fallback_value == static_cast<uint64_t>(val);
+            return (*vec_ptr)[index] == static_cast<uint64_t>(val);
+        }
+        bool operator!=(int val) const
+        {
+            if (!vec_ptr || index >= vec_ptr->size())
+                return fallback_value != static_cast<uint64_t>(val);
+            return (*vec_ptr)[index] != static_cast<uint64_t>(val);
+        }
+    }; //__attribute__((packed));
+
+    // Address fields as proxies to SOA vectors
+    AddressProxy address;
+    AddressProxy full_addr;
+
+    void set_queue_vectors(ankerl::svector<uint64_t, SMALL_VECTOR_SIZE> *addr_vec, ankerl::svector<uint64_t, SMALL_VECTOR_SIZE> *full_addr_vec, uint32_t idx)
+    {
+        address = AddressProxy(addr_vec, idx);
+        full_addr = AddressProxy(full_addr_vec, idx);
+    }
+
+    inline void fast_copy_packet(PACKET &dest, const PACKET &src)
+    {
+        memcpy((void*)&dest, (void*)&src, offsetof(PACKET, rob_index_depend_on_me));
+        dest.rob_index_depend_on_me = src.rob_index_depend_on_me;
+        fast_copy_fastset(dest.lq_index_depend_on_me, src.lq_index_depend_on_me);
+        fast_copy_fastset(dest.sq_index_depend_on_me, src.sq_index_depend_on_me);
+        dest.address = src.address;
+        dest.full_addr = src.full_addr;
+        dest.l1_bypassed = src.l1_bypassed;
+        dest.l2_bypassed = src.l2_bypassed;
+        dest.llc_bypassed = src.llc_bypassed;
+        dest.pf_merged_from_upper = src.pf_merged_from_upper;
+        dest.fill_level = src.fill_level;
+    }
+    template <typename T>
+    inline void fast_copy_fastset(T &dest, const T &src)
+    {
+        // inline void fast_copy_fastset(fastset& dest, const fastset& src) {
+        if (src.card == 0)
+            return;
+        dest.card = src.card;
+        if (src.card < SMALL_SIZE)
+        {
+            memcpy(dest.data.values, src.data.values, sizeof(TYPE) * src.card);
+        }
+        else
+        {
+            memcpy(dest.data.bits, src.data.bits, sizeof(src.data.bits));
+        }
+    }
+
+    void quickReset()
+    {
+        instruction = tlb_access = scheduled = translated = fetched = prefetched = drc_tag_read = returned = 0;
+        asid[0] = asid[1] = UINT8_MAX;
+        type = 0;
+        fill_level = rob_index = -1;
+        pf_metadata = 0;
+        // VB: used for bypass cache level
+        l1_bypassed = 0;
+        l2_bypassed = 0;
+        llc_bypassed = 0;
+        pf_merged_from_upper = 0;
+        exist_lvls = 0;
+
+        rob_index_depend_on_me.clear();
+        lq_index_depend_on_me = LQ_template_fastset;
+        sq_index_depend_on_me = SQ_template_fastset;
+        is_producer = instr_merged = load_merged = store_merged = 0;
+        cpu = NUM_CPUS;
+        data_index = lq_index = sq_index = 0;
+        address = full_addr = instruction_pa = data_pa = data = instr_id = ip = cycle_enqueued = 0;
+        event_cycle = UINT32_MAX;
+
+    }
+
+    PACKET() : address(), full_addr()
+    {
+        instruction = tlb_access = scheduled = translated = fetched = prefetched = drc_tag_read = returned = 0;
+        asid[0] = asid[1] = UINT8_MAX;
+        type = 0;
+        fill_level = rob_index = -1;
+        is_producer = instr_merged = load_merged = store_merged = 0;
+        cpu = NUM_CPUS;
+        data_index = lq_index = sq_index = 0;
+        instruction_pa = data = instr_id = ip = 0;
+        event_cycle = UINT32_MAX;
+        cycle_enqueued = 0;
+    }
+    friend std::ostream& operator<<(std::ostream&, const PACKET&);
+    // inline std::ostream& operator<<(std::ostream& os, const PACKET& p)
+    // {
+    //     os
+    //         << " InstrID " << (uint64_t)p.instr_id
+    //         << " cy "      << (uint64_t)p.event_cycle
+    //         << " ROB "     << (int)p.rob_index
+    //         << " LQ "      << (int)p.lq_index
+    //         << " SQ "      << (int)p.sq_index
+    //         << " fill "    << (int)p.fill_level
+    //         << " addr "    << (uint64_t)p.address      // DECIMAL, NOT HEX
+    //         << " ByP "     << (int)p.l1_bypassed << "/" << (int)p.l2_bypassed << "/" << (int)p.llc_bypassed
+    //         << " type "    << (int)p.type
+    //         << " ret "     << (int)p.returned
+    //         << " currCy "  << (uint64_t)current_cycle[p.cpu];
+    //
+    //     return os;
+    // }
+
+
+
+    // static const char* demangle(const char* name)
+    // {
+    //     int status = 0;
+    //     char* dem = abi::__cxa_demangle(name, nullptr, nullptr, &status);
+    //     return (status == 0 && dem) ? dem : name;
+    // }
+    // __attribute__((noinline))
+    // PACKET* operator&()
+    // {
+    //     if (instr_id < 1074740 || instr_id > 10780367912) {
+    //         return this;
+    //     }
+    //     uint64_t pAddr = address.tmpAddrProxy;
+    //
+    //     void* stack[8];
+    //     int n = backtrace(stack, 8);
+    //
+    //     const char* caller = "unknown";
+    //
+    //     if (n > 2) {
+    //         Dl_info info;
+    //         if (dladdr(stack[2], &info) && info.dli_sname) {
+    //             caller = demangle(info.dli_sname);
+    //         }
+    //     }
+    //
+    //     fprintf(stdout,
+    //         "[%s]"
+    //         " InstrID %lu"
+    //         " cy %lu"
+    //         "pAddr %lu"
+    //         " ROB %d"
+    //         " LQ %d"
+    //         " SQ %d"
+    //         " fill %d"
+    //         " ByP %d"
+    //         " type %d"
+    //         " ret %d\n",
+    //         caller,
+    //         (unsigned long)instr_id,
+    //         (unsigned long)event_cycle,
+    //         (unsigned long) pAddr,
+    //         (int)rob_index,
+    //         (int)lq_index,
+    //         (int)sq_index,
+    //         (int)fill_level,
+    //         (int)l1_bypassed, (int)l2_bypassed, (int)llc_bypassed,
+    //         (int)type,
+    //         (int)returned
+    //     );
+    //
+    //     fflush(stdout);
+    //     return this;
+    // }
+
+    // PACKET* operator&()
+    // {
+    //     void* stack[4];
+    //     int n = backtrace(stack, 4);
+    //     char** syms = backtrace_symbols(stack, n);
+    //
+    //     const char* caller =
+    //         (n > 1 && syms && syms[1]) ? syms[1] : "unknown";
+    //
+    //     fprintf(stdout,
+    //         "[%s]"
+    //         " InstrID %lu"
+    //         " cy %lu"
+    //         " ROB %d"
+    //         " LQ %d"
+    //         " SQ %d"
+    //         " fill %d"
+    //         " ByP %d"
+    //         " type %d"
+    //         " ret %d\n",
+    //         caller,
+    //         (unsigned long)instr_id,
+    //         (unsigned long)event_cycle,
+    //         (int)rob_index,
+    //         (int)lq_index,
+    //         (int)sq_index,
+    //         (int)fill_level,
+    //         (int)l1_bypassed, (int)l2_bypassed, (int)llc_bypassed,
+    //         (int)type,
+    //         (int)returned
+    //     );
+    //
+    //     free(syms);
+    //     return this;
+    // }
+
+
+};
+inline std::ostream& operator<<(std::ostream& os, const PACKET& p)
+{
+    os
+        << " InstrID " << (uint64_t)p.instr_id
+        << " cy "      << (uint64_t)p.event_cycle
+        << " ROB "     << (int)p.rob_index
+        << " LQ "      << (int)p.lq_index
+        << " SQ "      << (int)p.sq_index
+        << " fill "    << (int)p.fill_level
+        << " addr "    << (uint64_t)p.address
+        << " ByP "     << (int)p.l1_bypassed << "/" << (int)p.l2_bypassed << "/" << (int)p.llc_bypassed
+        << " type "    << (int)p.type
+        << " ret "     << (int)p.returned;
+        // << " currCy "  << (uint64_t)current_cycle[p.cpu];
+
+    return os;
+}
+
+
+class PACKET_QUEUE
+{
+public:
+    string NAME;
+    const uint16_t SIZE;
+    uint8_t is_RQ : 4, is_WQ : 4, write_mode : 4;
+    uint16_t cpu : 6, head, tail, occupancy, num_returned, next_fill_index, next_schedule_index, next_process_index;
+    uint32_t next_fill_cycle, next_schedule_cycle, next_process_cycle;
+    uint64_t ACCESS, FORWARD, MERGED, TO_CACHE, ROW_BUFFER_HIT, ROW_BUFFER_MISS, FULL;
+    PACKET *entry;
+    // uint8_t cache_type
+    // NEW: SOA vectors for cache-friendly address access
+    ankerl::svector<uint64_t, SMALL_VECTOR_SIZE> address_vector;
+    ankerl::svector<uint64_t, SMALL_VECTOR_SIZE> full_addr_vector;
+
+    // PACKET_QUEUE(string v1, uint32_t v2) : NAME(v1), SIZE(v2){
+    //     is_RQ = is_WQ = write_mode = 0;
+    //     cpu = head = tail = occupancy = num_returned = next_fill_index = next_schedule_index = next_process_index = 0;
+    //     next_fill_cycle = next_schedule_cycle = next_process_cycle = UINT64_MAX;
+    //     ACCESS = FORWARD = MERGED = TO_CACHE = ROW_BUFFER_HIT = ROW_BUFFER_MISS = FULL = 0;
+
+    //     // Allocate and initialize vectors FIRST
+    //     address_vector.reserve(SIZE);
+    //     full_addr_vector.reserve(SIZE);
+    //     for (size_t i = 0; i < SIZE; i++)
+    //     {
+    //         address_vector.emplace_back(0);
+    //         full_addr_vector.emplace_back(0);
+    //     }
+
+    //     // THEN allocate PACKET array
+    //     entry = new PACKET[SIZE];
+
+    //     // FINALLY set queue vectors for each packet
+    //     for (size_t i = 0; i < SIZE; i++)
+    //     {
+    //         entry[i].set_queue_vectors(&address_vector, &full_addr_vector, i);
+    //     }
+    // };
+    // PACKET_QUEUE(const string& v1, uint32_t v2)
+    // : NAME(v1.c_str()), SIZE(v2)
+//     PACKET_QUEUE(const std::string& v1, uint32_t v2) : NAME(v1.c_str()), SIZE(v2)
+// {
+//     is_RQ = is_WQ = write_mode = 0;
+//     cpu = head = tail = occupancy = num_returned = next_fill_index = next_schedule_index = next_process_index = 0;
+//     next_fill_cycle = next_schedule_cycle = next_process_cycle = UINT64_MAX;
+//     ACCESS = FORWARD = MERGED = TO_CACHE = ROW_BUFFER_HIT = ROW_BUFFER_MISS = FULL = 0;
+
+//     address_vector.reserve(SIZE);
+//     full_addr_vector.reserve(SIZE);
+//     for (size_t i = 0; i < SIZE; i++) {
+//         address_vector.emplace_back(0);
+//         full_addr_vector.emplace_back(0);
+//     }
+
+//     entry = new PACKET[SIZE];
+
+//     for (size_t i = 0; i < SIZE; i++)
+//         entry[i].set_queue_vectors(&address_vector, &full_addr_vector, i);
+// };
+PACKET_QUEUE(const std::string& v1, uint32_t v2) : NAME(v1), SIZE(v2)  // CHANGE: v1 instead of v1.c_str()
+{
+    is_RQ = is_WQ = write_mode = 0;
+    cpu = head = tail = occupancy = num_returned = next_fill_index = next_schedule_index = next_process_index = 0;
+    next_fill_cycle = next_schedule_cycle = next_process_cycle = UINT32_MAX;
+    ACCESS = FORWARD = MERGED = TO_CACHE = ROW_BUFFER_HIT = ROW_BUFFER_MISS = FULL = 0;
+
+    address_vector.reserve(SIZE);
+    full_addr_vector.reserve(SIZE);
+    for (size_t i = 0; i < SIZE; i++) {
+        address_vector.emplace_back(0);
+        full_addr_vector.emplace_back(0);
+    }
+
+    entry = new PACKET[SIZE];
+
+    for (size_t i = 0; i < SIZE; i++)
+        entry[i].set_queue_vectors(&address_vector, &full_addr_vector, i);
+}
+PACKET_QUEUE() :
+    NAME(""), SIZE(0),
+    is_RQ(0), is_WQ(0), write_mode(0),
+    cpu(0), head(0), tail(0), occupancy(0), num_returned(0),
+    next_fill_index(0), next_schedule_index(0), next_process_index(0),
+    next_fill_cycle(UINT32_MAX), next_schedule_cycle(UINT32_MAX), next_process_cycle(UINT32_MAX),
+    ACCESS(0), FORWARD(0), MERGED(0), TO_CACHE(0), ROW_BUFFER_HIT(0), ROW_BUFFER_MISS(0), FULL(0),
+    entry(nullptr)
+{}
+
+    // PACKET_QUEUE()
+    // {
+    //     is_RQ = is_WQ = 0;
+    //     cpu = head = tail = occupancy = num_returned = next_fill_index = next_schedule_index = next_process_index = 0;
+    //     next_fill_cycle = next_schedule_cycle = next_process_cycle = UINT64_MAX;
+    //     ACCESS = FORWARD = MERGED = TO_CACHE = ROW_BUFFER_HIT = ROW_BUFFER_MISS = FULL = 0;
+    //     entry = nullptr;
+    // };
+
+    ~PACKET_QUEUE()
+    {
+        delete[] entry;
+    };
+    void quick_reset()
+    {
+        // Reset ALL queue state
+        head = tail = occupancy = 0;
+        num_returned = 0;
+
+        // CRITICAL: Reset scheduler indices and cycles
+        next_fill_index = 0;
+        next_schedule_index = 0;
+        next_process_index = 0;
+        next_fill_cycle = UINT32_MAX;
+        next_schedule_cycle = UINT32_MAX;
+        next_process_cycle = UINT32_MAX;
+
+        // // Zero vectors
+        // for(uint32_t i = 0; i < SIZE; i++) {
+        //     address_vector[i] = 0;
+        //     full_addr_vector[i] = 0;
+        // }
+
+        // Reset packets and rebind
+        // for(uint32_t i = 0; i < SIZE; i++) {
+        //     entry[i].quickReset();
+        //     entry[i].set_queue_vectors(&address_vector, &full_addr_vector, i);
+        // }
+        for (uint32_t i = 0; i < SIZE; i++)
+        {
+            entry[i].quickReset();
+
+            // DIRECT member access - no function call
+            entry[i].address.vec_ptr = &address_vector;
+            entry[i].address.index = i;
+            entry[i].address.fallback_value = 0;
+            entry[i].full_addr.vec_ptr = &full_addr_vector;
+            entry[i].full_addr.index = i;
+            entry[i].full_addr.fallback_value = 0;
+        }
+
+        // processed_packet removed — was never used
+    }
+    // void quick_reset(){
+    //         head = 0;
+    //     tail = 0;
+    //     occupancy = 0;
+    //     for(uint32_t i = 0; i < SIZE; i++) {
+    //         entry[i].quickReset();
+    //         entry[i].set_queue_vectors(&address_vector, &full_addr_vector, i);
+    //     }
+    //     for(uint32_t i = 0; i < 2*MAX_READ_PER_CYCLE; i++) {
+    //         processed_packet[i].quickReset();
+    //         // vec_ptr remains nullptr per quickReset() - correct for temporaries
+    //     }
+
+    // }
+
+    int check_queue(PACKET *packet) const;
+    void add_queue(PACKET *packet), remove_queue(PACKET *packet);
+};
+
+// reorder buffer
+class CORE_BUFFER
+{
+public:
+    const string NAME;
+    const uint16_t SIZE;
+    uint16_t cpu,
+        head,
+        tail,
+        occupancy,
+        last_read, last_fetch, last_scheduled,
+        inorder_fetch[2],
+        next_fetch[2],
+        next_schedule;
+    uint32_t event_cycle;
+    // lsq_event_cycle,
+    // retire_event_cycle;
+    //  fetch_event_cycle,
+    //  schedule_event_cycle,
+    //  execute_event_cycle,
+
+    ooo_model_instr *entry;
+
+    // constructor
+    CORE_BUFFER(string v1, uint32_t v2) : NAME(v1), SIZE(v2)
+    {
+        head = 0;
+        tail = 0;
+        occupancy = 0;
+
+        last_read = SIZE - 1;
+        last_fetch = SIZE - 1;
+        last_scheduled = 0;
+
+        inorder_fetch[0] = 0;
+        inorder_fetch[1] = 0;
+        next_fetch[0] = 0;
+        next_fetch[1] = 0;
+        next_schedule = 0;
+
+        event_cycle = 0;
+        entry = new ooo_model_instr[SIZE]();
+    };
+
+    // destructor
+    ~CORE_BUFFER()
+    {
+        delete[] entry;
+    };
+};
+
+// load/store queue
+class LSQ_ENTRY
+{
+public:
+    uint64_t instr_id,
+        producer_id,
+        virtual_address,
+        physical_address,
+        ip;
+    uint32_t event_cycle;
+
+    uint16_t rob_index, data_index, sq_index;
+
+    uint8_t translated,
+        fetched,
+        asid[2];
+    // forwarding_depend_on_me[ROB_SIZE];
+    fastset
+        forwarding_depend_on_me;
+#ifdef USE_HERMES
+    int32_t rob_position;
+    int8_t rob_part_type;
+    uint8_t went_offchip;
+    uint8_t went_offchip_pred;
+    ocp_base_feature_t *ocp_feature;
+#endif
+
+    void quickReset()
+    {
+        instr_id = 0;
+        producer_id = UINT64_MAX;
+        virtual_address = 0;
+        physical_address = 0;
+        ip = 0;
+        event_cycle = 0;
+
+        rob_index = 0;
+        data_index = 0;
+        sq_index = UINT16_MAX;
+
+        translated = 0;
+        fetched = 0;
+        asid[0] = UINT8_MAX;
+        asid[1] = UINT8_MAX;
+#ifdef USE_HERMES
+        rob_position = -1;
+        rob_part_type = -1;
+        went_offchip = 0;
+        went_offchip_pred = 0;
+        ocp_feature = NULL;
+#endif
+
+        // new (&forwarding_depend_on_me) fastset();
+        forwarding_depend_on_me = template_fastset;
+    }
+
+    // constructor
+    LSQ_ENTRY()
+    {
+        instr_id = 0;
+        producer_id = UINT64_MAX;
+        virtual_address = 0;
+        physical_address = 0;
+        ip = 0;
+        event_cycle = 0;
+
+        rob_index = 0;
+        data_index = 0;
+        sq_index = UINT16_MAX;
+
+        translated = 0;
+        fetched = 0;
+        asid[0] = UINT8_MAX;
+        asid[1] = UINT8_MAX;
+
+#if 0
+        for (uint32_t i=0; i<ROB_SIZE; i++)
+            forwarding_depend_on_me[i] = 0;
+#endif
+    };
+};
+
+class LOAD_STORE_QUEUE
+{
+public:
+    const string NAME;
+    const uint32_t SIZE;
+    uint32_t occupancy, head, tail;
+
+    LSQ_ENTRY *entry;
+
+    // constructor
+    LOAD_STORE_QUEUE(string v1, uint32_t v2) : NAME(v1), SIZE(v2)
+    {
+        occupancy = 0;
+        head = 0;
+        tail = 0;
+
+        entry = new LSQ_ENTRY[SIZE];
+    };
+
+    // destructor
+    ~LOAD_STORE_QUEUE()
+    {
+        delete[] entry;
+    };
+};
+#endif

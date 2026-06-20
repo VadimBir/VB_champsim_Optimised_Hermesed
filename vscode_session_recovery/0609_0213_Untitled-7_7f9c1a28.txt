@@ -1,0 +1,4 @@
+Some issues are me uncatching it due to exhaustion. 
+The writing style, can be hard to resolve because the solution can be worse (a degradation), although I might agree with it. Or opposite, the suggestion is wrong, cause confusion. Which all ends up with overspending time. 
+Some issues, I just tend to not catch at a time, because I dont have a full picture. 
+But I agree, once the paper is written, the AI can seek for all sorts of issues typos, grammar and so on, however its 50% useless on logical issues because it would skip the context written somewhere (attention issue). 

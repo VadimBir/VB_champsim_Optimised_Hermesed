@@ -1,0 +1,14 @@
+Case-wise coverage (do not typeset)
+CASE 1 = topmost forwarder, NO anchor above (only L1).
+  1a) L1 skip, stays skipped (in flight)
+  1b) L1 skip, then NOT skip (repeat allocs
+      MSHR at L1, merges below)
+  1c) L1 skip, resolved by HIT at L2
+CASE 2 = no MSHR here, anchor ABOVE.
+  2a) L2 skip   (anchor above = L1)
+  2b) LLC skip  (anchor above = L2)
+  2c) L2 skip + LLC HIT  *** NOT YET WRITTEN ***
+CASE 3 = holds standard MSHR (the anchor). Any level, by skip-bit of level ABOVE:
+  3a) upper bit CLEAR (upper kept, or repeat-cleared per 1b)
+  3b) upper bit SET   (upper skipped)
+NOTE: clearing of a skip bit happens in CASE 1 (1b); CASE 3 only READS it. cross-ref.

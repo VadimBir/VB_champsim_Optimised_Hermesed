@@ -288,7 +288,7 @@ func_do_sim() {
     PWD=$(pwd)
     cd $PWD/$(get_repo_folder)/
     echo " >Setting permissions for scripts in ModdedChampsim..."
-    chmod +x $PWD/quick.sh
+    chmod +x $PWD/quickSim/quick.sh
     chmod +x $PWD/buildPrefetcher.sh
     chmod +x $PWD/run_champsim.sh
 
@@ -303,7 +303,7 @@ func_do_sim() {
     # now in ModdedChampsim dir, run the quick.sh script to test
 
     echo "   >Running quick.sh to test ModdedChampsim..."
-    $PWD/$(get_repo_folder)/quick.sh --cores 2 --debug 0 --fast --processes_num 1
+    $PWD/$(get_repo_folder)/quickSim/quick.sh --cores 2 --debug 0 --fast --processes_num 1
 }
 func_do_env_install() {
     echo "[+] Installing dependencies..."

@@ -1,0 +1,54 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 842 — CamatCPAbias at L2 with LLC-contention-aware bias
+// bias = (llc_free * llc_hr) / (l2_free + 1.0), clamp [0.3, 6.0]
+// Goal: bypass to LLC more aggressively when L2 MSHR is contended
+
+#define DBG_842L2 1
+
+inline bool l2_bypass_init_842[NUM_CPUS] = {};
+inline uint64_t l2_dbg_counter_842[NUM_CPUS] = {};
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init_842[cpu]) return;
+    cout << "L2 Bypass [842-CPAbiasL2split]: LLC-contention-aware bias [0.3,6.0]" << endl;
+    l2_bypass_init_842[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    double camat_this = lpm[cpu][LPM_L2C].wsm.camat_activeMemCyDivAccesses;
+    double camat_next = lpm[cpu][LPM_LLC].wsm.camat_activeMemCyDivAccesses;
+    double cpa_this   = lpm[cpu][LPM_L2C].wsm.cpa_totalCyDivAccesses;
+    double cpa_next   = lpm[cpu][LPM_LLC].wsm.cpa_totalCyDivAccesses;
+    if (camat_next < 1e-6 || cpa_next < 1e-6) { bool byp = false; return byp; }
+    // LLC hit rate from LPM
+    uint64_t w_llc = lpm[cpu][LPM_LLC].ws.ω_activeMemCy();
+    double mu_kappa_llc = w_llc ? (double)lpm[cpu][LPM_LLC].ws.m_pureMissCy / w_llc : 0.0;
+    double llc_hr  = 1.0 - mu_kappa_llc;
+    int    l2_free  = L2C->MSHR.SIZE - L2C->MSHR.occupancy;
+    int    llc_free = LLC->MSHR.SIZE - LLC->MSHR.occupancy;
+    // bias proportional to LLC free MSHRs weighted by LLC HR, inverse of L2 free
+    double bias    = (llc_free * llc_hr) / (l2_free + 1.0);
+    if (bias < 0.3) bias = 0.3;
+    if (bias > 6.0) bias = 6.0;
+    double lat_ratio = (double)L2C->LATENCY / (double)LLC->LATENCY;
+    bool byp = (camat_this * cpa_this) / (camat_next * cpa_next) < lat_ratio * bias;
+
+#if DBG_842L2
+    if ((++l2_dbg_counter_842[cpu] & 0xFFFF) == 0) {
+        printf("  [842-L2] bias=%.2f -> %s\n", bias, byp ? "BYP" : "---");
+    }
+#endif
+
+    return byp;
+}

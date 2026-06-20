@@ -1,0 +1,47 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 572 — 555 gate (phi afford) + LPMR starvation guard at LLC
+// Gate 1: phi(LLC) > 1 - H_LLC/C-AMAT(DRAM) — I can afford to give up hits
+// Gate 2: LPMR(DRAM) < 1.0                   — DRAM is underloaded
+
+static constexpr double H_LLC = 50.0;
+
+#define DBG_572 1
+
+inline bool llc_bypass_init_572[NUM_CPUS] = {};
+inline uint64_t llc_dbg_counter_572[NUM_CPUS] = {};
+
+#define SHALL_LLC_BYPASS_DEFINED
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init_572[cpu]) return;
+    cout << "LLC Bypass [572-PhiAfford_LPMRStarved]: G1=phi>1-H/camat_nxt G2=LPMR(DRAM)<1" << endl;
+    llc_bypass_init_572[cpu] = true;
+}
+
+inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    llc_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    double phi_llc   = get_phi_short(cpu, LPM_LLC);
+    double camat_dram = lpm[cpu][LPM_DRAM].wsm.camat_activeMemCyDivAccesses;
+    double lpmr_dram  = lpm[cpu][LPM_DRAM].wsm.lpmr_activeMemCyDivIdealCy;
+
+    bool g1 = (camat_dram >= H_LLC) && (phi_llc > 1.0 - H_LLC / camat_dram);
+    bool g2 = (lpmr_dram < 1.0);
+    bool byp = g1 && g2;
+
+#if DBG_572
+    if ((++llc_dbg_counter_572[cpu] & 0xFFFF) == 0) {
+        printf("    [572-LLC] phi_llc=%.3f camat_dram=%.2f lpmr_dram=%.3f | G1=%d G2=%d -> %s\n",
+               phi_llc, camat_dram, lpmr_dram, g1, g2, byp ? "BYP" : "---");
+    }
+#endif
+
+    return byp;
+}

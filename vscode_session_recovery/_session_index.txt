@@ -1,0 +1,119 @@
+﻿117 sessions cached
+
+84c2f24d-8985-475e-b2be-6bcb84269fae  created 06-10 05:33  last 06-10 21:52  Reduce cycle stalls in CPU cache simulation
+8714165b-ae2c-4086-b024-08b8900018ab  created 06-09 23:40  last 06-10 05:32  Organize simulation results by workload type
+501683ae-449d-4c6a-b29d-cf3b83b9950a  created 06-09 21:49  last 06-09 21:52  Check script loop filtering for forwarding and OCP mixes
+d78e81e5-12bd-4436-950e-e714ee2fbb95  created 06-09 21:48  last 06-09 21:49  /update-config
+956cbda5-bfd5-42da-8d37-9a6d16ddcf69  created 06-09 21:48  last 06-09 21:48  /clear
+09d51765-375d-48ed-b43d-a8654c7afb50  created 06-08 01:10  last 06-09 06:43  HERMES_PATH_FILE_KNOWN
+6da784c2-e0c0-475d-a6d5-6ef292e41f6b  created 06-06 18:04  last 06-07 20:33  Optimize cache and CPU scheduling performance
+ea129417-092e-4295-9d9e-4284fe8c80a2  created 06-03 16:20  last 06-03 16:21  HERMES_PATH_FILE_KNOWN
+4d57838e-99e6-4b00-8514-a25d34a34546  created 06-03 04:19  last 06-03 04:20  Analyze ChampSim cache simulation run script
+53ff624c-4209-487e-9259-fe5721de20b0  created 06-02 21:32  last 06-02 21:42  Identify process running on host 3
+d8c22c02-b82f-499c-9046-44bc449a45ab  created 06-02 02:40  last 06-02 21:39  HERMES_PATH_FILE_KNOWN
+5fd0b42a-7438-4c70-b58e-9f456bfa9c70  created 06-01 16:08  last 06-02 01:23  HERMES_PATH_FILE_KNOWN
+a88b1679-806b-4b6e-b309-8f84c815fce1  created 06-01 19:41  last 06-02 01:00  Analyze Hermes implementation against paper
+26b0c66c-25e2-41ab-8a30-90ced93cb9ee  created 06-01 16:08  last 06-01 16:10  Integrate Hermes into ChampSim project
+8e68979f-01ec-4110-baad-d1b1e3e2b6e4  created 05-29 18:42  last 06-01 01:39  Recall pending runs memory context
+b5f2d1bf-d3b9-43f5-bf86-be4828fc044c  created 05-31 23:39  last 05-31 23:40  Recreate Excel sheets with timestamped v2 directory
+7118bcdd-fd3c-4a9d-a9a8-f878d291c3fd  created 05-31 23:36  last 05-31 23:38  Check if ChampSim output log file exists
+ed042475-5424-4ad6-b8a9-73a603960a02  created 05-31 23:31  last 05-31 23:32  Find config under outputs
+fd44c081-c838-4ece-88ac-ada3620209fb  created 05-29 17:57  last 05-31 20:10  Check remotes and active ChampSim processes
+cd7b4a11-19a9-4131-8001-d8fb874a2e57  created 05-30 00:03  last 05-31 20:10  Identify simulation runs in ChampSim output logs
+0ccaf268-4475-4b6c-9f16-017ee9087a0a  created 05-31 02:39  last 05-31 20:10  Grep running sims in remote servers
+a67e8d4d-07e7-4c53-a061-74ca439618ed  created 05-31 19:43  last 05-31 20:10  Check git ignore status for .claude file
+1dc5c5f6-f7a8-40e1-8801-3cabbc2915d5  created 05-30 19:04  last 05-31 01:06  Debug spreadsheet calculation script
+ed021658-7bc8-4216-bba8-a409983ebaae  created 05-30 21:27  last 05-30 21:52  Understand BLT in Excel making script
+9defe88a-4c59-4adb-a38f-1e9f653f9ef3  created 05-30 21:26  last 05-30 21:27  /clear
+841606b8-2724-43ef-88ee-30feb7bd6b19  created 05-30 21:08  last 05-30 21:16  Understand BLT meaning in Excel script
+8b3541b6-4b61-4c89-b2de-b8d23d768d4e  created 05-29 18:18  last 05-29 18:48  Debug DRAM controller deadlock issues
+be31c7f3-1794-4ef6-b32a-960d1ef3680c  created 05-29 04:11  last 05-29 18:42  Debug DRAM deadlock after cycle packing removal
+ef042afb-a6b8-4060-8f1d-fe90199f9691  created 05-29 17:50  last 05-29 17:57  Investigate memory issue in results folders
+1456401b-e793-470c-8e77-88286f72ad63  created 05-29 01:37  last 05-29 07:49  Check log files for FINAL ROI line
+d3ee8d5b-5445-4b7d-aa90-cdf135dfdb1a  created 05-28 17:02  last 05-29 00:25  Investigate long-running simulations in outputs folder
+cf923e65-6920-4cf7-9c48-63e4caf6fd71  created 05-28 19:03  last 05-29 00:25  Document ChampSim simulation runs and merge logic
+f2e036b3-27e7-480b-bb8a-67f61247e612  created 05-28 17:53  last 05-29 00:25  Identify stuck heterogeneous simulation runs
+ae6c54ee-4d6d-4c3a-9667-e37f1f53f10d  created 05-28 15:30  last 05-29 00:25  Investigate unfair DRAM scheduler in champsim
+6268b16a-14fc-423f-931c-bee4f0e3eaa5  created 05-28 02:57  last 05-28 13:04  Remove cycle packing from ChampSim to fix deadlock
+9cf34b40-35fe-4bb0-9f27-a4ca3a073c93  created 05-28 02:22  last 05-28 13:04  Invisible deadlock cycles debugging
+c40b7587-7886-453b-81e2-02746045053f  created 05-27 22:49  last 05-28 13:04  Modify Linux scheduler settings in Ubuntu 24
+c6a9e5a0-2759-4829-9233-cb0f1af64cb1  created 05-26 17:57  last 05-28 02:22  Debug deadlock detection with cycle packing
+a8877aef-50c9-4a0b-b93c-3dedebea8179  created 05-27 01:24  last 05-28 02:21  Analyze L2 cache hit behavior with L1 bypass flag
+e7b96ba9-b8f5-4203-9935-d9f9a353aef5  created 05-25 22:07  last 05-28 02:21  Limit piped log file to 100GB with FIFO
+30fb0cf4-6578-4aa9-a0a9-db12dfe2a10d  created 05-26 15:28  last 05-28 02:19  Investigate Claude Opus 4.7 lazy generation issues
+f0d016dc-f342-4e04-9449-f81c7a88a8cf  created 05-27 03:37  last 05-28 02:19  Fix file parsing in aggregator script for new format
+a1d7bb5d-d5b8-4ad6-8e32-32a2bfd76940  created 05-27 02:29  last 05-28 02:19  Calculate average IPC from ChampSim simulation results
+ee3a86f8-76fd-4efb-ab7a-70b75ec5dce4  created 05-24 00:16  last 05-27 22:49  Extract and calculate trace instruction ratios from logs
+b67a8ca3-d809-4715-b5b3-a2f2297bf54d  created 05-26 23:38  last 05-27 02:29  Generate CSV lines for simulation sweep script
+1344930b-b2d3-4f3a-8dbf-b0b205009f8b  created 05-26 19:35  last 05-26 22:19  Investigate potential deadlock and timeout issue
+50ee3ffb-a3c4-4495-88e7-293d9421a054  created 05-26 20:51  last 05-26 20:51  /clear
+b3a4ebb6-27a7-4fd2-a24e-528d94afe4f1  created 05-26 17:58  last 05-26 19:35  Debug deadlock detection false positives in cycle packing
+aa064af4-94e9-4fca-b5c4-824a05a821bb  created 05-26 17:42  last 05-26 17:51  Debug L1D cache deadlock issue
+fae18fb9-9543-4b98-b6e3-2c37ecfeac19  created 05-26 17:29  last 05-26 17:33  Debug CPU deadlock in L1D cache trace
+a0f04747-c978-449b-8615-c9ffdb04567f  created 05-26 16:35  last 05-26 17:28  Debug cache warmup deadlock in ChampSim simulator
+7ac9cbb3-c05c-40eb-b380-e72da37086b6  created 05-25 21:24  last 05-26 02:20  Check ChampSim output logs for missing Final ROI lines
+15d26ecd-16ac-439d-8c88-0731cba7819a  created 05-25 21:11  last 05-25 21:21  Backup v15 and promote v15_DBG to v15
+0334a4a5-672b-4754-8c73-d7cd55ea5c53  created 05-25 20:27  last 05-25 20:47  Pack instruction metadata fields efficiently
+0f536ce5-6b14-4e4c-9f2b-1b0f8e3d1e21  created 05-25 12:46  last 05-25 20:27  Debug L2 deadlock resolution issue
+fe63e4a4-866a-4ee9-8a5d-ced6947865a4  created 05-25 01:53  last 05-25 19:07  Debug cache MSHR return handling in ChampSim
+b7e4a1c8-274f-427f-b337-d59f746b7e84  created 05-25 13:15  last 05-25 17:17  Debug deadlock in cache MSHR entries
+6a22e3b7-de17-44ab-8cb7-f7bb57343491  created 05-25 13:15  last 05-25 13:15  /clear
+c0639fed-d8b8-4fd0-b364-90d9a4ea6413  created 05-25 01:49  last 05-25 05:56  Debug cache prefetch fill level merging issue
+01b87616-f2ea-4508-99fd-be7844a0d1e6  created 05-25 03:44  last 05-25 05:17  Debug L2 cache not returning data to L1
+8146d8b1-ce63-4686-967b-36d2c42880a1  created 05-24 23:22  last 05-25 01:51  Debug cache miss handling return failure
+aeafcea4-d553-4574-ab12-f9dc75d693f4  created 05-24 22:11  last 05-24 22:43  Check for deadlock cases in ChampSim outputs
+9e996e59-1e9c-490b-af59-106b57ce28a6  created 05-24 22:03  last 05-24 22:07  Fix syntax error in bash script
+5fa677e3-79da-452f-91f4-1ecd3ef9ace6  created 05-24 17:46  last 05-24 21:58  Debug cache hierarchy memory entry loss
+7d20f7da-4c79-4d20-b8eb-0adfddf88c7a  created 05-24 19:55  last 05-24 21:29  Configure output directory path for simulation
+e519fc9c-e5e2-4df0-aefb-9312e8e56e84  created 05-24 03:54  last 05-24 19:55  Debug Champsim build failure
+7e863122-9423-4183-8a09-8faf6d0ff90e  created 05-24 17:38  last 05-24 19:34  Investigate server rerun issue
+80da32e3-90ac-406f-9a65-722c90511556  created 05-24 03:46  last 05-24 15:07  Start understanding everything server
+48be44ce-ac9e-42b0-a719-59c429fc09c9  created 05-23 18:19  last 05-24 03:45  POINT OF PHASE CHANGE
+fe23986b-729f-412d-9c69-f1c1b3c5a8b8  created 05-23 18:02  last 05-24 03:45  Debug deadlock detection in single-core cases
+a1b68971-1b37-477d-8510-2c82a76dbf97  created 05-24 00:37  last 05-24 03:45  enhance-logging-quickbyp-script
+76cf8277-9872-47b6-96b3-886ef6e33a9e  created 05-23 23:31  last 05-24 00:00  Debug deadlock issue in ChampSim script
+c3cd123d-91cd-4674-bef5-908a06f55ee1  created 05-23 21:54  last 05-23 23:31  Check disk space and missing trace configs
+25c7fefc-3243-448b-9e3e-2471294ce8ae  created 05-23 21:03  last 05-23 21:03  /clear
+77cc9cd1-f3a9-4396-a551-a10b09195cda  created 05-23 21:03  last 05-23 21:03  /clear
+b60c5881-c930-4029-b8da-4f9817a436b0  created 05-23 19:12  last 05-23 21:03  Understand Claude Haiku 4.5 capabilities
+5aaa6b76-6ce7-4c7f-8ac0-860c19c746bc  created 05-23 18:19  last 05-23 18:48  Find ChampSim log files with default settings
+f5a509f2-0897-4c3a-bea1-4456d1f37ca6  created 05-21 17:30  last 05-23 08:16  script comparison hetero homo
+0584658c-7299-49e2-bf1d-2d8b76400186  created 05-21 18:21  last 05-23 08:16  outputs folder merge and rename
+54d324f9-4211-4d88-bc56-7eb8eb94bb51  created 05-18 13:50  last 05-23 08:16  Analyze deadlock in cache and DRAM controller code
+81a94ae2-386f-4c68-b4f7-114d6b45f6b3  created 05-22 18:28  last 05-23 08:16  Work with v14 version only
+c82aec99-8eb6-44c1-a5c2-026a410af535  created 05-21 21:57  last 05-23 08:16  MEM_RUNS_STATE
+f1d31763-f9b3-407b-acca-b90270a5c107  created 05-21 18:49  last 05-23 08:16  Analyze ChampSim script for distributed homogeneous trace execution
+6dfdecb7-b0e2-4388-8177-ec90b62258e1  created 05-22 19:35  last 05-23 08:16  Extract and grep middle lines from output file
+828b4d05-7360-4e43-b045-d893223e2a2f  created 05-22 18:03  last 05-22 18:27  Install Claude CLI tool
+58d566ff-f538-4dc2-b2dc-75debde760ec  created 05-19 14:33  last 05-22 14:37  Debug ChampSim deadlock detection and analysis
+fda6b654-c1d2-48a2-bbd3-a9048f392690  created 05-22 11:18  last 05-22 11:33  Investigate large log files in output directory
+cc60cead-a6dd-485d-a2eb-641a6d3f2f00  created 05-22 11:18  last 05-22 11:18  /clear
+dc198f7b-d359-4506-a702-44cf89ac61a1  created 05-22 03:40  last 05-22 10:04  Analyze MSHR capacity stall ratios in ChampSim traces
+39a88e1b-fb71-48cf-ae90-f16076052693  created 05-19 13:32  last 05-21 19:57  MEM_RUNS_STATE
+82e566c5-8a88-4acc-9fa9-7af4d410f0e7  created 05-20 18:40  last 05-21 18:29  deadlock gaps closure
+db17fc19-135c-4e3f-8469-eb69196926be  created 05-19 22:45  last 05-20 21:06  CREATE OPUS AGENTS All 8/8 Opus audits done. Final�
+0e9331a3-c353-40e2-a9c0-59cf77db9ea9  created 05-19 21:00  last 05-19 21:01  file size check
+4401b971-60f1-4a2f-9907-519de3702063  created 05-16 05:46  last 05-19 14:31  Fix distributed script with job queue system
+f50fb11e-2541-4406-8f0f-aebec19e3173  created 05-17 17:57  last 05-19 13:51  Debug L1D cache deadlock in sequential load handling
+fb16d592-6241-4e86-b353-87ef7575d0a0  created 05-18 04:50  last 05-19 13:51  Optimize v14 space complexity with Opus agents
+c177f709-2ecb-498e-9e39-0363c72a41b8  created 05-18 23:10  last 05-19 13:51  Debug cache address printing issue
+1681a4aa-a4db-4b8c-9d7e-8f9a2edc512f  created 05-18 22:54  last 05-19 13:51  Debug memory configuration inconsistencies
+e4c26caa-9b19-4506-8583-53a7df5f47e0  created 05-17 19:55  last 05-18 19:40  Debug deadlock issues in A14 output
+39d7158a-222f-4585-86e6-36709a6c63e7  created 05-16 18:24  last 05-17 19:55  Create job distribution system for remote processing
+fdd84f8b-8fa0-474a-bb35-6f04e1dbe5c4  created 05-17 15:53  last 05-17 17:06  Extract command from log file and verify A14 setup
+02030eb0-4dd9-49ea-8e05-6dc3019858b5  created 05-15 23:17  last 05-16 06:03  Explore multiple prefetchers in single simulation run
+089aa4de-ccf2-4707-a871-c951e1ba957c  created 05-15 15:29  last 05-16 05:46  Build parallel ChampSim batch runner with dump features
+0256e2af-754b-41eb-b389-212ae8eec77f  created 05-15 22:18  last 05-15 23:17  Analyze worst GM traces impacting forwarding performance
+3bff1c6f-269c-44ea-b24b-a853bec2dedc  created 05-15 12:00  last 05-15 19:54  Reduce spec traces using GM delta analysis
+6e336510-3f40-4cb2-8fae-01979a17fd7a  created 05-15 15:24  last 05-15 15:29  /clear
+cf56d1df-abeb-4117-bb04-b3dee9e96c39  created 05-14 03:11  last 05-15 15:24  FK ... SURE ... DO SOMETHING ...
+23adaca3-484e-4ce0-b7e0-8a01b7ba29dc  created 05-15 11:57  last 05-15 12:00  Remove large Excel file from Git commit
+a31ced3c-3bc2-4cb2-b568-474b0a734e93  created 05-15 11:56  last 05-15 11:56  Remove Excel file from commit and push
+13991b8b-3103-4bbe-91eb-ddae0057dac0  created 05-14 16:32  last 05-15 11:47  Restructure Excel sheets with partial transpose and policy grouping
+c44df4f7-e1a7-4f12-b5f1-e502e38752a3  created 05-15 01:56  last 05-15 11:47  CHECK IF NUMA IS DISBALANCED IN THE SYSTEM
+5d45f099-29b2-4135-838c-135fc40fac94  created 05-14 18:21  last 05-15 01:56  Debug bulk script missing slot issue
+3b9807ad-0164-4b86-9d06-7e5af52ad30b  created 05-13 22:45  last 05-14 06:04  Fix 4000fix model inner style
+99a55590-365d-4e3e-b37d-6b228aaa89a4  created 05-13 20:08  last 05-14 01:36  OK ... 4001 IS JUST OLDER STYLE ... BUT IT NEEDS T�
+3d1ee746-8683-4c42-9a06-b995e71788a7  created 05-11 05:00  last 05-13 20:08  cp the inc dir and src dir ... cp into _BG_fixed_S�
+72a98c23-696a-40e0-a893-9e8d0ba75cb8  created 05-11 17:00  last 05-12 02:52  Investigate PID 1091785 performance delay
+0054a845-2e56-4dc9-82e9-900618d82e0e  created 05-11 03:12  last 05-11 16:33  Optimize trace helper for core idle issue

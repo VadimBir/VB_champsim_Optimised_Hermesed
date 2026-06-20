@@ -1,0 +1,33 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 3020 — BypassAllUnlessEffective — L2 (FIXED)
+// Bypass all LOADs by default UNLESS LLC is saturated.
+// Use C-AMAT(LLC)/CPA(LLC) as pressure signal.
+
+inline bool l2_bypass_init_3020[NUM_CPUS] = {};
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init_3020[cpu]) return;
+    cout << "L2 Bypass [3020-BypassAllUnlessEffective-FIXED]:\n"
+         << "  Bypass ALL unless C-AMAT(LLC)/CPA(LLC) >= 0.9" << endl;
+    l2_bypass_init_3020[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    double llc_camat = lpm[cpu][LPM_LLC].met[MET_WL].camat_activeMemCyDivAccesses;
+    double llc_cpa   = lpm[cpu][LPM_LLC].met[MET_WL].cpa_totalCyDivAccesses;
+    if (llc_cpa < 1.0) return true;
+
+    double pressure = llc_camat / llc_cpa;
+    return (pressure < 0.9);
+}

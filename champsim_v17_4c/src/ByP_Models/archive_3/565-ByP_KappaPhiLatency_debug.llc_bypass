@@ -1,0 +1,60 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 565 — Kappa+Phi+Latency at LLC, 2-tab debug indent
+// Gate 1: κ_short(LLC) > κ_long(LLC)
+// Gate 2: φ(LLC) > 1 - this_H_LLC/C-AMAT(DRAM)
+// Gate 3: κ_short(LLC)*this_H_LLC < κ_short(DRAM_proxy)*H_DRAM
+//         DRAM kappa proxy = mst(DRAM)/camat(DRAM), H_DRAM=200
+
+static constexpr double this_H_LLC  = 50.0;
+static constexpr double H_DRAM = 200.0;
+
+#define DBG_565 1
+#define DBG_CNT_PRINT 10
+
+inline bool llc_bypass_init_565[NUM_CPUS] = {};
+inline uint64_t llc_dbg_counter_565[NUM_CPUS] = {};
+
+#define SHALL_LLC_BYPASS_DEFINED
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init_565[cpu]) return;
+    cout << "LLC Bypass [565-KappaPhiLatency]: G1=k_short>k_long G2=phi>1-H/camat_nxt G3=k*H(l)<k*H(l+1)" << endl;
+    llc_bypass_init_565[cpu] = true;
+}
+
+inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    llc_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    double this_k_s_llc    = get_kappa_short(cpu, LPM_LLC);
+    double this_k_l_llc    = get_kappa_long(cpu, LPM_LLC);
+    double this_phi_llc    = get_phi_short(cpu, LPM_LLC);
+    double this_camat_llc  = lpm[cpu][LPM_LLC].wsm.camat_activeMemCyDivAccesses;
+    double camat_dram = lpm[cpu][LPM_DRAM].wsm.camat_activeMemCyDivAccesses;
+    double mst_dram   = lpm[cpu][LPM_DRAM].wsm.mst_pureMissCyDivAccesses;
+
+    double k_s_dram = (camat_dram > 1e-6) ? (mst_dram / camat_dram) : 0.0;
+
+    bool g1 = (this_k_l_llc >= 1e-6) && (this_k_s_llc > this_k_l_llc);
+    bool g2 = (camat_dram >= this_H_LLC) && (this_phi_llc > 1.0 - this_H_LLC / camat_dram);
+    bool g3 = (this_k_s_llc * this_H_LLC) < (k_s_dram * H_DRAM);
+    bool byp = g1 && g2 && g3;
+
+#if DBG_565
+    if ((++llc_dbg_counter_565[cpu] & DBG_CNT_PRINT) == 0) {
+        printf("    [565-LLC] k_s=%.3f k_l=%.3f phi=%.3f camat=%.2f | camat_DRAM=%.2f k_s_DRAM=%.3f"
+               " | G1=%d G2=%d G3=%d -> %s\n",
+               this_k_s_llc, this_k_l_llc, this_phi_llc, this_camat_llc,
+               camat_dram, k_s_dram,
+               g1, g2, g3, byp ? "BYP" : "---");
+    }
+#endif
+
+    return byp;
+}

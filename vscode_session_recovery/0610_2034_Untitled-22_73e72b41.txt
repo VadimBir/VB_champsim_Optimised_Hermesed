@@ -1,0 +1,67 @@
+-   28.70%     7.30%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::execute_memory_instruction()
+   - 21.40% O3_CPU::execute_memory_instruction()
+      - 9.84% CACHE::handle_read()
+         + 2.16% CACHE::l2c_prefetcher_operate(unsigned long, unsigned long, unsigned char, unsigned char, unsigned int)
+           1.23% LPM_Tracker::demandCompute(unsigned long const*)
+           0.93% PACKET_QUEUE::add_queue(PACKET*)
+      - 6.33% lpm_operate(int, unsigned char, bool, bool, unsigned long, bool, unsigned long, unsigned long)
+           0.72% LPM_Tracker::advance_class(unsigned char, unsigned char, unsigned int)
+        1.51% CACHE::add_rq(PACKET*)
+        1.48% CACHE::handle_fill()
+        1.12% CACHE::handle_writeback()
+   - 7.30% _start
+        __libc_start_main
+      - 000056ea0120ee6d
+         - 7.26% main
+              O3_CPU::execute_memory_instruction()
++   17.72%     1.55%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::schedule_instruction()
+-   16.26%    10.62%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const
+   - 10.62% _start
+        __libc_start_main
+        0x7cb34282a1ca
+      - main
+         - 10.52% O3_CPU::schedule_instruction()
+              O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const
+   + 5.64% O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const
+-   12.58%     5.97%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::update_rob()
+   - 6.61% O3_CPU::update_rob()
+        2.52% O3_CPU::reg_RAW_release(unsigned short)
+        2.33% AddrDependencyTracker::remove_producer(unsigned short, ooo_model_instr const*)
+        1.03% O3_CPU::complete_data_fetch(PACKET_QUEUE*, unsigned char)
+        0.72% O3_CPU::complete_instr_fetch(PACKET_QUEUE*, unsigned char)
+   - 5.97% _start
+        __libc_start_main
+      - 000000000005a970
+         - 5.91% main
+              O3_CPU::update_rob()
+-   10.50%     5.58%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] CACHE::handle_read()
+   - 5.58% _start
+        __libc_start_main
+        0x7cb34282a1ca
+      - main
+         - 5.12% O3_CPU::execute_memory_instruction()
+              CACHE::handle_read()
+   - 4.92% CACHE::handle_read()
+      + 2.16% CACHE::l2c_prefetcher_operate(unsigned long, unsigned long, unsigned char, unsigned char, unsigned int)
+        1.27% LPM_Tracker::demandCompute(unsigned long const*)
+        0.93% PACKET_QUEUE::add_queue(PACKET*)
++    8.41%     1.12%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::schedule_memory_instruction()
++    8.07%     2.92%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::fetch_instruction()
+-    7.31%     6.62%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::schedule_memory_instruction()::$_0::operator()(unsigned int, unsigned int) const
+   - 6.62% _start
+        __libc_start_main
+        0x7cb34282a1ca
+      - main
+         - 6.58% O3_CPU::schedule_memory_instruction()
+              O3_CPU::schedule_memory_instruction()::$_0::operator()(unsigned int, unsigned int) const
+   + 0.69% O3_CPU::schedule_memory_instruction()::$_0::operator()(unsigned int, unsigned int) const
++    7.21%     5.96%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] lpm_operate(int, unsigned char, bool, bool, unsigned long, bool, unsigned long, unsigned long)
++    6.52%     2.70%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] CACHE::add_rq(PACKET*)
+-    5.64%     5.58%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::reg_dependency(unsigned short)
+     5.58% _start
+        __libc_start_main
+        0x7cb34282a1ca
+        main
+      - O3_CPU::schedule_instruction()
+         - 5.57% O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const
+              O3_CPU::reg_dependency(unsigned short) 

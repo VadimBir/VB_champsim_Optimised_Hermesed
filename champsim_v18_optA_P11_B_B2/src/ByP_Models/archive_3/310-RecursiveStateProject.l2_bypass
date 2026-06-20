@@ -1,0 +1,87 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// ============================================================
+// MODEL 304 — RecursiveStateProject (L2 level)
+// Paper: Liu et al. JCST 36(1) 2021, eq. 18, 30, 32, 41–42
+//
+// Same recursive state projection as L1, applied at L2→LLC boundary.
+// Only fires when L1 did NOT bypass (l1_bypassed==0 enforced in cache.cc).
+//
+// Step 1 — Is current L2 miss a pure miss?
+//   overlap_L2 = w_φ(L2) × w_APC(L2) × w_MST(L2)
+//   If ≥ 1.0 → miss overlapped at L2 → NO BYPASS.
+//   If < 1.0 → pure stall at L2 → bypass candidate.
+//
+// Step 2 — Project LLC state after bypass:
+//
+//   Case A: LLC->MSHR.occupancy > 0
+//     LLC already active → bypass miss lands in overlap period at LLC.
+//     Pure miss at L2 saved, no new pure miss at LLC. BYPASS.
+//
+//   Case B: LLC->MSHR.occupancy == 0 AND overlap_LLC ≥ 1.0
+//     LLC idle but high hit traffic → absorbs lone miss via overlap.
+//     Pure miss at L2 saved, LLC absorbs cleanly. BYPASS.
+//
+//   Case C: LLC->MSHR.occupancy == 0 AND overlap_LLC < 1.0
+//     LLC also idle and hit-starved → bypass creates new lone pure miss
+//     at LLC. Compare:
+//       cost_no_bypass ≈ w_MST(L2)
+//       cost_bypass    ≈ w_MST(LLC)
+//     Bypass iff MST(L2) > MST(LLC).
+//     Note: LLC→DRAM path: MST(LLC) includes DRAM latency contribution
+//     via C-AMAT recursion, so this naturally accounts for the chain.
+//
+// L2 MSHR saturation guard: L2 MSHR cap stalls are ~10x worse than L1.
+// Step 1 protects against over-bypassing: if L2 miss is NOT pure (covered),
+// don't bypass — L2 is healthy. If L2 IS pure and LLC can absorb, bypass
+// relieves L2 pure-miss pressure directly.
+// ============================================================
+
+inline bool l2_bypass_init[NUM_CPUS] = {};
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init[cpu]) return;
+    cout << "L2 Bypass [310-RecursiveStateProject]:\n"
+         << "  Step1: bypass if w_phi(L2)*w_APC(L2)*w_MST(L2) < 1.0 (pure miss at L2)\n"
+         << "  Step2A: if MSHR(LLC)>0 -> overlap at LLC -> bypass free\n"
+         << "  Step2B: if phi*APC*MST(LLC)>=1.0 -> LLC absorbs cleanly -> bypass free\n"
+         << "  Step2C: both pure -> bypass only if MST(L2)>MST(LLC)" << endl;
+    l2_bypass_init[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    const LPM_Tracker& tl2  = lpm[cpu][LPM_L2C];
+    const LPM_Tracker& tllc = lpm[cpu][LPM_LLC];
+
+    // --- Step 1: is current L2 miss a pure miss? ---
+    double w_phi_l2    = tl2.w.φ_hitCyFracOfActiveCy();
+    double w_apc_l2    = tl2.wm.apc_accessesDivActiveMemCy;
+    double w_mst_l2    = tl2.wm.mst_pureMissCyDivAccesses;
+    double overlap_l2  = w_phi_l2 * w_apc_l2 * w_mst_l2;
+
+    if (overlap_l2 >= 1.0) return false;  // L2 miss covered -> not pure -> skip
+
+    // --- Step 2A: LLC already has active misses -> overlap ---
+    if (LLC->MSHR.occupancy > 0) return true;
+
+    // --- Step 2B/C: LLC is idle -> project lone miss outcome at LLC ---
+    double w_phi_llc   = tllc.w.φ_hitCyFracOfActiveCy();
+    double w_apc_llc   = tllc.wm.apc_accessesDivActiveMemCy;
+    double w_mst_llc   = tllc.wm.mst_pureMissCyDivAccesses;
+    double overlap_llc = w_phi_llc * w_apc_llc * w_mst_llc;
+
+    if (overlap_llc >= 1.0) return true;   // LLC absorbs lone miss via hits
+
+    // --- Step 2C: both pure -> compare costs ---
+    return (w_mst_l2 > w_mst_llc);
+}

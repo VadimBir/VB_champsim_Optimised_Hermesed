@@ -1,0 +1,70 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+#include "uncore.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 407a — κ-Cost (w2d, conservative) — LLC level
+// Check1: DRAM RQ flow control (reserve LLC_free slots)
+// Check2: κ > delta_LAT / (MST + delta_LAT)
+//   delta_LAT uses DRAM latency estimate vs LLC LATENCY
+
+inline bool llc_bypass_init_407a[NUM_CPUS] = {};
+
+#define SHALL_LLC_BYPASS_DEFINED
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init_407a[cpu]) return;
+    cout << "LLC Bypass [407a-KappaCost-w2d]: kappa-cost, w2d, conservative, DRAM RQ guard" << endl;
+    llc_bypass_init_407a[cpu] = true;
+}
+
+inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    llc_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    // CHECK 1: DRAM RQ flow control
+    uint32_t dram_total_size = 0, dram_total_occ = 0;
+    for (uint32_t ch = 0; ch < DRAM_CHANNELS; ch++) {
+        dram_total_size += uncore.DRAM.RQ[ch].SIZE;
+        dram_total_occ  += uncore.DRAM.RQ[ch].occupancy;
+    }
+    int32_t dram_free = (int32_t)dram_total_size - (int32_t)dram_total_occ;
+    if (dram_free <= 0) return false;
+
+    uint32_t llc_free = LLC->MSHR.SIZE - LLC->MSHR.occupancy;
+    uint32_t dram_reserved = llc_free;
+    if (dram_reserved < 1) dram_reserved = 1;
+
+    int32_t dram_available = dram_free - (int32_t)dram_reserved;
+    if (dram_available <= 0) return false;
+
+    // CHECK 2: Benefit/cost
+    double w2d_kappa = (lpm[cpu][LPM_LLC].bkt[BKT_W2DA].κ_pureMissFracOfMissCy()
+                      + lpm[cpu][LPM_LLC].bkt[BKT_W2DB].κ_pureMissFracOfMissCy()) / 2.0;
+
+    double w2d_mst = (lpm[cpu][LPM_LLC].bkt[BKT_W2DA].α_accessCount
+                      ? (double)lpm[cpu][LPM_LLC].bkt[BKT_W2DA].cy[CY_M] / lpm[cpu][LPM_LLC].bkt[BKT_W2DA].α_accessCount
+                      : 0.0)
+                   + (lpm[cpu][LPM_LLC].bkt[BKT_W2DB].α_accessCount
+                      ? (double)lpm[cpu][LPM_LLC].bkt[BKT_W2DB].cy[CY_M] / lpm[cpu][LPM_LLC].bkt[BKT_W2DB].α_accessCount
+                      : 0.0);
+    w2d_mst /= 2.0;
+
+    // delta_LAT: DRAM latency estimate - LLC LATENCY
+    // Use DRAM C-AMAT from tracker as DRAM latency estimate
+    double dram_lat = lpm[cpu][LPM_DRAM].met[MET_WL].camat_activeMemCyDivAccesses;
+    if (dram_lat < 1.0) dram_lat = (double)LLC->LATENCY * 2.0;
+    double delta_lat = dram_lat - (double)LLC->LATENCY;
+    if (delta_lat < 1.0) delta_lat = 1.0;
+
+    double threshold;
+    if (w2d_mst > 0.01)
+        threshold = delta_lat / (w2d_mst + delta_lat);
+    else
+        threshold = 0.5;
+
+    return (w2d_kappa > threshold);
+}

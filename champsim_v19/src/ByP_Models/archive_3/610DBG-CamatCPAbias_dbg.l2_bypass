@@ -1,0 +1,73 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 610DBG — CamatCPAbias_dbg at L2
+// camat(t)*cpa(t)/camat(n)*cpa(n)*bias<LAT(t)/LAT(n) bias=[0.2,5] FULL DBG
+
+#define DBG_610DBG 0
+
+inline bool l2_bypass_init_610DBG[NUM_CPUS] = {};
+inline uint64_t l2_dbg_counter_610DBG[NUM_CPUS] = {};
+inline double l2_acc_camat_this[NUM_CPUS] = {};
+inline double l2_acc_camat_next[NUM_CPUS] = {};
+inline double l2_acc_cpa_this[NUM_CPUS]   = {};
+inline double l2_acc_cpa_next[NUM_CPUS]   = {};
+inline double l2_acc_bias[NUM_CPUS]       = {};
+inline double l2_acc_lhs[NUM_CPUS]        = {};
+inline int    l2_acc_byp[NUM_CPUS]        = {};
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init_610DBG[cpu]) return;
+    cout << "L2 Bypass [610DBG-CamatCPAbias_dbg]: camat(t)*cpa(t)/camat(n)*cpa(n)*bias<LAT(t)/LAT(n) bias=[0.2,5] FULL DBG" << endl;
+    l2_bypass_init_610DBG[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    double camat_this = lpm[cpu][LPM_L2C].wsm.camat_activeMemCyDivAccesses;
+    double camat_next = lpm[cpu][LPM_LLC].wsm.camat_activeMemCyDivAccesses;
+    double cpa_this   = lpm[cpu][LPM_L2C].wsm.cpa_totalCyDivAccesses;
+    double cpa_next   = lpm[cpu][LPM_LLC].wsm.cpa_totalCyDivAccesses;
+    if (camat_next < 1e-6 || cpa_next < 1e-6) { bool byp = false; return byp; }
+    uint64_t w_next = lpm[cpu][LPM_LLC].ws.ω_activeMemCy();
+    double mu_kappa_next = w_next ? (double)lpm[cpu][LPM_LLC].ws.m_pureMissCy / w_next : 0.0;
+    double l2_hr   = 1.0 - mu_kappa_next;
+    int    l1_free = L2C->MSHR.SIZE - L2C->MSHR.occupancy;
+    int    l2_free = LLC->MSHR.SIZE - LLC->MSHR.occupancy;
+    double bias    = (l2_free * l2_hr) / (l1_free + 1.0);
+    if (bias < 0.2) bias = 0.2;
+    if (bias > 5.0) bias = 5.0;
+    double lat_ratio = (double)L2C->LATENCY / (double)LLC->LATENCY;
+    double lhs = (camat_this * cpa_this) / (camat_next * cpa_next);
+    bool byp = lhs < lat_ratio * bias;
+
+    l2_acc_camat_this[cpu] += camat_this;
+    l2_acc_camat_next[cpu] += camat_next;
+    l2_acc_cpa_this[cpu]   += cpa_this;
+    l2_acc_cpa_next[cpu]   += cpa_next;
+    l2_acc_bias[cpu]       += bias;
+    l2_acc_lhs[cpu]        += lhs;
+    l2_acc_byp[cpu]        += byp ? 1 : 0;
+
+    if (++l2_dbg_counter_610DBG[cpu] % 10000 == 0) {
+        printf("  [610DBG-L2] camat=%.2f/%.2f cpa=%.1f/%.1f bias=%.2f lhs=%.3f thr*bias=%.3f byp%%=%d\n",
+               l2_acc_camat_this[cpu]/10000, l2_acc_camat_next[cpu]/10000,
+               l2_acc_cpa_this[cpu]/10000,   l2_acc_cpa_next[cpu]/10000,
+               l2_acc_bias[cpu]/10000,       l2_acc_lhs[cpu]/10000,
+               lat_ratio * (l2_acc_bias[cpu]/10000), l2_acc_byp[cpu]);
+        l2_acc_camat_this[cpu] = l2_acc_camat_next[cpu] = 0;
+        l2_acc_cpa_this[cpu]   = l2_acc_cpa_next[cpu]   = 0;
+        l2_acc_bias[cpu]       = l2_acc_lhs[cpu]        = 0;
+        l2_acc_byp[cpu]        = 0;
+    }
+
+    return byp;
+}

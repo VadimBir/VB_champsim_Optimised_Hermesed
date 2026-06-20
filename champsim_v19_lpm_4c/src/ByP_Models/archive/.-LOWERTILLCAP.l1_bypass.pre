@@ -1,0 +1,40 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+// USEFUL VARS:  usage example
+//  * Cached metrics available without sim_access:
+//  *   lpm[cpu][IS_L1D].camat_activeMemCyDivAccesses_ratio   ← ω(L1D)/α(L1D)
+//  *   lpm[cpu][IS_L1D].apc_accessesDivActiveMemCy_ratio      ← α(L1D)/ω(L1D)
+//  *   lpm[cpu][IS_L1D].lpmr_activeMemCyDivIdealCy_ratio     ← ω(L1D)/(IC×CPIexe)
+//  *   lpm[cpu][IS_L2C].µ_sumMissOverlapCyDivMemActiveCy_ratio()         ← miss-cycle fraction
+//  *   lpm[cpu][IS_L2C].κ_pureMissCyDivSumMissOverlapCy_ratio()      ← pure-miss fraction
+//  *
+//  * Also raw counters:
+//  *   lpm[cpu][IS_L1D].h, .m, .x, .e
+//  *   lpm[cpu][IS_L1D].ω_numMemActiveCy()
+
+// L1D->MSHR.occupancy      L1D->MSHR.SIZE
+// L1D->RQ.occupancy        L1D->RQ.SIZE
+// L1D->PQ.occupancy        L1D->PQ.SIZE
+// L2C->MSHR.occupancy      L2C->MSHR.SIZE
+// L2C->RQ.occupancy        L2C->RQ.SIZE
+// L2C->PQ.occupancy        L2C->PQ.SIZE
+
+// CACHE TYPEs
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+static bool l1_bypass_init = false;
+
+inline bool l1d_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l1_bypass_init == false){
+        cout << "Bypass on: \nNO BYBPASS LOGIC" << endl;
+        l1_bypass_init = true;
+    }
+    if (L2C->MSHR.occupancy < L2C->MSHR.SIZE/2 && L1D->MSHR.occupancy < L1D->MSHR.SIZE/2)
+        return true;
+    return false;
+}

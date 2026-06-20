@@ -1,0 +1,37 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 920 — 920-L1selectLLCalways at LLC
+// LLC always true
+
+#define DBG_920 1
+
+inline bool llc_bypass_init_920[NUM_CPUS] = {};
+inline uint64_t llc_dbg_counter_920[NUM_CPUS] = {};
+
+#define SHALL_LLC_BYPASS_DEFINED
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init_920[cpu]) return;
+    cout << "LLC Bypass [920-920-L1selectLLCalways]: LLC always true" << endl;
+    llc_bypass_init_920[cpu] = true;
+}
+
+inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    llc_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    bool byp = true;
+
+#if DBG_920
+    if ((++llc_dbg_counter_920[cpu] & 0xFFFF) == 0) {
+        printf("    [920-LLC] -> %s\n", byp ? "BYP" : "---");
+    }
+#endif
+
+    return byp;
+}

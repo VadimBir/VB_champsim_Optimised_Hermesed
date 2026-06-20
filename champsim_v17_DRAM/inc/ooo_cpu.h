@@ -308,9 +308,16 @@ public:
     XZReader() : outbuf_pos(0), outbuf_available(0),
                  total_bytes_decoded(0), total_items_read(0), decoder_initialized(false) {
         // Allocate aligned buffers
+#ifdef _WIN32
+        // MinGW has no posix_memalign; 64B alignment here is a cache-line perf
+        // hint, not correctness. Plain malloc (16B aligned) stays free()-compatible.
+        inbuf  = (uint8_t*)malloc(BUFSIZ * BUF_SZ);
+        outbuf = (uint8_t*)malloc(BUFSIZ * BUF_SZ);
+#else
         posix_memalign((void**)&inbuf, 64, BUFSIZ * BUF_SZ);
         posix_memalign((void**)&outbuf, 64, BUFSIZ * BUF_SZ);
-        
+#endif
+
         strm = LZMA_STREAM_INIT;
     }
     ~XZReader() {

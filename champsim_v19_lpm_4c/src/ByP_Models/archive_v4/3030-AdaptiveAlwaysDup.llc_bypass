@@ -1,0 +1,37 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 3030 — AdaptiveAlways at LLC
+// LLC unconditional
+
+#define DBG_3030 1
+
+inline bool llc_bypass_init_3030[NUM_CPUS] = {};
+inline uint64_t llc_dbg_counter_3030[NUM_CPUS] = {};
+
+#define SHALL_LLC_BYPASS_DEFINED
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init_3030[cpu]) return;
+    cout << "LLC Bypass [3030-AdaptiveAlways]: LLC unconditional" << endl;
+    llc_bypass_init_3030[cpu] = true;
+}
+
+inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    llc_bypass_initialize(cpu, L1D, L2C, LLC);
+
+bool byp = true;
+
+#if DBG_3030
+    if ((++llc_dbg_counter_3030[cpu] & 0xFFFF) == 0) {
+        printf("    [3030-LLC] -> %s\n", byp ? "BYP" : "---");
+    }
+#endif
+
+    return byp;
+}

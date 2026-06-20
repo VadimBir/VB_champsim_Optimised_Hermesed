@@ -134,7 +134,7 @@
 #endif
 
 // CPU
-#define NUM_CPUS 2
+#define NUM_CPUS 4
 #define CPU_FREQ 4000
 #define DRAM_IO_FREQ 3200 // DDR4-2400
 #define PAGE_SIZE 4096

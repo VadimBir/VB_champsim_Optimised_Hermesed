@@ -1,0 +1,27 @@
+STD: 
+FINAL ROI CORE AVG IPC: ;0.55145;
+[ChampsimDB] Stored run_id=800 trace=LLM256.Pythiapre30Phase15xpost20-21M_14M pf=L1D:no+L2C:Zion1+LLC:no avg_ipc=0.55145 → ./CHAMPSIM_RESULTS.db
+=== BINARY TIME: 16.363s (0.27m) ===
+
+
+FINAL ROI CORE AVG IPC: ;0.55145;
+[ChampsimDB] Stored run_id=805 trace=LLM256.Pythiapre30Phase15xpost20-21M_14M pf=L1D:no+L2C:Zion1+LLC:no avg_ipc=0.55145 → ./CHAMPSIM_RESULTS.db
+=== BINARY TIME: 15.947s (0.27m) ===
+
+mv: cannot stat 'champsim_v15_Reordered/src/ByP_Models/archive/.-4000fix-KappaPhiL1L2.l1_bypass.pre': No such file or directory
+[DONE] BUF_SZ = 512 | 5 processes | time: 23954 ms | Effectiveness: 0.208733 s
+➜  champsim_VB git:(main) ✗ MODEL="4000fix-KappaPhiL1L2" && ./quick_v14.sh --glc --dir champsim_v15_Reordered -p 5 --L1 no --L2 Zion1 --L3 no --trace 256.Py -d 1 -c 1 -bypca --l1byp $MODEL --l2byp $MODEL --l3byp  $MODEL --ocp none --repl lru --time
+
+
+NEW HH 
+avg_congested_cycle 8
+
+EzSearch AVG IPC Core   :0:0.55145: L2-Pf-HR :0.95512 : L2-HR :0.89925 Uful:0.02934
+OffChipPred     ;Hermes:inactive;
+Core_0_execution_checksum 140039767200773
+FINAL ROI CORE AVG IPC: ;0.55145;
+[ChampsimDB] Stored run_id=811 trace=LLM256.Pythiapre30Phase15xpost20-21M_14M pf=L1D:no+L2C:Zion1+LLC:no avg_ipc=0.55145 → ./CHAMPSIM_RESULTS.db
+=== BINARY TIME: 16.180s (0.27m) ===
+
+[DONE] BUF_SZ = 512 | 1 processes | time: 16675 ms | Effectiveness: 0.059970 s
+➜  champsim_VB git:(main) ✗ MODEL="4000fix-KappaPhiL1L2" && ./quick_v14.sh --glc --dir champsim_v15_HSH -p 1 --L1 no --L2 Zion1 --L3 no --trace 256.Py -d 1 -c 2 -bypca --l1byp $MODEL --l2byp $MODEL --l3byp  $MODEL --ocp none --repl lru --time

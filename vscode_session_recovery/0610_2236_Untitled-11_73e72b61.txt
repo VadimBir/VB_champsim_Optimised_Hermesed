@@ -1,0 +1,1047 @@
+✻ Waiting for 1 background agent to finish
+
+● Agent "Sequential gate+retime+full report" completed · 22s
+
+● Orphans from the dead agents found: P28's queued 16c gate sim (will fire imminently) + 2 inert watcher loops. Decision (no kills): let P28's queued sim run — host is otherwise idle, so it's effectively a clean sequential run and its log = P28 gate B evidence. Then proceed with the full sequence. Relaunching with
+  that directive.
+
+● claude(Sequential wave rerun, orphan-aware) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Relaunched, orphan-aware: waits out the queued P28 sim (reuses its log as gate B evidence), then strict-sequential 11-branch gating + baseline timing + full report. ETA ~80-100 min. Silent until it lands.
+
+✻ Waiting for 1 background agent to finish
+
+● Agent "Sequential wave rerun, orphan-aware" completed · 1m 7s
+
+● Found the stall root cause: the 3 orphan shells are self-deadlocked — each one's until pgrep -f 'make ' matches the OTHER watchers' own command lines, so none can ever exit and the queued P28 sim can never fire. They're provably inert (no sim/make/binary running) and can do no further useful work.
+
+  Decision: authorize kill all 3 orphan shells (zero loss — the queued sim never started; P28 gate B gets run properly in-sequence instead). Relaunching the sequential agent with that authorization.
+
+● claude(Sequential wave, kill orphans first) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Relaunched with kill authorization (3 verified-deadlocked orphan shells only, cmdline-checked before kill). Then strict-sequential: 11 branches gated + v18 baseline timed + full report. ETA ~80-100 min. Will deliver the final table.
+
+✻ Waiting for 1 background agent to finish
+
+● Agent "Sequential wave, kill orphans first" completed · 28s
+
+● Agent over-asked despite authorization. Relaunching with unconditional go + crash-resumable checkpointing.
+  
+● claude(Sequential wave GO, checkpointed) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Launched with unconditional GO + crash-resumable checkpoints (WAVE2_SEQ_STATUS.md line per branch — any successor resumes from the first unlisted branch). Kill 3 orphans → strict-sequential 11-branch gating → baseline timing → full report Section 9. Multi-hour run; silent until verdicts land.
+
+✻ Waiting for 1 background agent to finish
+
+✻ Claude resuming /loop wakeup (Jun 10 8:17am)
+ 
+● Stale wakeup — already past that point. All 11 landed; sequential tester+reporter agent is running now (kill orphans → 11-branch sequential gates → baseline → full report, checkpointed in WAVE2_SEQ_STATUS.md). Waiting for its completion notification; spawning nothing.
+
+✻ Waiting for 2 background agents to finish
+  
+● Agent "P28 fetch PACKET hoist" completed · 7m 53s
+  
+● Late P28 completion arrived with FULL results: P28 PASS bit-exact (gate A 13.549s; gate B 285.202s contended, 16/16 checksums, LPM diff 0; field-coverage proof closed; report row written). Sequential agent will detect this evidence and only re-time it officially.
+  
+  Scoreboard pre-sequential: PASS = P25, P28 (+P23 likely) | gates pending = P16, P17, P19B, P20, P21, P24, P26, P27. Sequential agent grinding.
+  
+✻ Waiting for 1 background agent to finish
+
+● Agent "Sequential wave GO, checkpointed" completed · 55m 47s
+  
+● WAVE-2 FULL REPORT DONE (OPT_REPORT.md §9, strictly sequential, idle host, v18 baseline 286.216s):
+  
+  ┌────────┬─────────────────────────────────────────┬────────────────────────────────────────┬───────────────────────────┐
+  │ BRANCH │                  WHAT                   │                  16c                   │             Δ             │
+  ├────────┼─────────────────────────────────────────┼────────────────────────────────────────┼───────────────────────────┤
+  │ P24    │ exec_mem RT-loop else-break (spin kill) │ 274.071s                               │ −4.24% BEST               │
+  ├────────┼─────────────────────────────────────────┼────────────────────────────────────────┼───────────────────────────┤
+  │ P21    │ sched_mem per-word skip                 │ 282.230s                               │ −1.39%                    │
+  ├────────┼─────────────────────────────────────────┼────────────────────────────────────────┼───────────────────────────┤
+  │ P19B   │ rob_maps dead maintenance ifdef'd       │ 284.173s                               │ −0.71%                    │
+  ├────────┼─────────────────────────────────────────┼────────────────────────────────────────┼───────────────────────────┤
+  │ P25    │ omit-frame-pointer                      │ 285.395s                               │ −0.29%                    │
+  ├────────┼─────────────────────────────────────────┼────────────────────────────────────────┼───────────────────────────┤
+  │ P28    │ fetch PACKET hoist                      │ 285.499s                               │ −0.25%                    │
+  ├────────┼─────────────────────────────────────────┼────────────────────────────────────────┼───────────────────────────┤
+  │ P16    │ inline small-set                        │ 287.089s                               │ +0.30% loser              │
+  ├────────┼─────────────────────────────────────────┼────────────────────────────────────────┼───────────────────────────┤
+  │ P23    │ DRAM next-event gate                    │ 287.904s                               │ +0.59% loser              │
+  ├────────┼─────────────────────────────────────────┼────────────────────────────────────────┼───────────────────────────┤
+  │ P26    │ lazy PACKET copy                        │ 288.996s                               │ +0.97% loser              │
+  ├────────┼─────────────────────────────────────────┼────────────────────────────────────────┼───────────────────────────┤
+  │ P17    │ emhash tuning                           │ 293.113s                               │ +2.41% loser              │
+  ├────────┼─────────────────────────────────────────┼────────────────────────────────────────┼───────────────────────────┤
+  │ P27    │ fused_scan ctz                          │ 354.142s                               │ +23.7% loser (P5 déjà vu) │
+  ├────────┼─────────────────────────────────────────┼────────────────────────────────────────┼───────────────────────────┤
+  │ P20    │ persistent dirty flags                  │ FAIL — assert deadlock @2.2s, restored │ —                         │
+  └────────┴─────────────────────────────────────────┴────────────────────────────────────────┴───────────────────────────┘
+  
+  All PASS rows bit-exact (IPC + 16 checksums + LPM diff 0). FALCON's spin find = validated biggest win of the whole campaign.
+  
+  Proposed next: merge the 5 winners into v18 one-by-one (recommended order P25→P21→P19B→P24→P28, pairwise function-disjoint), gate after each, then final serialized v17-baseline→v18-final number. Say GO and I spawn the single merge agent.
+  
+✻ Brewed for 1h 59m 39s
+
+❯ CREATE A v19 WHICH WILL BE THE MERGE OF ALL THE ... OPTIMISATIONS ...                                                                                                                                                                                                                                                     
+
+● GO — v19 = v18 (11 opts) + 5 wave-2 winners stacked one-by-one.
+  ⎿  Interrupted · What should Claude do instead?
+
+❯ I ASSUME WORD IS ... ONLY ... THE  P24    │ exec_mem RT-loop else-break (spin kill) │ 274.071s                               │ −4.24% BEST               │                                                                                                                                                                
+    ├────────┼─────────────────────────────────────────┼────────────────────────────────────────┼───────────────────────────┤                                                                                                                                                                                               
+    │ P21    │ sched_mem per-word skip                 │ 282.230s                               │ −1.39%                    │                                                                                                                                                                                               
+    ├────────┼─────────────────────────────────────────┼────────────────────────────────────────┼───────────────────────────┤                                                                                                                                                                                               
+    │ P19B   │ rob_maps dead maintenance ifdef'd       │ 284.173s                               │ −0.71%                    │                                                                                                                                                                                               
+    ├────────┼─────────────────────────────────────────┼────────────────────────────────────────┼───────────────────────────┤                                                                                                                                                                                               
+    │ P25    │ omit-frame-pointer                      │ 285.395s                               │ −0.29%                    │                                                                                                                                                                                               
+    ├────────┼─────────────────────────────────────────┼────────────────────────────────────────┼───────────────────────────┤                                                                                                                                                                                               
+    │ P28    │ fetch PACKET hoist                      │ 285.499s                               │ −0.25% ... ... ARE ANY OF THEM ARE ... ... ... UGLY ???                                                                                                                                                                   
+
+● Honest ugliness audit of the 5:
+
+  ┌────────────────────┬──────────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │       BRANCH       │        UGLY?         │                                                                                                                 WHY                                                                                                                  │
+  ├────────────────────┼──────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ P24 else-break     │ NO — cleanest of all │ idiomatic break; arguably fixes a perf bug (re-testing unchanged head)                                                                                                                                                               │
+  ├────────────────────┼──────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ P21 word-skip      │ NO                   │ one surgical mask-check guard                                                                                                                                                                                                        │
+  ├────────────────────┼──────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ P19B ifdef         │ MILD                 │ #ifdef TRUE_SANITY_CHECK scatter — but matches the project's existing sanity-gating pattern                                                                                                                                          │
+  ├────────────────────┼──────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ P28 template hoist │ MILD-FRAGILE         │ correctness rests on "every live field overwritten per-iter" proof — a future field addition could silently leak stale template values. Proof documented in WORKLOG, but it's a tripwire                                             │
+  ├────────────────────┼──────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ P25 flag drop      │ OPERATIONALLY UGLY   │ removing -fno-omit-frame-pointer breaks frame-pointer call-graphs → all our perf record --call-graph=fp profiling goes blind. Future profiling must switch to --call-graph=dwarf (slower, fatter perf.data) or temp-restore the flag │
+  └────────────────────┴──────────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+  
+  Code-wise: none are hacks. The only real cost is P25's profiling blindness — and it's also the 2nd-smallest win (−0.29%).
+
+● User answered Claude's questions:
+  ⎿  · v19 = which winners? → DO ONLY THE 24 41 ... SuP WITH 198???
+
+● claude(Create v19 = v18+P24+P21) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● v19 agent running: copy v18 → stage 1 (+P24) gate → stage 2 (+P21) gate → official sequential 16c number → OPT_REPORT §10 + vault. ETA ~30-40 min (2 builds + 5 sims, all sequential). Expected landing zone: ~272-274s (−4 to −5% vs v18's 286.216s) if the two compose — will report the real number.
+
+✻ Waiting for 1 background agent to finish
+
+● Agent "Create v19 = v18+P24+P21" completed · 19m 59s
+ 
+● v19 DONE — official 272.586s, bit-exact.
+  
+  ┌──────────────────────┬──────┬──────────┐
+  │        STAGE         │ GATE │ 16c TIME │
+  ├──────────────────────┼──────┼──────────┤
+  │ v19.1 = v18 + P24    │ PASS │ 271.962s │
+  ├──────────────────────┼──────┼──────────┤
+  │ v19.2 = + P21        │ PASS │ 269.573s │
+  ├──────────────────────┼──────┼──────────┤
+  │ OFFICIAL (idle host) │ PASS │ 272.586s │
+  └──────────────────────┴──────┴──────────┘
+
+  - −4.76% vs v18 (286.216s) — both wins compose (P24-alone 274.071s, stacking P21 added −0.54%).
+  - Full campaign: −13.6% vs your original 315.541s baseline (−16.9% vs same-host-measured 327.909s).
+  - Every stage: IPC ;0.51803; + 16x checksum + LPM ROI diff 0.
+  - Tree: champsim_v19_DRAM (13 opts total). Docs: OPT_REPORT §10, v19 WORKLOG, vault v19-merged-optimizations.md.
+
+  Campaign state: v19 = fastest proven tree. On the shelf if ever wanted: P19B (−0.71%), P25 (−0.29%, costs fp-profiling), P28 (−0.25%).
+
+✻ Cooked for 22m 14s
+
+❯ SO ... I AM LOST ... DO WE HAVE ALL OPT USED?? OR SOME DEGRADE ???                                                                                                                                                                                                                                                        
+
+● Not all — only the PROVEN-FASTER ones. Full map:
+
+  IN v19 (13 opts):
+  - v18 core (11): P1 LPM accumulator, P2 DRAM early-out+shadow, P6 queue-scan direct, P7+P7ext+P7c emhash maps+sets, P8 LPM reorder, P9D hoist, P10 AddressProxy removal, P11 O3 hoists, P14 struct hole-fill 128B, P15 schedule dirty-guards
+  - Wave-2 (2): P24 spin-kill (−4.24%), P21 word-skip (−1.39%)
+
+  TESTED, FASTER, but EXCLUDED by your order (available any time): P19B (−0.71%), P25 (−0.29%, blinds fp-profiling), P28 (−0.25%)
+
+  TESTED and DEGRADE — correctly left out: P16 inline small-set (+0.30%), P23 DRAM gate (+0.59%), P26 lazy packet (+0.97%), P17 emhash tuning (+2.41%), P27 ctz scan (+23.7%!), P5 lazy fused_scan (slower), P13 RT mirror (slower), P3/P4 (no clear win)
+
+  FAILED/IMPOSSIBLE: P20 (deadlock), P22 (proof broke), P12/P18/P19 (premise false / no design), u32 narrowing (unsafe), schedule merge (your equivalency-break finding)
+
+  So: nothing faster is missing from v19 except the 3 you excluded (P19B/P25/P28, combined ~−1.2% more). Every degrading opt was caught by sequential testing and kept out.
+
+✻ Cooked for 19s
+
+❯ I MEAN ... RIGHT NOW ... v19 ... IS 19.2 RIGHT ??? THAT INCLUDE P21 v18 + P24 ???                                                                                                                                                                                                                                         
+
+● Correct. champsim_v19_DRAM right now = v19.2 = v18 (all 11) + P24 + P21 — both edits live in its src/ooo_cpu.cc (verified: 4 P24 else-breaks + P21 skip present), gate-proven after each add, official 272.586s. The 271.962/269.573 numbers were just the intermediate stage runs; same tree, final state = 13 opts.
+
+✻ Worked for 7s
+
+❯ JUST HAVE v19 NAME                                                                                                                                                                                                                                                                                                        
+
+● Bash(act "rename champsim_v19_DRAM to champsim_v19 per user naming order, simple mv" && mv /home/cc/champsim_VB/champsim_v19_DRAM /home/cc/champsim_VB/champsim_v19 && ls -d /home/cc/champsim_VB/champsim_v19)
+  ⎿  10:57:29 | Write vault v19 note linking v18 architecture page
+     10:57:56 | sanity-recheck: grep markers + tail OPT_REPORT + ls vault before result
+     11:21:33 | rename champsim_v19_DRAM to champsim_v19 per user naming order, simple mv
+     ~/champsim_VB/champsim_v19/
+
+● v19 DONE — official 272.586s, bit-exact.
+
+  ┌──────────────────────┬──────┬──────────┐
+  │        STAGE         │ GATE │ 16c TIME │
+  ├──────────────────────┼──────┼──────────┤
+  │ v19.1 = v18 + P24    │ PASS │ 271.962s │
+  ├──────────────────────┼──────┼──────────┤
+  │ v19.2 = + P21        │ PASS │ 269.573s │
+  ├──────────────────────┼──────┼──────────┤
+  │ OFFICIAL (idle host) │ PASS │ 272.586s │
+  └──────────────────────┴──────┴──────────┘
+
+  - −4.76% vs v18 (286.216s) — both wins compose (P24-alone 274.071s, stacking P21 added −0.54%).
+  - Full campaign: −13.6% vs your original 315.541s baseline (−16.9% vs same-host-measured 327.909s).
+  - Every stage: IPC ;0.51803; + 16x checksum + LPM ROI diff 0.
+  - Tree: champsim_v19_DRAM (13 opts total). Docs: OPT_REPORT §10, v19 WORKLOG, vault v19-merged-optimizations.md.
+
+  Campaign state: v19 = fastest proven tree. On the shelf if ever wanted: P19B (−0.71%), P25 (−0.29%, costs fp-profiling), P28 (−0.25%).
+
+✻ Cooked for 22m 14s
+
+❯ SO ... I AM LOST ... DO WE HAVE ALL OPT USED?? OR SOME DEGRADE ???                                                                                                                                                                                                                                                        
+
+● Not all — only the PROVEN-FASTER ones. Full map:
+
+  IN v19 (13 opts):
+  - v18 core (11): P1 LPM accumulator, P2 DRAM early-out+shadow, P6 queue-scan direct, P7+P7ext+P7c emhash maps+sets, P8 LPM reorder, P9D hoist, P10 AddressProxy removal, P11 O3 hoists, P14 struct hole-fill 128B, P15 schedule dirty-guards
+  - Wave-2 (2): P24 spin-kill (−4.24%), P21 word-skip (−1.39%)
+
+  TESTED, FASTER, but EXCLUDED by your order (available any time): P19B (−0.71%), P25 (−0.29%, blinds fp-profiling), P28 (−0.25%)
+
+  TESTED and DEGRADE — correctly left out: P16 inline small-set (+0.30%), P23 DRAM gate (+0.59%), P26 lazy packet (+0.97%), P17 emhash tuning (+2.41%), P27 ctz scan (+23.7%!), P5 lazy fused_scan (slower), P13 RT mirror (slower), P3/P4 (no clear win)
+
+  FAILED/IMPOSSIBLE: P20 (deadlock), P22 (proof broke), P12/P18/P19 (premise false / no design), u32 narrowing (unsafe), schedule merge (your equivalency-break finding)
+
+  So: nothing faster is missing from v19 except the 3 you excluded (P19B/P25/P28, combined ~−1.2% more). Every degrading opt was caught by sequential testing and kept out.
+
+✻ Cooked for 19s
+
+
+● v19 DONE — official 272.586s, bit-exact.
+
+  ┌──────────────────────┬──────┬──────────┐
+  │        STAGE         │ GATE │ 16c TIME │
+  ├──────────────────────┼──────┼──────────┤
+  │ v19.1 = v18 + P24    │ PASS │ 271.962s │
+  ├──────────────────────┼──────┼──────────┤
+  │ v19.2 = + P21        │ PASS │ 269.573s │
+  ├──────────────────────┼──────┼──────────┤
+  │ OFFICIAL (idle host) │ PASS │ 272.586s │
+  └──────────────────────┴──────┴──────────┘
+
+  - −4.76% vs v18 (286.216s) — both wins compose (P24-alone 274.071s, stacking P21 added −0.54%).
+  - Full campaign: −13.6% vs your original 315.541s baseline (−16.9% vs same-host-measured 327.909s).
+  - Every stage: IPC ;0.51803; + 16x checksum + LPM ROI diff 0.
+  - Tree: champsim_v19_DRAM (13 opts total). Docs: OPT_REPORT §10, v19 WORKLOG, vault v19-merged-optimizations.md.
+
+  Campaign state: v19 = fastest proven tree. On the shelf if ever wanted: P19B (−0.71%), P25 (−0.29%, costs fp-profiling), P28 (−0.25%).
+
+✻ Cooked for 22m 14s
+
+❯ SO ... I AM LOST ... DO WE HAVE ALL OPT USED?? OR SOME DEGRADE ???                                                                                                                                                                                                                                                                                                                                    
+
+● Not all — only the PROVEN-FASTER ones. Full map:
+
+  IN v19 (13 opts):
+  - v18 core (11): P1 LPM accumulator, P2 DRAM early-out+shadow, P6 queue-scan direct, P7+P7ext+P7c emhash maps+sets, P8 LPM reorder, P9D hoist, P10 AddressProxy removal, P11 O3 hoists, P14 struct hole-fill 128B, P15 schedule dirty-guards
+  - Wave-2 (2): P24 spin-kill (−4.24%), P21 word-skip (−1.39%)
+
+  TESTED, FASTER, but EXCLUDED by your order (available any time): P19B (−0.71%), P25 (−0.29%, blinds fp-profiling), P28 (−0.25%)
+
+  TESTED and DEGRADE — correctly left out: P16 inline small-set (+0.30%), P23 DRAM gate (+0.59%), P26 lazy packet (+0.97%), P17 emhash tuning (+2.41%), P27 ctz scan (+23.7%!), P5 lazy fused_scan (slower), P13 RT mirror (slower), P3/P4 (no clear win)
+
+  FAILED/IMPOSSIBLE: P20 (deadlock), P22 (proof broke), P12/P18/P19 (premise false / no design), u32 narrowing (unsafe), schedule merge (your equivalency-break finding)
+
+  So: nothing faster is missing from v19 except the 3 you excluded (P19B/P25/P28, combined ~−1.2% more). Every degrading opt was caught by sequential testing and kept out.
+
+✻ Cooked for 19s
+
+❯ I MEAN ... RIGHT NOW ... v19 ... IS 19.2 RIGHT ??? THAT INCLUDE P21 v18 + P24 ???                                                                                                                                                                                                                                                                                                                     
+
+● Correct. champsim_v19_DRAM right now = v19.2 = v18 (all 11) + P24 + P21 — both edits live in its src/ooo_cpu.cc (verified: 4 P24 else-breaks + P21 skip present), gate-proven after each add, official 272.586s. The 271.962/269.573 numbers were just the intermediate stage runs; same tree, final state = 13 opts.
+
+✻ Worked for 7s
+
+❯ JUST HAVE v19 NAME                                                                                                                                                                                                                                                                                                                                                                                    
+
+● Bash(act "rename champsim_v19_DRAM to champsim_v19 per user naming order, simple mv" && mv /home/cc/champsim_VB/champsim_v19_DRAM /home/cc/champsim_VB/champsim_v19 && ls -d /home/cc/champsim_VB/champsim_v19)
+  ⎿  10:57:29 | Write vault v19 note linking v18 architecture page
+     10:57:56 | sanity-recheck: grep markers + tail OPT_REPORT + ls vault before result
+
+● Bash(act "rename champsim_v19_DRAM to champsim_v19 per user naming order, simple mv" && mv /home/cc/champsim_VB/champsim_v19_DRAM /home/cc/champsim_VB/champsim_v19 && ls -d /home/cc/champsim_VB/champsim_v19)
+  ⎿  10:57:29 | Write vault v19 note linking v18 architecture page
+     10:57:56 | sanity-recheck: grep markers + tail OPT_REPORT + ls vault before result
+     11:21:33 | rename champsim_v19_DRAM to champsim_v19 per user naming order, simple mv
+     ~/champsim_VB/champsim_v19/
+
+● Done — /home/cc/champsim_VB/champsim_v19 (13 opts, 272.586s official, bit-exact).
+
+❯ PERF_COLLECT_INTERVAL=5 # seconds (15 minutes)                                                                                                                                                                                                                                                                                                                                                        
+  PERF_BEGIN_AT_TIME=0 # ms PLEASE FIX THIS SHIT /home/cc/champsim_VB/qrun_champsim_v14.sh ... IT EITHER WONT START ... OR IT WILL NOT END IN THE RUN ... WTF ...                                                                                                                                                                                                                                       
+
+● claude(Fix qrun perf collect start/end bug) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Fix agent on it: diagnose start/stop trigger chain in qrun_champsim_v14.sh (suspects: s-vs-ms unit mix per the mismatched comments, BEGIN_AT=0 zero-edge never firing, stop-time computed past sim end), minimal fix + backup + boundary tests. Report when it lands.
+
+✻ Waiting for 1 background agent to finish
+
+● Agent "Fix qrun perf collect start/end bug" completed · 1m 4s
+
+● FIXED — both symptoms had real causes:
+
+  1. "Won't start": your PERF_BEGIN_AT_TIME was NEVER READ — line 227 hardcoded PERF_DELAY=${PERF_DELAY:-900} → always slept 900s regardless of your 0.
+  2. "Won't end": $PERF -p $BIN_PID & had no duration — PERF_COLLECT_INTERVAL was also never read → perf ran until binary exit.
+
+  Fix (minimal, backup .PERFFIX_BK):
+  - PERF_DELAY now defaults to PERF_BEGIN_AT_TIME (0 = attach immediately, no sleep)
+  - perf bounded via perf -p PID -- sleep $PERF_COLLECT_INTERVAL (guaranteed stop; 0 = old until-exit behavior)
+  - lying comments corrected (both vars = seconds)
+
+  bash -n clean, boundary cases traced (0/5/0-interval). [UNVERIFIED]: live perf attach on this host — next real run confirms.
+
+✻ Cogitated for 1m 38s
+
+❯ CAN YOU CREATE x4 OPUS AGENTS TO CHECK THE 1cProf.data ON IF WE CAN ACCELERATE THESE ... -   28.70%     7.30%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::execute_memory_instruction()                                                                                                                                                        
+     - 21.40% O3_CPU::execute_memory_instruction()                                                                                                                                                                                                                                                                                                                                                      
+        - 9.84% CACHE::handle_read()                                                                                                                                                                                                                                                                                                                                                                    
+           + 2.16% CACHE::l2c_prefetcher_operate(unsigned long, unsigned long, unsigned char, unsigned char, unsigned int)                                                                                                                                                                                                                                                                              
+             1.23% LPM_Tracker::demandCompute(unsigned long const*)                                                                                                                                                                                                                                                                                                                                     
+             0.93% PACKET_QUEUE::add_queue(PACKET*)                                                                                                                                                                                                                                                                                                                                                     
+        - 6.33% lpm_operate(int, unsigned char, bool, bool, unsigned long, bool, unsigned long, unsigned long)                                                                                                                                                                                                                                                                                          
+             0.72% LPM_Tracker::advance_class(unsigned char, unsigned char, unsigned int)                                                                                                                                                                                                                                                                                                               
+          1.51% CACHE::add_rq(PACKET*)                                                                                                                                                                                                                                                                                                                                                                  
+          1.48% CACHE::handle_fill()                                                                                                                                                                                                                                                                                                                                                                    
+          1.12% CACHE::handle_writeback()                                                                                                                                                                                                                                                                                                                                                               
+     - 7.30% _start                                                                                                                                                                                                                                                                                                                                                                                     
+          __libc_start_main                                                                                                                                                                                                                                                                                                                                                                             
+        - 000056ea0120ee6d                                                                                                                                                                                                                                                                                                                                                                              
+           - 7.26% main                                                                                                                                                                                                                                                                                                                                                                                 
+                O3_CPU::execute_memory_instruction()                                                                                                                                                                                                                                                                                                                                                    
+  +   17.72%     1.55%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::schedule_instruction()                                                                                                                                                                                                                                                       
+  -   16.26%    10.62%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const                                                                                                                                                                                                    
+     - 10.62% _start                                                                                                                                                                                                                                                                                                                                                                                    
+          __libc_start_main                                                                                                                                                                                                                                                                                                                                                                             
+          0x7cb34282a1ca                                                                                                                                                                                                                                                                                                                                                                                
+        - main                                                                                                                                                                                                                                                                                                                                                                                          
+           - 10.52% O3_CPU::schedule_instruction()                                                                                                                                                                                                                                                                                                                                                      
+                O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const                                                                                                                                                                                                                                                                                                       
+     + 5.64% O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const                                                                                                                                                                                                                                                                                                          
+  -   12.58%     5.97%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::update_rob()                                                                                                                                                                                                                                                                 
+     - 6.61% O3_CPU::update_rob()                                                                                                                                                                                                                                                                                                                                                                       
+          2.52% O3_CPU::reg_RAW_release(unsigned short)                                                                                                                                                                                                                                                                                                                                                 
+          2.33% AddrDependencyTracker::remove_producer(unsigned short, ooo_model_instr const*)                                                                                                                                                                                                                                                                                                          
+          1.03% O3_CPU::complete_data_fetch(PACKET_QUEUE*, unsigned char)                                                                                                                                                                                                                                                                                                                               
+          0.72% O3_CPU::complete_instr_fetch(PACKET_QUEUE*, unsigned char)                                                                                                                                                                                                                                                                                                                              
+     - 5.97% _start                                                                                                                                                                                                                                                                                                                                                                                     
+          __libc_start_main                                                                                                                                                                                                                                                                                                                                                                             
+        - 000000000005a970                                                                                                                                                                                                                                                                                                                                                                              
+           - 5.91% main                                                                                                                                                                                                                                                                                                                                                                                 
+                O3_CPU::update_rob()                                                                                                                                                                                                                                                                                                                                                                    
+  -   10.50%     5.58%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] CACHE::handle_read()                                                                                                                                                                                                                                                                 
+     - 5.58% _start                                                                                                                                                                                                                                                                                                                                                                                     
+          __libc_start_main                                                                                                                                                                                                                                                                                                                                                                             
+          0x7cb34282a1ca                                                                                                                                                                                                                                                                                                                                                                                
+        - main                                                                                                                                                                                                                                                                                                                                                                                          
+           - 5.12% O3_CPU::execute_memory_instruction()                                                                                                                                                                                                                                                                                                                                                 
+                CACHE::handle_read()                                                                                                                                                                                                                                                                                                                                                                    
+     - 4.92% CACHE::handle_read()                                                                                                                                                                                                                                                                                                                                                                       
+        + 2.16% CACHE::l2c_prefetcher_operate(unsigned long, unsigned long, unsigned char, unsigned char, unsigned int)                                                                                                                                                                                                                                                                                 
+          1.27% LPM_Tracker::demandCompute(unsigned long const*)                                                                                                                                                                                                                                                                                                                                        
+          0.93% PACKET_QUEUE::add_queue(PACKET*)                                                                                                                                                                                                                                                                                                                                                        
+  +    8.41%     1.12%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::schedule_memory_instruction()                                                                                                                                                                                                                                                
+  +    8.07%     2.92%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::fetch_instruction()                                                                                                                                                                                                                                                          
+  -    7.31%     6.62%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::schedule_memory_instruction()::$_0::operator()(unsigned int, unsigned int) const                                                                                                                                                                                             
+     - 6.62% _start                                                                                                                                                                                                                                                                                                                                                                                     
+          __libc_start_main                                                                                                                                                                                                                                                                                                                                                                             
+          0x7cb34282a1ca                                                                                                                                                                                                                                                                                                                                                                                
+        - main                                                                                                                                                                                                                                                                                                                                                                                          
+           - 6.58% O3_CPU::schedule_memory_instruction()                                                                                                                                                                                                                                                                                                                                                
+                O3_CPU::schedule_memory_instruction()::$_0::operator()(unsigned int, unsigned int) const                                                                                                                                                                                                                                                                                                
+     + 0.69% O3_CPU::schedule_memory_instruction()::$_0::operator()(unsigned int, unsigned int) const                                                                                                                                                                                                                                                                                                   
+  +    7.21%     5.96%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] lpm_operate(int, unsigned char, bool, bool, unsigned long, bool, unsigned long, unsigned long)                                                                                                                                                                                       
+  +    6.52%     2.70%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] CACHE::add_rq(PACKET*)                                                                                                                                                                                                                                                               
+  -    5.64%     5.58%  perceptron-no-Z  perceptron-no-Zion1-no-lru-1core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::reg_dependency(unsigned short)                                                                                                                                                                                                                                               
+       5.58% _start                                                                                                                                                                                                                                                                                                                                                                                     
+          __libc_start_main                                                                                                                                                                                                                                                                                                                                                                             
+          0x7cb34282a1ca                                                                                                                                                                                                                                                                                                                                                                                
+          main                                                                                                                                                                                                                                                                                                                                                                                          
+        - O3_CPU::schedule_instruction()                                                                                                                                                                                                                                                                                                                                                                
+           - 5.57% O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const                                                                                                                                                                                                                                                                                                    
+                O3_CPU::reg_dependency(unsigned short)                                                                                                                                                                                                                                                                                                                                                  
+
+● 4 Opus analysis agents on the new 1-core profile, hotspots split:
+
+● claude(Prof-A exec_mem+handle_read accel) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● claude(Prof-B sched_inst+reg_dep accel) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● claude(Prof-C update_rob accel) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● claude(Prof-D lpm+cacheops+fetch accel) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● 4 Opus analysis agents launched on 1cProf.data (they'll locate the file + matching binary; source base = champsim_v19):
+
+  - A: exec_mem (28.7% — what remains post-P24) + handle_read
+  - B: schedule_instruction fused_scan + reg_dependency (5.58% self — never attacked)
+  - C: update_rob + reg_RAW_release + AddrDependencyTracker::remove_producer
+  - D: lpm_operate residual + add_rq + fetch_instruction (note: P28 hoist is gate-proven on the shelf for fetch)
+
+  All analysis-only, annotate-evidence-cited, PURSUE/PARK/REJECT verdicts → 4 ACCEL_*.md specs. Each was briefed on the full failed-history (P5/P13/P16/P17/P20/P22/P23/P26/P27) to avoid re-proposing losers. Verdicts when they land.
+
+✻ Waiting for 4 background agents to finish
+
+● Agent "Prof-B sched_inst+reg_dep accel" completed · 3m 5s
+ 
+● Prof-B landed — fused_scan is NOT the 64-load loop anymore (already AVX2-vectorized by the compiler); real costs found:
+  
+  1. B8 compact-threshold 128→32 (tombstone-skip burns ~7% of reg_dep) — one-line, PURSUE
+  2. B1 lambda capture spill: 11.54% on a single mov 0x28(%rsp),%rdi reload after do_scheduling — capture refactor, PURSUE
+  3. B3 per-word dirty pre-skip before the AVX cr-build, PURSUE
+  4. B2 reg_producers vector→flat latest[] (bigger refactor), PURSUE-last
+  5. PARK: B4 tail-lane, B5 min-cycle (wrap risk) | REJECT: rest
+
+  Waiting on A, C, D specs before proposing the implementation wave (one dir per benefit, sequential gates).
+
+✻ Waiting for 3 background agents to finish
+
+● Agent "Prof-C update_rob accel" completed · 3m 47s
+
+● Prof-C landed — 5 PURSUE: C5 reg_RAW_release hash→direct array[ROB_SIZE] index (kills 20% of its cost), C3A remove_producer front-cursor (its hottest insn = 23% linear scan), C7 min-event-cycle early-out in update_rob, C1 snapshot hoist, C4 tombstone-compact amortize. PARK: C2 AVX gather, C6 reg-pin.
+
+  Waiting on A + D.
+
+✻ Waiting for 2 background agents to finish
+
+● Agent "Prof-D lpm+cacheops+fetch accel" completed · 4m 54s
+
+● Prof-D landed — 4 PURSUE (~2.7-3.6% aggregate): D1 lpm continuation 5-way cmp chain (45% of lpm_operate self!) → one SIMD packed compare (1.8-2.4%), D5 add_rq skip WQ scan for instruction fetches (0.5-0.8%, needs WQ-writer audit), D8 port gate-proven P28 hoist into v19 (0.25%), D2 trivial multiply hoist (0.18%).
+
+  Waiting on A (exec_mem slice) — then full PURSUE roster + implementation wave proposal.
+
+✻ Waiting for 1 background agent to finish
+
+● Agent "Prof-A exec_mem+handle_read accel" completed · 6m 34s
+
+● All 4 specs in. PURSUE roster (~18 ideas):
+  
+  ┌────────────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────┬──────────┐
+  │         SLICE          │                                          TOP IDEAS                                           │   EST    │
+  ├────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┼──────────┤
+  │ A exec_mem/handle_read │ A1 SoA tag mirror for check_hit (3-5%!), A3 guard-lift, A4 empty fastpath, A6 hoist, A8 hint │ 5-9%     │
+  ├────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┼──────────┤
+  │ B sched/reg_dep        │ B8 compact-threshold 1-liner, B1 capture-spill fix, B3 word pre-skip, B2 flat latest[]       │ ~2%      │
+  ├────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┼──────────┤
+  │ C update_rob           │ C5 hash→direct array, C3A front-cursor, C7 min-cycle guard, C1, C4                           │ ~1.5-2%  │
+  ├────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┼──────────┤
+  │ D lpm/cache/fetch      │ D1 SIMD continuation compare (1.8-2.4%), D5 WQ-scan skip, D8 port P28, D2                    │ 2.7-3.6% │
+  └────────────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────┴──────────┘
+  
+  ⚠ One caution from history: A1 resembles P3 (tagv shadow, wave-1, "no clear win" contended, never sequentially settled) — implementer must check P3's WORKLOG first.
+  
+  Proposed wave-3: 4 Opus implementers, one per slice, each in own dir (v19_A/B/C/D), implementing its ideas INCREMENTALLY — 1c gate (14s) after each idea, drop any that fails or slows 1c, 16c gate at slice end. Then ONE sequential 16c pass of the 4 dirs + v19 baseline → report → v20 merge of winners. GO?
+  
+✻ Baked for 7m 25s
+
+❯ /usage                                                                                                                                                                                                                                                                                                                                                                                                
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Settings  Status   Config   Usage   Stats                                    
+  
+  Session
+
+  Total cost:            $169.79 (costs may be inaccurate due to usage of unknown models)
+  Total duration (API):  6h 13m 24s
+  Total duration (wall): 15h 28m 51s
+  Total code changes:    5835 lines added, 503 lines removed
+  Usage by model:
+      claude-haiku-4-5:  213.8k input, 4.1k output, 0 cache read, 0 cache write ($0.2343)
+        claude-fable-5:  50.2k input, 421.4k output, 69.2m cache read, 2.5m cache write ($61.01)
+       claude-opus-4-7:  3.1k input, 753.9k output, 99.2m cache read, 6.2m cache write ($107.14)
+     claude-sonnet-4-6:  3.5k input, 25.9k output, 1.7m cache read, 129.3k cache write ($1.41)
+
+  Current session
+  ███████████████████████████████                    62% used
+  Resets 12:40pm (UTC)
+
+  Current week (all models)
+✻ Waiting for 1 background agent to finish
+
+● Agent "Prof-A exec_mem+handle_read accel" completed · 6m 34s
+
+● All 4 specs in. PURSUE roster (~18 ideas):
+
+  ┌────────────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────┬──────────┐
+  │         SLICE          │                                          TOP IDEAS                                           │   EST    │
+  ├────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┼──────────┤
+  │ A exec_mem/handle_read │ A1 SoA tag mirror for check_hit (3-5%!), A3 guard-lift, A4 empty fastpath, A6 hoist, A8 hint │ 5-9%     │
+  ├────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┼──────────┤
+  │ B sched/reg_dep        │ B8 compact-threshold 1-liner, B1 capture-spill fix, B3 word pre-skip, B2 flat latest[]       │ ~2%      │
+  ├────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┼──────────┤
+  │ C update_rob           │ C5 hash→direct array, C3A front-cursor, C7 min-cycle guard, C1, C4                           │ ~1.5-2%  │
+  ├────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┼──────────┤
+  │ D lpm/cache/fetch      │ D1 SIMD continuation compare (1.8-2.4%), D5 WQ-scan skip, D8 port P28, D2                    │ 2.7-3.6% │
+  └────────────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────┴──────────┘
+
+  ⚠ One caution from history: A1 resembles P3 (tagv shadow, wave-1, "no clear win" contended, never sequentially settled) — implementer must check P3's WORKLOG first.
+
+  Proposed wave-3: 4 Opus implementers, one per slice, each in own dir (v19_A/B/C/D), implementing its ideas INCREMENTALLY — 1c gate (14s) after each idea, drop any that fails or slows 1c, 16c gate at slice end. Then ONE sequential 16c pass of the 4 dirs + v19 baseline → report → v20 merge of winners. GO?
+
+✻ Baked for 7m 25s
+
+❯ /usage 
+  ⎿  Settings dialog dismissed
+
+❯ WE GO AND TRY THE A B C D IMPLEMENTATION ... ... (SEPERATELY) AND TEST ON THE 16 CORES ... ... VIA OPUS OF COURSE ...                                                                                                                                                                                                                                                                                 
+
+● Wave-3 GO — 4 Opus implementers, separate dirs, 16c-gated.
+  
+  5. PARK: B4 tail-lane, B5 min-cycle (wrap risk) | REJECT: rest
+
+  Waiting on A, C, D specs before proposing the implementation wave (one dir per benefit, sequential gates).
+
+✻ Waiting for 3 background agents to finish
+
+● Agent "Prof-C update_rob accel" completed · 3m 47s
+
+● Prof-C landed — 5 PURSUE: C5 reg_RAW_release hash→direct array[ROB_SIZE] index (kills 20% of its cost), C3A remove_producer front-cursor (its hottest insn = 23% linear scan), C7 min-event-cycle early-out in update_rob, C1 snapshot hoist, C4 tombstone-compact amortize. PARK: C2 AVX gather, C6 reg-pin.
+
+  Waiting on A + D.
+
+✻ Waiting for 2 background agents to finish
+
+● Agent "Prof-D lpm+cacheops+fetch accel" completed · 4m 54s
+
+● Prof-D landed — 4 PURSUE (~2.7-3.6% aggregate): D1 lpm continuation 5-way cmp chain (45% of lpm_operate self!) → one SIMD packed compare (1.8-2.4%), D5 add_rq skip WQ scan for instruction fetches (0.5-0.8%, needs WQ-writer audit), D8 port gate-proven P28 hoist into v19 (0.25%), D2 trivial multiply hoist (0.18%).
+
+  Waiting on A (exec_mem slice) — then full PURSUE roster + implementation wave proposal.
+
+✻ Waiting for 1 background agent to finish
+
+● Agent "Prof-A exec_mem+handle_read accel" completed · 6m 34s
+
+● All 4 specs in. PURSUE roster (~18 ideas):
+
+  ┌────────────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────┬──────────┐
+  │         SLICE          │                                          TOP IDEAS                                           │   EST    │
+  ├────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┼──────────┤
+  │ A exec_mem/handle_read │ A1 SoA tag mirror for check_hit (3-5%!), A3 guard-lift, A4 empty fastpath, A6 hoist, A8 hint │ 5-9%     │
+  ├────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┼──────────┤
+  │ B sched/reg_dep        │ B8 compact-threshold 1-liner, B1 capture-spill fix, B3 word pre-skip, B2 flat latest[]       │ ~2%      │
+  ├────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┼──────────┤
+  │ C update_rob           │ C5 hash→direct array, C3A front-cursor, C7 min-cycle guard, C1, C4                           │ ~1.5-2%  │
+  ├────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┼──────────┤
+  │ D lpm/cache/fetch      │ D1 SIMD continuation compare (1.8-2.4%), D5 WQ-scan skip, D8 port P28, D2                    │ 2.7-3.6% │
+  └────────────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────┴──────────┘
+
+  ⚠ One caution from history: A1 resembles P3 (tagv shadow, wave-1, "no clear win" contended, never sequentially settled) — implementer must check P3's WORKLOG first.
+
+  Proposed wave-3: 4 Opus implementers, one per slice, each in own dir (v19_A/B/C/D), implementing its ideas INCREMENTALLY — 1c gate (14s) after each idea, drop any that fails or slows 1c, 16c gate at slice end. Then ONE sequential 16c pass of the 4 dirs + v19 baseline → report → v20 merge of winners. GO?
+
+✻ Baked for 7m 25s
+
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● claude(Wave3-B sched slice impl) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● claude(Wave3-C update_rob slice impl) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● claude(Wave3-D lpm/cache/fetch slice impl) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Wave-3 running — 4 Opus implementers, separate dirs off v19:
+
+  - v19_A: A8→A6→A4→A3→A1 (SoA tag mirror last, P3-history check mandated)
+  - v19_B: B8→B1→B3→B2 (compact threshold first, flat-latest refactor last)
+  - v19_C: C1→C4→C5→C3A→C7
+  - v19_D: D2→D8→D5→D1 (SIMD continuation compare last, LPM-digit sensitive)
+
+  Each: idea-by-idea with 1c gate (12.6s ref) + revert-on-fail, accumulated winners → full 16c gate + report row. Will tally; after all land, sequential 16c retime decides v20 merge set.
+
+✻ Waiting for 4 background agents to finish
+
+❯ I DONT KNOW IS THIS IS THE SAME ??? -   31.39%     8.49%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::execute_memory_instruction()                                                                                                                                                                                                            
+     - 22.90% O3_CPU::execute_memory_instruction()                                                                                                                                                                                                                                                                                                                                                      
+        - 12.20% CACHE::handle_read()                                                                                                                                                                                                                                                                                                                                                                   
+           + 4.00% CACHE::l2c_prefetcher_operate(unsigned long, unsigned long, unsigned char, unsigned char, unsigned int)                                                                                                                                                                                                                                                                              
+             1.03% LPM_Tracker::demandCompute(unsigned long const*)                                                                                                                                                                                                                                                                                                                                     
+             0.85% PACKET_QUEUE::add_queue(PACKET*)                                                                                                                                                                                                                                                                                                                                                     
+        - 5.19% lpm_operate(int, unsigned char, bool, bool, unsigned long, bool, unsigned long, unsigned long)                                                                                                                                                                                                                                                                                          
+             1.00% LPM_Tracker::advance_class(unsigned char, unsigned char, unsigned int)                                                                                                                                                                                                                                                                                                               
+        - 1.78% CACHE::add_rq(PACKET*)                                                                                                                                                                                                                                                                                                                                                                  
+             0.56% PACKET_QUEUE::check_queue(PACKET*) const                                                                                                                                                                                                                                                                                                                                             
+          1.51% CACHE::handle_fill()                                                                                                                                                                                                                                                                                                                                                                    
+          0.80% CACHE::handle_prefetch()                                                                                                                                                                                                                                                                                                                                                                
+          0.80% CACHE::handle_writeback()                                                                                                                                                                                                                                                                                                                                                               
+     + 8.49% _start                                                                                                                                                                                                                                                                                                                                                                                     
+  -   14.49%     0.61%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::schedule_instruction()                                                                                                                                                                                                                                                      
+     - 13.88% O3_CPU::schedule_instruction()                                                                                                                                                                                                                                                                                                                                                            
+        - 13.87% O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const                                                                                                                                                                                                                                                                                                      
+             5.08% O3_CPU::reg_dependency(unsigned short)                                                                                                                                                                                                                                                                                                                                               
+     + 0.61% _start                                                                                                                                                                                                                                                                                                                                                                                     
+  -   13.98%     6.36%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::update_rob()                                                                                                                                                                                                                                                                
+     - 7.63% O3_CPU::update_rob()                                                                                                                                                                                                                                                                                                                                                                       
+          3.06% AddrDependencyTracker::remove_producer(unsigned short, ooo_model_instr const*)                                                                                                                                                                                                                                                                                                          
+          2.95% O3_CPU::reg_RAW_release(unsigned short)                                                                                                                                                                                                                                                                                                                                                 
+          1.01% O3_CPU::complete_data_fetch(PACKET_QUEUE*, unsigned char)                                                                                                                                                                                                                                                                                                                               
+          0.59% O3_CPU::complete_instr_fetch(PACKET_QUEUE*, unsigned char)                                                                                                                                                                                                                                                                                                                              
+     + 6.36% _start                                                                                                                                                                                                                                                                                                                                                                                     
+  -   13.95%     8.86%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const                                                                                                                                                                                                   
+     - 8.86% _start                                                                                                                                                                                                                                                                                                                                                                                     
+          __libc_start_main                                                                                                                                                                                                                                                                                                                                                                             
+          0x74932ec2a1ca                                                                                                                                                                                                                                                                                                                                                                                
+        - main                                                                                                                                                                                                                                                                                                                                                                                          
+           - 8.78% O3_CPU::schedule_instruction()                                                                                                                                                                                                                                                                                                                                                       
+                O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const                                                                                                                                                                                                                                                                                                       
+     - 5.09% O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const                                                                                                                                                                                                                                                                                                          
+          5.08% O3_CPU::reg_dependency(unsigned short)                                                                                                                                                                                                                                                                                                                                                  
+  -   12.61%     6.01%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] CACHE::handle_read()                                                                                                                                                                                                                                                                
+     + 6.60% CACHE::handle_read()                                                                                                                                                                                                                                                                                                                                                                       
+     + 6.01% _start                                                                                                                                                                                                                                                                                                                                                                                     
+  +    9.30%     0.98%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::schedule_memory_instruction()                                                                                                                                                                                                                                               
+  -    8.34%     7.47%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::schedule_memory_instruction()::$_0::operator()(unsigned int, unsigned int) const                                                                                                                                                                                            
+     - 7.47% _start                                                                                                                                                                                                                                                                                                                                                                                     
+          __libc_start_main                                                                                                                                                                                                                                                                                                                                                                             
+          0x74932ec2a1ca                                                                                                                                                                                                                                                                                                                                                                                
+        - main                                                                                                                                                                                                                                                                                                                                                                                          
+           - 7.44% O3_CPU::schedule_memory_instruction()                                                                                                                                                                                                                                                                                                                                                
+                O3_CPU::schedule_memory_instruction()::$_0::operator()(unsigned int, unsigned int) const                                                                                                                                                                                                                                                                                                
+     - 0.86% O3_CPU::schedule_memory_instruction()::$_0::operator()(unsigned int, unsigned int) const                                                                                                                                                                                                                                                                                                   
+          0.85% O3_CPU::add_load_queue(unsigned short, unsigned int)                                                                                                                                                                                                                                                                                                                                    
+  +    8.31%     3.49%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::fetch_instruction()                                                                                                                                                                                                                                                         
+  +    6.42%     2.50%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] CACHE::add_rq(PACKET*)                                                                                                                                                                                                                                                              
+  +    6.12%     4.70%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] lpm_operate(int, unsigned char, bool, bool, unsigned long, bool, unsigned long, unsigned long)                                                                                                                                                                                      
+  -    5.10%     5.04%  perceptron-no-Z  perceptron-no-Zion1-no-lru-16core-ByP-4000fix-KappaPhiL1L2-fixed-none  [.] O3_CPU::reg_dependency(unsigned short)                                                                                                                                                                                                                                              
+       5.04% _start                                                                                                                                                                                                                                                                                                                                                                                     
+          __libc_start_main                                                                                                                                                                                                                                                                                                                                                                             
+          0x74932ec2a1ca                                                                                                                                                                                                                                                                                                                                                                                
+          main                                                                                                                                                                                                                                                                                                                                                                                          
+        - O3_CPU::schedule_instruction()                                                                                                                                                                                                                                                                                                                                                                
+           - 5.03% O3_CPU::schedule_instruction()::$_0::operator()(unsigned int, unsigned int) const                                                                                                                                                                                                                                                                                                    
+                O3_CPU::reg_dependency(unsigned short)   THIS IS FOR THE 16 cores perf ... I AM QUESTIONING ... CAN THE TWO SCHEDULE METHODS BE MERGED??? IF EITHER WAY THERE IS LOOPING ... HOWEVER ... x2 TIMES BEING ATTEMPTED FAILED ... THE MAIN HAS A SPECIAL CASE WHEN THE SCHEDULE INSTR RUNS ... WHILE THE OTHER DOES NOT ... SO MAY BE ... WE CAN DO ... IT ... AND MERGE ... AND HAVE ...    
+  INLINED SHORT CIRCUIT BRANCHLESS CONDITIONS ON THE SCHEDULING ??? ... LIKEWISE THIS ... MERGE ... CAN ACTUALLY ASSIST WIT HTHE ... DIRTY WORD ... (PARALLEL TO DIRTY WORD ... MAY BE ... USE OF 128b IS BETTER????? ...... BUT THEN I QUESTION IF ... THE ... BINARY OBJ ACTUALLY SIMD THE WORDS CHECK ... VIA AVX2 ... (I DONT WANT ANY ... EXPLICIT ... SIMD CODE ...                               
+
+● Same picture — 16c profile shape ≈ 1c (exec_mem 31.4%, sched lambda 13.9, update_rob 14.0, handle_read 12.6, sched_mem 8.3, reg_dep 5.1). Wave-3 slices are aimed at exactly these.
+
+  Your merge angle is NEW vs the 2 failed attempts: instead of changing main, move main's special-case condition INSIDE one merged function — merged(){ if(si_cond) si_body; sm_body; } — equivalent BY CONSTRUCTION iff main calls them adjacently in fixed order with nothing between (that's the make-or-break check). Plus your dirty-word + autovec questions (compiler already AVX2'd the cr-build
+   per slice-B annotate; whether the OR-folds/dirty checks autovec = verifiable by objdump, no explicit SIMD needed). Spawning ONE feasibility prober.
+
+● claude(Probe schedule-merge feasibility v3) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Prober launched — 5 decisive checks: (1) main.cc call adjacency/order, (2) si-condition computable inside with identical value, (3) merged design + savings quantified from common lambda prologues, (4) objdump autovec verdict on dirty-word OR-folds + 128b question (no explicit SIMD ever), (5) prior-failure records to prove the new design dodges them. Verdict →
+  MERGE_SCHED_FEASIBILITY_v19.md.
+
+  In flight: wave-3 A/B/C/D implementers + this prober = 5.
+  
+✻ Waiting for 5 background agents to finish
+
+● Agent "Wave3-A exec_mem slice impl" completed · 7m 46s
+
+● Wave3-A died mid-wait (the recurring pattern — edits likely in v19_A, gates incomplete). No respawn yet; its dir is recoverable. In flight: B, C, D, prober.
+
+✻ Waiting for 4 background agents to finish
+
+❯ ALSO THAT COND ... I DO NOT KNOW IF THE ... FIRST SCHEDULE METHOD ACTUALLY GOES AND ... SCHEDULE MEM INSTR ... ... MEANING ... WE NEED TO BE CAREFUL ... ... ... I KNOW THAT SIMD OPTIMISATION x10 THE PERFORMANCE OF THE SCHDULE METHOD ... HERE ... WE HAVE ... CYCLES CHECKING ... WHICH KINDA COMPLECATES FEW THINGS ... ... SO ... MAY BE THE EQUIVALENT RESULT SCAN BE ACHIEVED ... VIA ...     
+  SMART MERGED FUNC CREATION???                                                                                                                                                                                                                                                                                                                                                                         
+  
+● Noted — exactly the kill-switch class the prober must rule on: if schedule_instruction's dispatch path (do_scheduling) already touches memory-scheduling state (LSQ adds / is_mem bookkeeping that schedule_memory_instruction later reads), then the merged body's equivalence depends entirely on main's order being preserved INSIDE the merge — and any conditional interleaving breaks it. Its
+  checks 1-2 cover "anything between the calls" + "si-condition inputs"; when its verdict lands I will explicitly verify it also traced si→mem-state writes consumed by sm before accepting MERGEABLE. If it didn't, follow-up probe before any implementation.
+
+  On SIMD: agreed — no explicit intrinsics; the 10x you saw historically is the compiler AVX2 path (slice-B annotate confirmed the cr-build already vectorizes). The "smart merged func" win, if any, = shared prologue/masks + one pass, with cycle-checks (PCYCLE wraps) kept in scalar guarded form exactly as today. Prober verdict incoming.
+
+✻ Waiting for 4 background agents to finish
+
+● Agent "Probe schedule-merge feasibility v3" completed · 4m 15s
+  
+  - main.cc:1604-7: si gated by a per-index check (!sinf && !scmp && PCYCLE_LE on next_schedule only); sm unconditional; adjacent, fixed order.
+  - si's internal P15 guard ORs over the whole range — strict superset of main's gate.
+  - → calling merged-si unconditionally fires si on cycles main currently defers (other range entries ready, head index not) = instructions scheduled EARLIER = drift. Same asymmetry that killed your 2 prior attempts.
+  - Variant A (gate hoisted inside merged func) IS bit-exact but saves only call/ret ≈ <0.1% — not worth it.
+
+  Your si→mem-state caution: moot — the merge dies upstream of it.
+
+  Good news from objdump: the dirty checks are ALREADY your "10x SIMD" — both OR-fold prologues compile to pure AVX2 (vmovdqa/vpor/vpandn/vptest, 2x ymm covering all 512 ROB bits, -march=znver3). Nothing to add, no intrinsics ever. 128b masks: REJECT (would break ctzll consumers, saves nothing).
+
+  Merge idea = permanently closed with documented proof (MERGE_SCHED_FEASIBILITY_v19.md). Wave-3 B/C/D still implementing; A needs a gate-finisher when you allow.
+
+✻ Waiting for 3 background agents to finish
+
+● Agent "Wave3-B sched slice impl" completed · 12m 5s
+
+● Wave3-B died at the very last step (report row append) — 51 tool calls deep, gates likely complete, verdicts recoverable from v19_B/WORKLOG.md. In flight: C, D. Pending recovery pass: A (mid-wait), B (row only). Will collect everything in the post-wave sequential phase.
+
+✻ Waiting for 2 background agents to finish
+
+● Agent "Wave3-C update_rob slice impl" completed · 11m 58s
+
+● W3-C PASS — C4 (compact amortize) + C5 (hash→direct array) + C3A (front-cursor) accepted; C1 already existed in v19; C7 honest-skip (11 event_cycle writer sites + wrap risk = unprovable conservatively). 16c 270.277s (contended), gate exact, LPM data diff 0.
+
+  Status: C done | D running | A, B need gate/row recovery. After D lands: recovery + sequential 16c pass (A/B/C/D vs v19 272.586s) → v20 winner merge proposal.
+
+✻ Waiting for 1 background agent to finish
+
+❯ ALSO ... THERE ARE MANY ... THINGS HAPPENING IN THE do schedule and do mem schedule methods ... MAY BE ... SOME REWRITE WOULD ALLOW TO GO AND ... ACTUALLY ALLOW SIMD OPTIMISATION .... OR MAY BE ... SOME LATER CODE IS REDUNDANT DOING WHAT THE UPPER CODE IS ALREADY DOING ... (AKA REPEATED CHECKS) ... THIS PART REQUIRES A THOROW UNDERSTANDING OF THE CODE ... AN AGENT MUST!!!! SEE THE LATER 
+   WHOLE PATH OF THE CODE ALL THOSE FUNCTIONS ... ... UNTO A POINT ...                                                                                                                                                                                                                                                                                                                                  
+  
+● claude(Deep path audit do_scheduling chain) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Deep path-audit agent launched: full trace of both dispatch chains (do_scheduling→reg_dependency→producers; check_and_add_lsq→add_load/store_queue→LSQ wiring), per-function precondition tables → dominated/redundant re-check hunt with dual cites + safety proofs, plus autovec-blocking loop shapes verified against objdump. Output: PATH_AUDIT_SCHED_v19.md.
+
+  In flight: W3-D implementer + path auditor. Done: C (PASS 270.277s). Recovery pending: A, B.
+  
+✻ Waiting for 2 background agents to finish
+
+● Agent "Wave3-D lpm/cache/fetch slice impl" completed · 13m 30s
+  
+● W3-D PASS — all 4 accepted (D2 lpm-ref overload, D8 P28-port, D5 WQ-scan skip w/ audit, D1 single-u16 continuation compare). 16c 271.432s contended, gate exact, LPM diff 0.
+  
+  Wave-3 tally: C PASS (270.277s), D PASS (271.432s), A + B incomplete. Spawning ONE recovery agent to finish A and B sequentially (read their WORKLOGs, resume idea loops where they died, 16c gates, report rows). Path auditor still digging.
+  
+● claude(Recover finish W3-A and W3-B) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Recovery agent on A+B (resume idea loops from WORKLOG state, gate, rows). In flight: recovery + path auditor. Once both land: full wave-3 scoreboard → sequential 16c pass → v20 merge proposal.
+
+✻ Waiting for 2 background agents to finish
+
+● Agent "Deep path audit do_scheduling chain" completed · 4m 59s
+  
+● Path audit DONE — your suspicion confirmed: real repeated checks found downstream:
+  
+  1. R3 check_and_add_lsq re-COUNTS num_mem_ops by scanning all 8 src/dst slots EVERY call (objdump: 8 scalar cmpq) — value already known at rename. Fix: 8-bit slot mask + ctz-iterate. 0.3-0.6%
+  2. V2 sched_mem's lambda is NOT inlined (own symbol) → loses ymm register reuse for ready[] — always_inline fixes. 0.1-0.3%
+  3. R8 scan re-loads im_ptr/fc_ptr despite precomputed ready[w]. 0.1-0.3%
+  4. R4 SQ-forward loop re-tests producer_id != UINT64_MAX per iteration — hoistable
+  5. DEAD CODE: do_memory_scheduling (ooo_cpu.cc:1187-1201) has ZERO live callers
+    - micro-CSE trio (R5/R6/M2), R2 low-pri
+
+  Combined PURSUE ≈ 0.55-1.3%, all bit-exact-arguable. Spec: PATH_AUDIT_SCHED_v19.md.
+
+  This is a natural W3-E slice (all in ooo_cpu.cc, off v19, same idea-by-idea protocol). Recovery agent (A+B) still running. Launch W3-E now in parallel, or after A/B land? Your call.
+  
+✻ Waiting for 1 background agent to finish
+
+❯ /understand-anything:understand I NEED TO UPDATE EVERYTHING ... AND UPDATE HTE VERSION ... ... ... DO NOT EXECUTE IT YET ... MAY BE I SHOULD COMAPCT YOU AND LET YOU UPDATE IT ???                                                                                                                                                                                                                    
+
+● NOT executing — holding.
+  
+  Recommendation:
+  1. Wait for the A/B recovery agent to land first (still running; its results need my current context to tally).
+  2. Then /compact — yes, good idea. All campaign state is already externalized (OPT_REPORT.md §1-10, WAVE2_SEQ_STATUS.md, per-dir WORKLOGs, cc_perf_specs/*.md, vault notes), so compaction loses nothing; the /understand run spawns many subagents and wants the context room.
+  3. Then run /understand --full (full rebuild fits "UPDATE EVERYTHING + VERSION" — it re-stamps version/commit in meta).
+
+  One thing to decide at execution time: which dir gets the graph — champsim_v19 (current best tree) or the repo root? Existing graph was built for an older v14/v17 tree, so a full rebuild on v19 is the consistent choice. Say when, and answer the dir question then.
+
+✻ Waiting for 1 background agent to finish
+
+❯ IS THERE A NEW COMBINED DIR???                                                                                                                                                                                                                                                                                                                                                                        
+
+● NO — newest combined dir = champsim_v19 (13 opts, 272.586s official).
+  
+  Wave-3 results are NOT combined yet — they sit in separate dirs: champsim_v19_C (PASS, 270.277s), champsim_v19_D (PASS, 271.432s), champsim_v19_A/_B (recovery agent finishing them now). A combined v20 (v19 + winning slices, stacked one-by-one with gates) = next step once A/B land and sequential retime ranks all four. Want me to queue v20 creation right after?
+
+✻ Waiting for 1 background agent to finish
+
+❯ AGENT TO CHECK IF THERE IS ANY OPTIMISATION POSSIBLE TO THE DRAM CONPROLLER CODE ... ... BECAUSE IT ... IT IS ... ... 260 PER MILLION INSTR IN THE GAP SINGLE WORKLOAD ... I BELEIVE DUE TO DRAM BEING ... ENDLESSLY SLOW ...                                                                                                                                                                         
+
+● claude(DRAM ctrl GAP-workload analysis) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+❯ AGENT TO CHECK IF THEREI S A ... CHEAP WAY TO ELIMINATE THE ... LQ SQ FAST SET FROM THE PACKET AND REPLACE WITH SOME ... e.g. STACK ... OR QUEUE ... OR WHAT EVER HASHMAP ... CHEAP ONE ... ... 
+
+● claude(PACKET fastset elimination probe) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Agent "DRAM ctrl GAP-workload analysis" completed · 12s
+
+● claude(DRAM GAP analysis, GO all answers) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● DRAM-GAP agent relaunched with all 4 answers baked in (act = shell prefix, scope authorized, sibling-check recipe, -d semantics self-check) + no-questions directive.
+
+  In flight: A/B recovery, fastset-elimination probe, DRAM-GAP profiler. Will tally as they land.
+
+✻ Waiting for 3 background agents to finish
+
+❯ AGENT L2 CACHE HAS A BLOOM ... BUT IT IS ABOUND ... 48% FALSE POSITIVE ... ... HASHMAP ... UNKER 100% WAS MAKIGN IT SLOWER ... emhash I DO NOT KNOW ... MAY BE 7 BE GOOD ... OR MAY BE ... THERE IS A CHEAP WAY TO DOUBLE THE BLOOM ... e.g. RECURSIVE BLOOM ??? ??? ... ... ... OR ... HAVE A SIMD BASED BLOOM ... aka x4 64bit arr bloom USED TO CHECK VIA SINGLE BLOOK CHECK ... MAY BE ...        
+
+● claude(L2 bloom filter redesign probe) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Bloom agent launched. Decisive check first: pre-filter vs definitive — if a bloom positive falls through to an exact check, FP improvements are free (bit-exact); if its answer feeds sim behavior directly, only exact-equivalent restructures allowed. Then it does the FP math on current m/k/n (48% ⇒ likely grossly undersized or k=1) and ranks: (1) just grow it, (2) blocked one-cacheline 
+  bloom = your x4-u64 single-check idea (standard trick, compiler-vectorizable, no intrinsics), (3) two-level/recursive, (4) emhash7 exact — incl. why ankerl-exact lost and clear/reset cost.
+
+  In flight: A/B recovery, fastset probe, DRAM-GAP profiler, bloom probe.
+
+✻ Waiting for 4 background agents to finish
+
+● Agent "L2 bloom filter redesign probe" completed · 2m 12s
+
+● Bloom probe: BIG one.
+
+  - PRE-FILTER confirmed (bloom-negative = same as not-found; positive → exact MSHR scan) → FP fixes are bit-exact FREE.
+  - Root cause of your 48%: DualBloom128 is m=128 with correlated hash pair — the FPR² trick is broken; math reproduces measured 48%.
+  - Winner: blocked-512 bloom, k=4, one cacheline (your x4-u64 single-check idea, ×8): FP 48% → <3% (0.24% @n=32), probe = 1 line load + 4 bit tests, drop-in API. Est 1.5-3%.
+  - emhash7 there = NOT bit-exact (ordering macro) + slower — same trap ankerl hit.
+
+  Launching implementer (own dir, gates).
+  
+● claude(Implement blocked-512 bloom) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Agent "PACKET fastset elimination probe" completed · 4m 39s
+
+● claude(Implement fastset side-tables) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● P-FASTSET implementer launched (own dir, slot-reuse clearing flagged as the critical correctness point, deadlock-aware gate handling).
+
+  In flight (5): A/B recovery, DRAM-GAP profiler, P-BLOOM (48%→<3% FP), P-FASTSET (PACKET 192→128B). On deck after landings: wave-3 sequential retime → v20 combined dir.
+
+✻ Waiting for 4 background agents to finish
+
+● Agent "Recover finish W3-A and W3-B" completed · 17m 45s
+
+● Wave-3 fully closed:
+
+  ┌───────┬──────────────────────────────────────────────────────────────────────────────┬─────────────────┐
+  │ SLICE │                                     KEPT                                     │ 16c (contended) │
+  ├───────┼──────────────────────────────────────────────────────────────────────────────┼─────────────────┤
+  │ W3-A  │ A8 hints only (A4 already in base, A6/A3 absorbed, A1 parked per P3 history) │ 275.129s        │
+  ├───────┼──────────────────────────────────────────────────────────────────────────────┼─────────────────┤
+  │ W3-B  │ B8+B1+B3                                                                     │ 271.529s        │
+  ├───────┼──────────────────────────────────────────────────────────────────────────────┼─────────────────┤
+  │ W3-C  │ C4+C5+C3A                                                                    │ 270.277s        │
+  ├───────┼──────────────────────────────────────────────────────────────────────────────┼─────────────────┤
+  │ W3-D  │ D2+D8+D5+D1                                                                  │ 271.432s        │
+  └───────┴──────────────────────────────────────────────────────────────────────────────┴─────────────────┘                                                                                                                                                                                                                                                                             
+  
+  All bit-exact (IPC+checksums+LPM 0). v19 base = 272.586s — contended numbers too noisy to rank (some look ~flat); note: one duplicate W3-B row sits in OPT_REPORT (recovery agent flagged it honestly — will clean in final consolidation).
+  
+  Still running: DRAM-GAP profiler, P-BLOOM, P-FASTSET. Plan when those land: one sequential retime (v19 + A/B/C/D + BLOOM + FASTSET, idle host, one at a time) → rank → v20 = v19 + proven winners stacked one-by-one. Also on shelf: path-audit W3-E PURSUEs (R3 mem-slot mask, V2 always_inline, R8...) — unimplemented, awaiting your word.
+  
+✻ Waiting for 3 background agents to finish
+  
+❯ AGENT ... TO CONSIDER SPLITTING THE cache.cc ... AND RETURN BACK FUNCTIONS FRO MTHE cach.h ... ... ... IN THE PAST I WANTED THE SPLIT OF CACHE.cc BASED OF FUNC ... BTU IT IS YET FKIGN 2000 LINES ... FUCK ... WELL I DID SOME EXTENSIONS ... MAY BE ... THERE CAN BE A SPLIT BY ... RQ WQ AND PQ AND ... FILL /??? OR ... JUST RQ WQ PQ ... ... ... DEFINETELY ALL MACTOS MUST BE ... MERGED UNDER  
+  THE SAME cache_macro.h FILE ... ... ... THE KEY IS TO ... NOT DEGRADE THE PERFORMANCE ... AND OFF LOAD THE ... OVERLY LONG FUNCTIONALITIES (when 200 lines has two parts based of if) THESE SHALL BE SPLIT ... WITH CORRESPONDING NAME ... (e.g. handle_read_hit or _miss _miss_forward ... ... ... BTW ... ALL THE BYPASS ... USED TO FORWARD THE REQUESTS ... MUST BE RENAMED INTO Forward ... or   
+  FWRD ... or Fwd or something ... NOT ByP ANYMORE .... (THERE IS ONE DEFINE IN THE CACHE.cc WHICH IS ... TRUE REPLACEMENT POLICY BYPASS ... THAT IS INDEPEPNDENT FROM MY ByP ...                                                                                                                                                                                                                       
+
+● Design agent first (this collides with in-flight BLOOM/FASTSET cache.h edits — implementing the split AFTER v20 merge avoids redoing it; the plan can be built now).
+
+● claude(Design cache.cc split refactor) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Agent "Implement fastset side-tables" completed · 57s
+
+● Agent caught a real spec contradiction (cross-cache return_data wake). Relaunching with directive: audit first, then decide.
+
+● claude(P-FASTSET audit then implement) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+  │ W3-B  │ B8+B1+B3                                                                     │ 271.529s        │
+  ├───────┼──────────────────────────────────────────────────────────────────────────────┼─────────────────┤
+  │ W3-C  │ C4+C5+C3A                                                                    │ 270.277s        │
+  ├───────┼──────────────────────────────────────────────────────────────────────────────┼─────────────────┤
+  │ W3-D  │ D2+D8+D5+D1                                                                  │ 271.432s        │
+  └───────┴──────────────────────────────────────────────────────────────────────────────┴─────────────────┘
+
+  All bit-exact (IPC+checksums+LPM 0). v19 base = 272.586s — contended numbers too noisy to rank (some look ~flat); note: one duplicate W3-B row sits in OPT_REPORT (recovery agent flagged it honestly — will clean in final consolidation).
+
+  Still running: DRAM-GAP profiler, P-BLOOM, P-FASTSET. Plan when those land: one sequential retime (v19 + A/B/C/D + BLOOM + FASTSET, idle host, one at a time) → rank → v20 = v19 + proven winners stacked one-by-one. Also on shelf: path-audit W3-E PURSUEs (R3 mem-slot mask, V2 always_inline, R8...) — unimplemented, awaiting your word.
+
+❯ AGENT ... TO CONSIDER SPLITTING THE cache.cc ... AND RETURN BACK FUNCTIONS FRO MTHE cach.h ... ... ... IN THE PAST I WANTED THE SPLIT OF CACHE.cc BASED OF FUNC ... BTU IT IS YET FKIGN 2000 LINES ... FUCK ... WELL I DID SOME EXTENSIONS ... MAY BE ... THERE CAN BE A SPLIT BY ... RQ WQ AND PQ AND ... FILL /??? OR ... JUST RQ WQ PQ ... ... ... DEFINETELY ALL MACTOS MUST BE ... MERGED UNDER  
+  THE SAME cache_macro.h FILE ... ... ... THE KEY IS TO ... NOT DEGRADE THE PERFORMANCE ... AND OFF LOAD THE ... OVERLY LONG FUNCTIONALITIES (when 200 lines has two parts based of if) THESE SHALL BE SPLIT ... WITH CORRESPONDING NAME ... (e.g. handle_read_hit or _miss _miss_forward ... ... ... BTW ... ALL THE BYPASS ... USED TO FORWARD THE REQUESTS ... MUST BE RENAMED INTO Forward ... or   
+  FWRD ... or Fwd or something ... NOT ByP ANYMORE .... (THERE IS ONE DEFINE IN THE CACHE.cc WHICH IS ... TRUE REPLACEMENT POLICY BYPASS ... THAT IS INDEPEPNDENT FROM MY ByP ...                                                                                                                                                                                                                       
+
+● Design agent first (this collides with in-flight BLOOM/FASTSET cache.h edits — implementing the split AFTER v20 merge avoids redoing it; the plan can be built now).
+
+● claude(Design cache.cc split refactor) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Agent "Implement fastset side-tables" completed · 57s
+
+● Agent caught a real spec contradiction (cross-cache return_data wake). Relaunching with directive: audit first, then decide.
+
+● claude(P-FASTSET audit then implement) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● P-FASTSET relaunched: 15-min audit resolves the §2c/§3-A contradiction (is the wake-set the LOCAL MSHR entry's or the inbound cross-cache packet's?) → auto-decides proceed / extend-with-boundary-transfer / honest FAIL-design. No more questions back.
+
+  In flight (4): DRAM-GAP profiler, P-BLOOM, P-FASTSET, cache-split refactor designer.
+
+✻ Waiting for 4 background agents to finish
+
+❯ I NEED THE WHOLE ... FUNCTION + NESTED FUNC WITHOUT STATEMENTS ... LIST ... ... lvl 1 is class ... lvl 2 is method ... lvl 3 is method calling from insduder the method where the name gives nice context ... e.g. handle_read_hit ... or ANOTHER POST FIX ...... ...                                                                                                                                 
+
+● claude(Extract cache class func-call tree) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Tree extractor launched — class→method→callees outline of cache.cc+cache.h (uses your func-extract skill for exact ranges, no brace-counting), conditional calls marked ?, >150-line methods get [SPLIT-CANDIDATE] branch breakdown with suggested _hit/_miss/_forward names. Output: cc_perf_specs/CACHE_FUNC_TREE.md — feeds straight into the split-refactor plan.
+
+  In flight (5): DRAM-GAP, P-BLOOM, P-FASTSET, refactor designer, tree extractor.
+
+✻ Waiting for 5 background agents to finish
+
+● Agent "P-FASTSET audit then implement" completed · 4m 27s
+
+● P-FASTSET = honest FAIL-design. Audit proved the spec's §3-A wrong: at cross-cache return_data, 7 join sites (cache.cc:1550-1652) READ the inbound packet's dep-sets, and the origin-slot + destination-slot indices never coexist at any single site → side-table lookup impossible there. Zero edits made; refutation written into FASTSET_ELIM_v19.md §6. Two agents in a row correctly refused a
+  deadlock-class trap.
+
+  Possible future angle [HYPOTHESIS, unprobed]: replace the 72B of sets with a single u16 origin-slot reference into the upstream cache's table — but needs an upstream-entry-lifetime proof (the exact trap). Parked unless you say probe.
+
+  Still in flight (4): DRAM-GAP, P-BLOOM, refactor designer, func-tree extractor.
+
+✻ Waiting for 4 background agents to finish
+
+● Agent "Design cache.cc split refactor" completed · 5m 26s
+
+● Refactor plan READY (REFACTOR_CACHE_SPLIT_PLAN.md, 313 lines):
+
+  - File map: cache.cc (core, 35 funcs) + cache_rq.cc / cache_wq.cc / cache_pq.cc / cache_fill.cc (9 moved) + new inc/cache_macro.h
+  - Header cleanup: 47 bodies in cache.h → 40 move to .cc, 7 stay-inline (hot: get_set, bloom ops, bypass-fill stubs) — LTO-thin already in Makefile so split cost mitigated
+  - Macros: ~74 merged into cache_macro.h (1 double-define found: CACHE_LVL_BASE)
+  - Splits: add_rq (210 lines) hard-split; return_data + handle_prefetch optional
+  - ByP→Fwd: 23 internal renames; KEEP-AS-IS = LLC_BYPASS (cache.cc:345/555, way==LLC_WAY no-fill = true replacement-policy bypass — your exception found); 8 DO-NOT-RENAME categories (CLI flags, build defines, model filenames, Excel log columns wByP etc.)
+
+  Sequencing: implementation AFTER v20 merge (P-BLOOM still editing cache.h — collision risk flagged HIGH). Gate plan included (both tiers + sequential timing, accept only if within noise).
+  
+  In flight: DRAM-GAP, P-BLOOM, func-tree extractor. Say when to fire the refactor executor.
+  
+✻ Waiting for 3 background agents to finish
+  
+❯ THOSE IMPORVEMENTS ...   │ W3-A  │ A8 hints only (A4 already in base, A6/A3 absorbed, A1 parked per P3 history) │ 275.129s        │                                                                                                                                                                                                                                                                   
+    ├───────┼──────────────────────────────────────────────────────────────────────────────┼─────────────────┤                                                                                                                                                                                                                                                                                          
+    │ W3-B  │ B8+B1+B3                                                                     │ 271.529s        │                                                                                                                                                                                                                                                                                          
+    ├───────┼──────────────────────────────────────────────────────────────────────────────┼─────────────────┤                                                                                                                                                                                                                                                                                          
+    │ W3-C  │ C4+C5+C3A                                                                    │ 270.277s        │                                                                                                                                                                                                                                                                                          
+    ├───────┼──────────────────────────────────────────────────────────────────────────────┼─────────────────┤                                                                                                                                                                                                                                                                                          
+    │ W3-D  │ D2+D8+D5+D1                                                                  │ 271.432s         IS IT ... AFTER WHAT ??? WHAT IS THE BASE DIR USED THERE ... WHAT IS ITS TIME ???                                                                                                                                                                                                         
+  
+● Base for all four = champsim_v19 (the 13-opt tree: v18's 11 + P24 + P21). Each W3-X dir = v19 + that slice ONLY (not stacked on each other).
+  
+  v19's own time = 272.586s (official, idle-host sequential). The W3 numbers above were CONTENDED runs (other sims alive) → not comparable to 272.586 nor to each other. So "−2.3s for C" is unproven; only the bit-exact PASS is proven. Ranking needs the sequential retime pass (v19 + A + B + C + D back-to-back, idle host) — queued for after P-BLOOM and the DRAM-GAP profiler finish, then v20 =
+   v19 + proven winners. 
+
+✻ Waiting for 3 background agents to finish
+
+● Agent "Extract cache class func-call tree" completed · 4m 18s
+
+● Function tree DONE (cc_perf_specs/CACHE_FUNC_TREE.md): CACHE class ≈80 methods (≈50 header-inline + ≈30 in .cc), full class→method→callee outline with ? conditional marks.
+  
+  4 split candidates >150 LOC with proposed names + ranges:
+  - handle_fill (157) → _pick_mshr_entry / _handle_fill_llc_bypass_path / _handle_fill_normal_path
+  - handle_prefetch (177) → _per_iter_init / _hit / _miss_new / _miss_inflight_merge
+  - add_rq (210) → _wq_forward_check / _rq_merge / _mshr_merge / _enqueue
+  - return_data (168) → _lookup_mshr / _l1d_load / _l1d_rfo / _l2c_load / _finalize
+  
+  (operate/check_mshr at 143 kept whole; PACKET_QUEUE lives in block.h — out of scope.) This plugs directly into the split-refactor plan.
+
+  Awaiting: DRAM-GAP profiler + P-BLOOM gates. Then: sequential retime → v20 → refactor execution.
+
+✻ Waiting for 2 background agents to finish
+
+● Agent "Implement blocked-512 bloom" completed · 8m 20s
+  
+● P-BLOOM PASS bit-exact — blocked-512 k=4 bloom landed (inc/cache.h only), 1c 12.652s, 16c 273.832s @4-sim contention (uninformative), gate exact + LPM diff 0. FP improvement is by-construction (math: 48%→<3%) but not log-printable; the sequential retime will show the real time win.
+  
+  Last one in flight: DRAM-GAP profiler. Then: sequential retime (v19 + W3-A/B/C/D + P-BLOOM, idle host, one at a time) → rank → v20. GO on retime as soon as GAP agent lands, or wait for your word?
+
+✻ Waiting for 1 background agent to finish
+  
+❯ THE CAHCE.cc CASE ... THE ISSUE CAN BE ... SOME SHARED METHODS ... I AM UNSURE WHERE THOSE WILL GO ... BUT THERE MUST NOT BE ANY ... CHANGES TO THE ... STRUCTURE ... AND ANY SPLITING ... MUST BE INLINE ... SO THE PERFORMANCE WOULD NTO CHANGE ... ... AFTER THE SPLIT ... WOULD BE NICE TO CHECK IF NOW SOME METHODS CAN HAVE A CONST IN THEM ... TO HELP WIT HTHE LOADS ...                      
+
+● Bash(act "append user constraint addendum to REFACTOR_CACHE_SPLIT_PLAN.md, orchestration bookkeeping" && cat >> /home/cc/champsim_VB/cc_perf_specs/REFACTOR_CACHE_SPLIT_PLAN.md <<'EOF'
+  
+      ## ADDENDUM — USER CONSTRAINTS (2026-06-10, binding on executor)
+      1. CLASS STRUCTURE FROZEN: no member/field/signature changes to CACHE or any struct. File placement only.
+      2. SHARED METHODS (used by 2+ of rq/wq/pq/fill): do NOT duplicate; keep in core cache.cc, or if hot, keep as inline in header. Decide per profile-hotness; record per function.
+      3. ALL long-function splits MUST be `inline` (static inline / inline member in same TU or header) — zero codegen change goal; verify hot symbols still inlined via objdump after build.
+      4. POST-SPLIT CONST AUDIT: pass over the new sub-functions — add `const` to methods that don't mutate state, const-qualify locals/params/pointers where provable; goal = help compiler eliminate redundant loads. Bit-exact by construction; gate anyway.
+      EOF)
+  ⎿  12:45:54 | find source line mapping in annotate dump
+     12:46:26 | annotate operate + add_rq top lines
+     12:46:31 | append user constraint addendum to REFACTOR_CACHE_SPLIT_PLAN.md, orchestration bookkeeping
+
+● Constraints locked into the plan addendum:
+  1. Class structure FROZEN — placement only
+  2. Shared methods → core cache.cc (or stay-inline if hot), never duplicated
+  3. All splits inline, objdump-verify hot symbols still inlined post-build
+  4. Post-split const audit (const methods/locals/params → compiler load elimination), gated anyway
+
+  Refactor executor gets these verbatim when fired (after v20). DRAM-GAP profiler still annotating (act log shows it on operate+add_rq lines now).
+
+✻ Waiting for 1 background agent to finish
+
+● Agent "DRAM GAP analysis, GO all answers" completed · 17m 52s
+
+● DRAM-GAP analysis CONFIRMED your "endlessly slow DRAM" instinct:
+
+  - Workload: GAP pr-10 (pagerank), 1c, IPC 0.05313, 5.18 host-s/Minstr
+  - DRAM controller = 20.3% of host CPU (vs ~4% on LLM): schedule() O(SIZE) HIT+MISS scans alone = 15.13%, add_rq dup-scan 1.68% (13.68% hot cmp inside), operate 2.16%
+  - Ranked: A bank-bucketed pending lists (5-10% absolute on this class!) → B open-row fast-gate → C (min,2nd-min) cache → D check_dram_queue hash (upgraded: 1.5-2% here) → E free-idx bitmap
+
+  All probes/implementations now landed. Queue (proposed order):
+  1. Sequential retime → rank v19 + W3-A/B/C/D + P-BLOOM → v20 stack
+  2. DRAM slice implementer (A+B+C+D+E off v20; gates = LLM bit-exact + GAP reference IPC 0.05313 must match)
+  3. Cache split refactor (plan + tree + your constraints ready) on v20+
+
+  GO on #1 now?
+
+✻ Churned for 46m 8s
+  
+❯ ONE THING I DONT KNOW ... IS WHERE THE BLOAT OF 2K LINES IS OCCURING RIGHT NOW ... ... OH BTW ... THERE ARE SOME ... getters at hthe end ... and there is a prnt ... ... I THINK TRUE CODE IS 1400 LINES ABOUND 300=>1700 LINES ... ... THOSE OTHERS ... KINDA SHALL GO INTO THE helper.cc ... MAY BE MARCOR AND THOSE HELPER GETTERS SHALL GO UNDER THE ... single cache_helper.cc file ... ... ...  
+  BTW THERE IS ALSO THE SAME NEEDED FOR THE DRAM CONTROLLRE ... IT NEEDS ITS OWN HELPER CC AS WELL ... ... AND WE CAN DO THE SAME ON THE ... ooo_cpu ... TO HAVE _fetch _decode _schedule _execute ... WHERE THE MAIN WOULD BE ... handle branch, add rob, update rob, and retire ... with all in between being the methods from the _POSTFIX.cc splitted files ...                                     
+  ⎿  Interrupted · What should Claude do instead?
+
+❯ YES TO THAT ... 1 ...                                                                                                                                                                                                                                                                                                                                                                                 
+
+● GO #1. Appending your new refactor scope first (helper-file split + ooo_cpu split), then launching retime+v20 agent.
+
+● Bash(act "append helper-cc + ooo_cpu split scope to refactor plan addendum per user order" && cat >> /home/cc/champsim_VB/cc_perf_specs/REFACTOR_CACHE_SPLIT_PLAN.md <<'EOF'
+  
+      ## ADDENDUM 2 — SCOPE EXTENSION (2026-06-10, user order)
+      5. BLOAT LOCATION: user believes true cache.cc logic = ~lines 300-1700 (~1400 lines); trailing getters + print/dump functions = bloat. Executor must inventory the actual line distribution and report where the 2k+ lines sit.
+      6. NEW FILE cache_helper.cc: ALL getters + print/dump/stat functions from cache.cc/cache.h go here (cold; no inline requirement). cache_macro.h still separate for macros.
+      7. SAME TREATMENT for DRAM controller: dram_helper.cc for its getters/print/stat bloat (inventory dram_controller.cc the same way).
+      8. ooo_cpu SPLIT (new): ooo_cpu_fetch.cc / ooo_cpu_decode.cc / ooo_cpu_schedule.cc / ooo_cpu_execute.cc — stage methods by _postfix; core ooo_cpu.cc keeps handle_branch, add_rob, update_rob, retire (+ shared). Same frozen-structure / inline-split / const-audit / gate rules as cache (Addendum 1 applies to ALL files).
+      EOF)
+  ⎿  12:46:56 | save perf outputs to artifact dir
+     12:48:47 | final sanity check artifact + IPC verbatim line
+     12:51:06 | append helper-cc + ooo_cpu split scope to refactor plan addendum per user order
+
+● claude(Sequential retime then build v20) Opus 4.7
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Both done:
+
+  1. Refactor plan extended (Addendum 2): cache_helper.cc (getters+print bloat; executor will inventory where the 2k lines actually sit vs your ~1400-true-code estimate), dram_helper.cc same treatment, ooo_cpu split → _fetch/_decode/_schedule/_execute.cc with core keeping handle_branch/add_rob/update_rob/retire. All under the frozen-structure/inline/const-audit rules.
+  2. v20 agent RUNNING (checkpointed in V20_BUILD_STATUS.md, resumable): idle-wait → sequential retime of v19 + A/B/C/D/BLOOM (6 runs) → rank (winner = faster than fresh v19 baseline, ±0.5s = neutral-excluded) → stack winners one-by-one with both gates each (B/D ooo_cpu.cc hunk merge handled) → official idle v20 number + OPT_REPORT §11 + vault + duplicate-row cleanup. ETA ~2h. Refactor
+  executor fires on v20 after that, on your word.
+
+✻ Waiting for 1 background agent to finish
+
+❯ WOW ..> WTF IS RETIME??? ... IS IT LIKE ... STACCKING EACH ... AND SEEING IF ITS BETTER AT EACH MERGE??                                                                                                                                                                                                                                                                                               
+
+● NO code change — "retime" = just RE-RUN the stopwatch. The earlier times were measured while other sims hogged the host = noisy garbage. Retime = run each EXISTING dir once, alone, on idle host, one after another → trustworthy times.
+  
+  Two separate phases:
+
+  1. RETIME (now): v19, W3-A, W3-B, W3-C, W3-D, BLOOM — 6 clean runs, no edits. Output = honest ranking: which slices actually beat v19.
+  2. STACK (after): that IS your "stack each, check at each merge" — winners merged into v20 one-by-one, full bit-exact gate after EVERY add, drop any stage that fails or regresses. Same consistency proof method as v18/v19.
+
+  So: first measure honestly, then stack only what measured faster.

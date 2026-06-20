@@ -1,0 +1,17 @@
+--- /c/Users/vasum/VB_champsim_Optimised_Hermesed/champsim_v17/src/ooo_cpu.cc	2026-06-16 23:25:19.641162900 +0900
++++ /c/Users/vasum/VB_champsim_Optimised_Hermesed/champsim_v17_B3/src/ooo_cpu.cc	2026-06-19 02:22:09.273039900 +0900
+@@ -854,6 +854,14 @@
+             if (w == ws) rmask &= ~((1ULL << (start & 63)) - 1);
+             if (w == we - 1 && (end & 63)) rmask &= (1ULL << (end & 63)) - 1;
+ 
++            // B3: per-word dirty pre-skip (strict superset of P15 guard).
++            // ready == cr & dirty_word, so dirty_word==0 => no schedules this word.
++            // When also (~fc & rmask)!=0, stall is guaranteed nonzero, so the real
++            // path schedules nothing then returns false. Provable pure no-op.
++            uint64_t dirty_word = fc_ptr[w] & ~sinf_p[w] & ~scmp_p[w] & rmask;
++            if (dirty_word == 0 && (~fc_ptr[w] & rmask) != 0)
++                return false;
++
+             uint64_t cr = 0;
+             for (uint32_t b = 0; b < 64; b++)
+                 cr |= (uint64_t)PCYCLE_LE(ec_ptr[base + b], ccp) << b;

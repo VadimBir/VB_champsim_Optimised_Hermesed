@@ -1,1 +1,0 @@
-./qrun_champsim_v14.sh --dir champsim_v15 --bp perceptron --repl lru --win-mode fixed --hermes none --l1byp no --l2byp no --l3byp no LLM256.Pythiapre30Phase15xpost20 no no no

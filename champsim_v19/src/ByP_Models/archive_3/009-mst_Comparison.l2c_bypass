@@ -1,0 +1,47 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+inline bool l2_bypass_init[NUM_CPUS] = {};
+
+
+// ============================================================
+// METHOD 4: MST COMPARISON  [Eq35: MST=mu*kappa*C-AMAT]
+// bypass iff MST(current) > MST(next)
+// = stall per access at current > stall per access at next
+// shifting miss to less-stalled level reduces net MST [Eq4,18,35]
+// + RQ gate
+// ============================================================
+
+// --- M4 L2C ---
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init[cpu]) return;
+        cout << "L2C Bypass [ng][M4 MST Comparison]:\n"
+             << "  MST(l) = mu(l)*kappa(l)*camat(l)  [Eq35]\n"
+             << "  P1: LLC RQ not full\n"
+             << "  P2: MST(L2C) > MST(LLC)\n";
+    l2_bypass_init[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+    if (LLC->RQ.occupancy >= LLC->RQ.SIZE) return false;
+
+    const auto& t2 = lpm[cpu][L2C_type];
+    const auto& t3 = lpm[cpu][LLC_type];
+
+    double mst_l2c = t2.w.µ_missCyFracOfActiveCy()
+                   * t2.w.κ_pureMissFracOfMissCy()
+                   * t2.gm.camat_activeMemCyDivAccesses;
+
+    double mst_llc = t3.w.µ_missCyFracOfActiveCy()
+                   * t3.w.κ_pureMissFracOfMissCy()
+                   * t3.gm.camat_activeMemCyDivAccesses;
+
+    return mst_l2c > mst_llc;
+}

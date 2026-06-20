@@ -1,0 +1,38 @@
+MARS Paper (ICCD 2026)
+  Paper: CURRENT_PAPER/ICCD26_MARS (21).pdf
+  Completed this session:
+  - 11 validated passive voice rewrites ready to apply to .tex (items 4, 10, 21, 24, 25, 26, 28, 31, 32, 36, 37)
+  - MAS/PM paragraph rewritten — full names only, zero abbreviations
+  - TTP/HMP/Hermes explanatory paragraph fixed (mispredicts, fraction-of-fraction, comma placement)
+  - Section V-B intro sentence confirmed correct — no changes needed
+
+  Still open:
+  1. TTP citation: TTP [?] on line 751 — unify with Hermes citation number
+  2. Three author TODOs to delete (lines 810, 961, 608) + Section V-A needs writing
+  3. A14 bib entry (@website{anandtech_a14}) to add to .bib
+
+  Critical rule: Never "MAS" or "PM" — always "MSHR admission stall cycles" / "pure-miss cycles"
+
+  ---
+  Style Guide (new — created this session)
+
+  Source: 12 Sonnet agents forensically read Zion + CARE paper-by-paper, section-by-section
+
+  Installed to: ~/.claude/skills/paper-writing/author_profile/
+
+  ┌────────────────────────────────────────────┬──────────────────────────────────────────┐
+  │                    File                    │               When to open               │
+  ├────────────────────────────────────────────┼──────────────────────────────────────────┤
+  │ conference-all-sections-write.md           │ Full reference (COMBO)                   │
+  ├────────────────────────────────────────────┼──────────────────────────────────────────┤
+  │ conference-abstract-conclusion-write.md    │ Writing abstract or conclusion           │
+  ├────────────────────────────────────────────┼──────────────────────────────────────────┤
+  │ conference-intro-background-write.md       │ Writing intro or background/related work │
+  ├────────────────────────────────────────────┼──────────────────────────────────────────┤
+  │ conference-design-write.md                 │ Writing design section                   │
+  ├────────────────────────────────────────────┼──────────────────────────────────────────┤
+  │ conference-methodology-evaluation-write.md │ Writing methodology or evaluation        │
+  └────────────────────────────────────────────┴──────────────────────────────────────────┘
+
+  Key tense finding: Both Zion and CARE use present tense everywhere — including methodology, evaluation, and figure references. ("Figure N
+  shows...", "We evaluate...", "CARE achieves..."

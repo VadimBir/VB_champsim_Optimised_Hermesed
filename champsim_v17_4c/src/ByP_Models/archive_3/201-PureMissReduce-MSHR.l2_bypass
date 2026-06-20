@@ -1,0 +1,39 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// ============================================================
+// MODEL 201 — PureMissReduce-MSHR (L2 level)
+// Paper: Liu et al. JCST 36(1) 2021, Section 3–6
+//
+// THIRD MODEL — paper-exact fix for model 200 (L2 level).
+// At bypass call site, L2C->RQ.occupancy >= 1 always.
+// L2C->MSHR.occupancy == 0 is the correct pure-miss gate:
+//   packet not yet in L2C MSHR (mshr_index==-1 precondition)
+//   → MSHR.occupancy counts OTHER active misses only
+//   → MSHR.occupancy == 0 ↔ new miss would be lone at L2
+//   → bypass prevents m(L2)↑ → MST(L2)↓ → C-AMAT(L2)↓ (eq.18/33)
+// ============================================================
+
+inline bool l2_bypass_init[NUM_CPUS] = {};
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init[cpu]) return;
+    cout << "L2 Bypass [201-PureMissReduce-MSHR]:\n"
+         << "  bypass iff L2C->MSHR.occupancy == 0\n"
+         << "  paper-exact: MSHR==0 is LPM pure-miss condition (m_pureMiss_cy gate)\n"
+         << "  fixes model 200 RQ.occupancy==0 unreachability at current-level check" << endl;
+    l2_bypass_init[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+    // MSHR.occupancy == 0: no active misses → new miss would be lone pure miss at L2
+    return (L2C->MSHR.occupancy == 0);
+}

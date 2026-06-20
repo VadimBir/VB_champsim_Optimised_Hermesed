@@ -1,0 +1,11 @@
+--- /c/Users/vasum/VB_champsim_Optimised_Hermesed/champsim_v17/Makefile.win	2026-06-16 23:25:06.658772200 +0900
++++ /c/Users/vasum/VB_champsim_Optimised_Hermesed/champsim_v17_P25/Makefile.win	2026-06-19 02:15:47.309003000 +0900
+@@ -21,7 +21,7 @@
+ # Linux EXTRA_DEFS (win-mode -DLPM_WIN_* and hermes -DUSE_HERMES/-DNO_HERMES)
+ # that select codegen. Empty by default → identical to the prior fixed flags.
+ EXTRA_CFLAGS ?=
+-CXXFLAGS := -O3 -g -std=c++17 -D_DEFAULT_SOURCE -fno-omit-frame-pointer -fno-aggressive-loop-optimizations $(EXTRA_CFLAGS) $(INC)
++CXXFLAGS := -O3 -g -std=c++17 -D_DEFAULT_SOURCE -fno-aggressive-loop-optimizations $(EXTRA_CFLAGS) $(INC)
+ CFLAGS   := -O2 $(INC)
+ LDFLAGS  := -static -pthread   # statically link libgcc/libstdc++/winpthread → self-contained exe
+ LZMA_DLL := $(DEPS)/liblzma.dll

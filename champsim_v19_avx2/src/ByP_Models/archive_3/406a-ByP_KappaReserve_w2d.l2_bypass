@@ -1,0 +1,49 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 406a — κ-Reserve (w2d, conservative) — L2 level
+// Same logic as L1 but: self=L2, lower=LLC
+// L2 κ determines want, LLC MSHR reservation determines can
+
+inline bool l2_bypass_init_406a[NUM_CPUS] = {};
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init_406a[cpu]) return;
+    cout << "L2 Bypass [406a-KappaReserve-w2d]: kappa-reserve, w2d, conservative" << endl;
+    l2_bypass_init_406a[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    // LLC miss rate from w2d
+    double llc_mr = (lpm[cpu][LPM_LLC].bkt[BKT_W2DA].load_missRate()
+                   + lpm[cpu][LPM_LLC].bkt[BKT_W2DB].load_missRate()) / 2.0;
+    if (llc_mr < 0.01) llc_mr = 0.01;
+
+    // MSHR state
+    uint32_t l2_free = L2C->MSHR.SIZE - L2C->MSHR.occupancy;
+    int32_t  llc_free = (int32_t)LLC->MSHR.SIZE - (int32_t)LLC->MSHR.occupancy;
+    if (llc_free <= 0) return false;
+
+    // Reserve: L2_free misses × LLC_miss_rate [eq 44]
+    uint32_t llc_reserved = (uint32_t)((double)l2_free * llc_mr + 0.999);
+    if (llc_reserved < 1) llc_reserved = 1;
+
+    int32_t llc_available = llc_free - (int32_t)llc_reserved;
+    if (llc_available <= 0) return false;
+
+    double required_kappa = 1.0 - (double)llc_available / (double)LLC->MSHR.SIZE;
+
+    double w2d_kappa = (lpm[cpu][LPM_L2C].bkt[BKT_W2DA].κ_pureMissFracOfMissCy()
+                      + lpm[cpu][LPM_L2C].bkt[BKT_W2DB].κ_pureMissFracOfMissCy()) / 2.0;
+
+    return (w2d_kappa >= required_kappa);
+}

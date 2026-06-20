@@ -1,0 +1,49 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// ============================================================
+// MODEL 301 — RecursiveCAMAT-PushDown (L2 level)
+// Paper: Liu et al. JCST 36(1) 2021, eq. 41–42, Section 6
+//
+// Explicit C-AMAT push-down at L2:
+//   (A) MSHR_L2 == 0: lone L2 miss → pure miss guaranteed at L2.
+//       Bypassing eliminates m(L2) term in the recursion entirely.
+//   (B) GR_LLC < 1: LLC miss supply > hit supply → injected request
+//       lands in LLC's miss-active period → becomes x(LLC) overlap
+//       → κ(LLC) ↓ → C-AMAT(LLC) term in recursion shrinks (eq 42).
+//
+//   Both must hold simultaneously (AND):
+//     Protects LLC from extra stall (10× worse concern for L2):
+//     Bypass fires only when LLC already has active misses, so the
+//     injected req overlaps with existing DRAM latency. If LLC is
+//     idle (GR_LLC ≥ 1), adding a bypass req starts a new miss
+//     at LLC — which is the pure-miss problem we're trying to avoid.
+// ============================================================
+
+inline bool l2_bypass_init[NUM_CPUS] = {};
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init[cpu]) return;
+    cout << "L2 Bypass [301-RecursiveCAMAT-PushDown]:\n"
+         << "  bypass iff (MSHR_L2==0) AND (RQ_LLC < MSHR_LLC+1)\n"
+         << "  (A) lone L2 miss: MSHR==0 is pure-miss gate (paper-exact, model 201)\n"
+         << "  (B) LLC is miss-starved: injection overlaps with active LLC misses (eq 42)\n"
+         << "  AND-guard: protects LLC from triggering a new pure-miss when LLC is idle" << endl;
+    l2_bypass_init[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+    // (A) MSHR==0: no active L2 misses → this miss would be lone → pure miss period
+    bool lone_l2 = (L2C->MSHR.occupancy == 0);
+    // (B) GR_LLC < 1: LLC miss supply > hit supply → injected req lands in miss-active period
+    bool gr_llc_low = (LLC->RQ.occupancy < LLC->MSHR.occupancy + 1);
+    return lone_l2 && gr_llc_low;
+}

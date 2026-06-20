@@ -1,0 +1,50 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL B-successor — LLC
+// 520a base + enhancements:
+//   Gate 0: kappa_short < 0.05 pre-filter
+//   Gate 1: kappa degradation
+//   Gate 2: W2D-averaged DRAM pressure, conservative threshold (cap 1.3 — higher bar)
+//   LLC is most conservative: require stronger kappa signal to justify DRAM traffic
+
+inline bool llc_bypass_init_Bsucc[NUM_CPUS] = {};
+
+#define SHALL_LLC_BYPASS_DEFINED
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init_Bsucc[cpu]) return;
+    cout << "LLC Bypass [B-successor]:\n"
+         << "  Gate0: k_short >= 0.05 | Gate1: k_short > k_long | Gate2: k_reduce >= W2D pressure (cap 1.3)" << endl;
+    llc_bypass_init_Bsucc[cpu] = true;
+}
+
+inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    llc_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    /* ── Gate 0: pre-filter — cache working well → no bypass ── */
+    double k_now = get_kappa_short(cpu, LPM_LLC);
+    if (k_now < 0.05) return false;
+
+    /* ── Gate 1: kappa degradation ── */
+    double k_long = get_kappa_long(cpu, LPM_LLC);
+    if (k_long < 1e-6) return false;
+    if (k_now <= k_long) return false;
+
+    /* ── Gate 2: W2D-averaged DRAM pressure (conservative) ── */
+    double dram_camat = lpm[cpu][LPM_DRAM].met[MET_W2D].camat_activeMemCyDivAccesses;
+    double dram_cpa   = lpm[cpu][LPM_DRAM].met[MET_W2D].cpa_totalCyDivAccesses;
+    if (dram_cpa < 1.0) return false;
+
+    double next_pressure = dram_camat / dram_cpa;
+    // LLC asymmetric: cap at 1.3 (more conservative — higher bar to bypass)
+    if (next_pressure > 1.3) next_pressure = 1.3;
+
+    double k_reduce_pct = k_now / k_long;
+    return (k_reduce_pct >= next_pressure);
+}

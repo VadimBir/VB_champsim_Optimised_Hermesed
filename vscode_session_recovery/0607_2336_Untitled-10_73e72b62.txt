@@ -1,0 +1,7 @@
+\textbf{Consistency.} The return path preserves consistency with the baseline cache hierarchy. Three cases cover every forwarded miss:   
+
+\noindent 1) At the topmost forwarding level, with no anchoring MSHR above it. \textit{Downwards}, on a repeated demand, if the forwarded request remains in flight, the repeat allocates an MSHR at this level, propagates to the lower level, and merges into the existing anchor MSHR; the merge clears the skip bit, causing the return to route through this level rather than bypass it. If the original request was resolved by a hit at the next level, no anchor MSHR exists; any subsequent demand is a fresh miss on the standard path. \textit{Upwards}, when data returns, the presence of the skip bit determines whether this level expects a return; the anchor routes directly to the requester if the bit is set, or through this level's MSHR if the merge cleared it.   
+
+\noindent 2) At any level holding no MSHR entry for the miss, because this level itself forwarded while an upper level holds the anchoring MSHR, or because the level routed directly to DRAM without MSHR allocation. \textit{Downwards}, repeated demands cannot reach this level; they merge into the upper anchoring MSHR, creating no new downward requests. \textit{Upwards}, this level holds no MSHR entry, so the demand return bypasses it; the level is filled concurrently via its replacement policy.   
+
+\noindent 3) At a level whose skip bit is clear, the level holds the standard MSHR entry. It completes the normal fill, exactly as in the conventional cache hierarchy.

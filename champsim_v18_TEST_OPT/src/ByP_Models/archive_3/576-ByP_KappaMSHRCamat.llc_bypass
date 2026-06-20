@@ -1,0 +1,50 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 576 — ByP_KappaMSHRCamat at LLC
+// k_trend||mshr_full||camat_ratio + dram_k_not_worse
+
+#define DBG_576 1
+
+inline bool llc_bypass_init_576[NUM_CPUS] = {};
+inline uint64_t llc_dbg_counter_576[NUM_CPUS] = {};
+
+#define SHALL_LLC_BYPASS_DEFINED
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init_576[cpu]) return;
+    cout << "LLC Bypass [576-ByP_KappaMSHRCamat]: k_trend||mshr_full||camat_ratio + dram_k_not_worse" << endl;
+    llc_bypass_init_576[cpu] = true;
+}
+
+inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    llc_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    double k1_short = get_kappa_short(cpu, LPM_LLC);
+    double k1_long  = get_kappa_long(cpu,  LPM_LLC);
+    double k2_short = get_kappa_short(cpu, LPM_DRAM);
+    double k2_long  = get_kappa_long(cpu,  LPM_DRAM);
+    double camat_this = lpm[cpu][LPM_LLC].wsm.camat_activeMemCyDivAccesses;
+    double camat_next = lpm[cpu][LPM_DRAM].wsm.camat_activeMemCyDivAccesses;
+    int mshr_this_occ  = LLC->MSHR.occupancy;
+    int mshr_this_size = LLC->MSHR.SIZE;
+
+    bool want_byp = (k1_long > 1e-6 && k1_short > k1_long)
+                 || (mshr_this_occ >= mshr_this_size - 1)
+                 || (camat_next > 1e-6 && camat_this / camat_next < 50.0 / 200.0);
+    bool next_ok  = (k2_long < 1e-6 || k2_short <= k2_long);
+    bool byp = want_byp && next_ok;
+
+#if DBG_576
+    if ((++llc_dbg_counter_576[cpu] & 0xFFFF) == 0) {
+        printf("    [576-LLC] -> %s\n", byp ? "BYP" : "---");
+    }
+#endif
+
+    return byp;
+}

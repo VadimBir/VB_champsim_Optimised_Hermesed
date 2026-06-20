@@ -1,0 +1,109 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+
+
+// USEFUL VARS:  usage example
+//  * Cached metrics available without sim_access:
+//  *   lpm[cpu][IS_L1D].gm.camat_activeMemCyDivAccesses   ← ω(L1D)/α(L1D)
+//  *   lpm[cpu][IS_L1D].gm.apc_accessesDivActiveMemCy      ← α(L1D)/ω(L1D)
+//  *   lpm[cpu][IS_L1D].gm.lpmr_activeMemCyDivIdealCy     ← ω(L1D)/(IC×CPIexe)
+//  *   lpm[cpu][IS_L2C].g.µ_missCyFracOfActiveCy()         ← miss-cycle fraction
+//  *   lpm[cpu][IS_L2C].g.κ_pureMissFracOfMissCy()      ← pure-miss fraction
+//  *
+//  * Also raw counters:
+//  *   lpm[cpu][IS_L1D].h, .m, .x, .e
+//  *   lpm[cpu][IS_L1D].g.ω_activeMemCy()
+
+// L2C->MSHR.occupancy      L2C->MSHR.SIZE
+// L2C->RQ.occupancy        L2C->RQ.SIZE
+// L2C->PQ.occupancy        L2C->PQ.SIZE
+// L2C->MSHR.occupancy      L2C->MSHR.SIZE
+// L2C->RQ.occupancy        L2C->RQ.SIZE
+// L2C->PQ.occupancy        L2C->PQ.SIZE
+
+// CACHE TYPEs
+
+
+
+
+inline bool l2_bypass_init[NUM_CPUS] = {};
+
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init[cpu]) return;
+    cout << "Bypass on: \nLayer Mismatch 2.5x Scaled Model\nLayer_mismatch = (C-AMAT_L2C / C-AMAT_L1D)\nScaled_cost = unmatch * 2.5 * C-AMAT_L2C\nDecision: MSHRfree*C-AMAT > immediate + future" << endl;
+    l2_bypass_init[cpu] = true;
+}
+
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    // L1D MSHR not sufficiently occupied → no need to bypass
+    if (L2C->MSHR.occupancy * 2 < L2C->MSHR.SIZE)
+        return false;
+
+    uint32_t free = L2C->MSHR.SIZE - L2C->MSHR.occupancy;
+    if (free == 0)
+        return false;
+
+    // Use window-based metrics
+    double w_camat_l1d = lpm[cpu][L1D_type].wm.camat_activeMemCyDivAccesses;
+    double w_camat_l2c = lpm[cpu][L2C_type].wm.camat_activeMemCyDivAccesses;
+    double w_apc_l1d   = lpm[cpu][L1D_type].wm.apc_accessesDivActiveMemCy;
+    double w_lpmr_l1d  = lpm[cpu][L1D_type].wm.lpmr_activeMemCyDivIdealCy;
+    double w_lpmr_l2c  = lpm[cpu][L2C_type].wm.lpmr_activeMemCyDivIdealCy;
+    double w_lpmr_llc  = lpm[cpu][LLC_type].wm.lpmr_activeMemCyDivIdealCy;
+
+    // Fallback to cumulative if windowed not ready
+    if (w_camat_l1d < 0.001) w_camat_l1d = lpm[cpu][L1D_type].gm.camat_activeMemCyDivAccesses;
+    if (w_camat_l2c < 0.001) w_camat_l2c = lpm[cpu][L2C_type].gm.camat_activeMemCyDivAccesses;
+    if (w_apc_l1d < 0.001)   w_apc_l1d   = lpm[cpu][L1D_type].gm.apc_accessesDivActiveMemCy;
+    if (w_lpmr_l1d < 0.001)  w_lpmr_l1d  = lpm[cpu][L1D_type].gm.lpmr_activeMemCyDivIdealCy;
+    if (w_lpmr_l2c < 0.001)  w_lpmr_l2c  = lpm[cpu][L2C_type].gm.lpmr_activeMemCyDivIdealCy;
+    if (w_lpmr_llc < 0.001)  w_lpmr_llc  = lpm[cpu][LLC_type].gm.lpmr_activeMemCyDivIdealCy;
+
+    // Clamp very small values
+    if (w_lpmr_l1d < 0.001) w_lpmr_l1d = 0.001;
+    if (w_lpmr_l2c < 0.001) w_lpmr_l2c = 0.001;
+    if (w_lpmr_llc < 0.001) w_lpmr_llc = 0.001;
+    if (w_camat_l1d < 0.001) w_camat_l1d = 0.001;
+
+    // Layer latency ratio = C-AMAT_L2C / C-AMAT_L1D
+    // This represents how much "slower" L2 is compared to L1
+    // Typical values: C-AMAT_L2C ~ 11, C-AMAT_L1D ~ 1.6
+    // So ratio ~ 6.9, but we cap at 2.5 as specified
+    double layer_ratio = w_camat_l2c / w_camat_l1d;
+    if (layer_ratio > 2.5) layer_ratio = 2.5;
+    if (layer_ratio < 1.0) layer_ratio = 1.0;
+
+    // Available Resource
+    double available = (double)free * w_camat_l2c;
+
+    // Unmatch fractions
+    double rq_unmatch = 1.0 - (w_lpmr_l2c / w_lpmr_l1d);
+    if (rq_unmatch < 0) rq_unmatch = 0;
+
+    double pq_unmatch = 1.0 - (w_lpmr_llc / w_lpmr_l2c);
+    if (pq_unmatch < 0) pq_unmatch = 0;
+
+    // Immediate cost with LAYER MISMATCH SCALING (2.5x)
+    // The layer ratio amplifies the cost because deeper hierarchy = more expensive
+    double rq_cost = (double)L2C->RQ.occupancy * rq_unmatch * layer_ratio * w_camat_l2c;
+    double pq_cost = (double)L2C->PQ.occupancy * pq_unmatch * w_camat_l2c;
+    double immediate = rq_cost + pq_cost;
+
+    // Future cost also scaled by layer mismatch
+    // Future = APC(L1D) * rq_unmatch * layer_ratio * C-AMAT + C-AMAT
+    double future = w_apc_l1d * rq_unmatch * layer_ratio * w_camat_l2c + w_camat_l2c;
+
+    // Decision
+    return available > (immediate + future);
+}

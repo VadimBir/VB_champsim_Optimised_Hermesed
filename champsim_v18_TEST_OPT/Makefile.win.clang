@@ -1,0 +1,54 @@
+# Makefile.win.clang — native Windows build using LLVM-MinGW clang (NOT a VM).
+# Driven by w64devkit make/sh (compiler-agnostic) but compiled with clang++.
+# Run with w64devkit\bin on PATH:
+#     make -f Makefile.win.clang -j4
+# NOTE: llvm-mingw ships libc++ (no libstdc++). The Linux Makefile asks for
+# -stdlib=libstdc++ for output equivalence; we CANNOT here, so results are
+# compared against the g++/libstdc++ build via execution_checksum.
+
+CLANG  := C:/Users/vasum/llvm-mingw/bin
+CXX    := $(CLANG)/clang++.exe
+CC     := $(CLANG)/clang.exe
+SHELL  := C:/Users/vasum/w64devkit/bin/sh.exe
+
+DEPS   := win_deps
+INC    := -Iinc -I$(DEPS)/sqlite -I$(DEPS)/lzma/include
+
+# No -fno-aggressive-loop-optimizations (GCC-only flag; clang rejects it).
+# clang defaults to libc++ for the x86_64-w64-windows-gnu target.
+CXXFLAGS := -O3 -g -std=c++17 -D_DEFAULT_SOURCE -fno-omit-frame-pointer $(EXTRA_CFLAGS) $(INC)
+CFLAGS   := -O2 $(INC)
+LDFLAGS  := -static -pthread   # static libc++/libunwind/winpthread → self-contained exe
+LZMA_DLL := $(DEPS)/liblzma.dll
+
+OBJDIR := obj_win_clang
+BIN    := bin/champsim_clang.exe
+
+SRCS := $(wildcard src/*.cc) $(wildcard src/hermes/*.cc) \
+        $(wildcard branch/*.cc) $(wildcard replacement/*.cc) \
+        $(wildcard prefetcher/*.cc)
+SRCS := $(filter-out replacement/hawkeye.cc replacement/hawkeye_crc2.cc,$(SRCS))
+OBJS := $(patsubst %.cc,$(OBJDIR)/%.o,$(SRCS)) $(OBJDIR)/sqlite3.o
+
+.PHONY: all clean
+all: $(BIN)
+
+$(BIN): $(OBJS)
+	@mkdir -p bin
+	@echo "Linking $@ (clang) ..."
+	$(CXX) $(OBJS) $(LZMA_DLL) $(LDFLAGS) -o $@
+	@cp $(LZMA_DLL) bin/liblzma-5.dll
+	@echo "Built $@ (clang/libc++) (+ liblzma-5.dll beside it)"
+
+$(OBJDIR)/%.o: %.cc
+	@mkdir -p $(dir $@)
+	@echo "Compiling $< (clang) ..."
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJDIR)/sqlite3.o: $(DEPS)/sqlite/sqlite3.c
+	@mkdir -p $(dir $@)
+	@echo "Compiling sqlite3.c (clang) ..."
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -rf $(OBJDIR) $(BIN)

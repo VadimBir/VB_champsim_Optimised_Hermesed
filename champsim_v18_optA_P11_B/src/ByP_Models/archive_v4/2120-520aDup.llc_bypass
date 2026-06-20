@@ -1,0 +1,42 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 2120 — κ-Reduce — LLC (AlwaysBypassLLC variant, C-AMAT/CPA pressure gate)
+// Bypass IFF κ_short > κ_long  AND  κ_reduce% >= C-AMAT(DRAM)/CPA(DRAM)
+// (Originally AlwaysBypass had no guard — but trace showed DRAM CPA→276 while
+//  LLC kept bypassing 77%. So even 2120 LLC needs DRAM pressure awareness.)
+
+inline bool llc_bypass_init_2120[NUM_CPUS] = {};
+
+#define SHALL_LLC_BYPASS_DEFINED
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init_2120[cpu]) return;
+    cout << "LLC Bypass [2120-KappaReduce-AlwaysLLC-CAMATPressure]:\n"
+         << "  Bypass IFF κ_short > κ_long AND κ_reduce% >= C-AMAT(DRAM)/CPA(DRAM)" << endl;
+    llc_bypass_init_2120[cpu] = true;
+}
+
+inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    llc_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    double k_now  = get_kappa_short(cpu, LPM_LLC);
+    double k_long = get_kappa_long(cpu, LPM_LLC);
+    if (k_long < 1e-6) return false;
+    if (k_now <= k_long) return false;
+
+    double dram_camat = lpm[cpu][LPM_DRAM].met[MET_WL].camat_activeMemCyDivAccesses;
+    double dram_cpa   = lpm[cpu][LPM_DRAM].met[MET_WL].cpa_totalCyDivAccesses;
+    if (dram_cpa < 1.0) return false;
+
+    double next_pressure = dram_camat / dram_cpa;
+    if (next_pressure > 1.0) next_pressure = 1.0;
+
+    double k_reduce_pct = k_now / k_long;
+    return (k_reduce_pct >= next_pressure);
+}

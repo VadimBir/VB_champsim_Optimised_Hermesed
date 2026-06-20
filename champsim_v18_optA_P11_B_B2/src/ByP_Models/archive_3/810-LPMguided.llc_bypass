@@ -1,0 +1,42 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 810 — LPMguided at LLC
+// lpmr(t)>lpmr(n)*ratio && n_free>2 && t_pressure>0.3
+
+#define DBG_810 1
+
+inline bool llc_bypass_init_810[NUM_CPUS] = {};
+inline uint64_t llc_dbg_counter_810[NUM_CPUS] = {};
+
+#define SHALL_LLC_BYPASS_DEFINED
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init_810[cpu]) return;
+    cout << "LLC Bypass [810-LPMguided]: lpmr(t)>lpmr(n)*ratio && n_free>2 && t_pressure>0.3" << endl;
+    llc_bypass_init_810[cpu] = true;
+}
+
+inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    llc_bypass_initialize(cpu, L1D, L2C, LLC);
+
+double lpm_t  = lpm[cpu][LPM_LLC].wsm.lpmr_activeMemCyDivIdealCy;
+double lpm_n  = lpm[cpu][LPM_DRAM].wsm.lpmr_activeMemCyDivIdealCy;
+int    n_free = LLC->MSHR.SIZE - LLC->MSHR.occupancy;
+int    t_free = LLC->MSHR.SIZE - LLC->MSHR.occupancy;
+double t_pressure = 1.0 - (double)t_free / (double)LLC->MSHR.SIZE;
+bool byp = (lpm_t > lpm_n * 0.25) && (n_free > 2) && (t_pressure > 0.3);
+
+#if DBG_810
+    if ((++llc_dbg_counter_810[cpu] & 0xFFFF) == 0) {
+        printf("    [810-LLC] -> %s\n", byp ? "BYP" : "---");
+    }
+#endif
+
+    return byp;
+}

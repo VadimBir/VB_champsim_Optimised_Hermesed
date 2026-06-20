@@ -1,0 +1,74 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+// USEFUL VARS:  usage example
+//  * Cached metrics available without sim_access:
+//  *   lpm[cpu][IS_L1D].c_amat_val   ← ω(L1D)/α(L1D)
+//  *   lpm[cpu][IS_L1D].apc_val      ← α(L1D)/ω(L1D)
+//  *   lpm[cpu][IS_L1D].lpmr_val     ← ω(L1D)/(IC×CPIexe)
+//  *   lpm[cpu][IS_L2C].mu()         ← miss-cycle fraction
+//  *   lpm[cpu][IS_L2C].kappa()      ← pure-miss fraction
+//  *
+//  * Also raw counters:
+//  *   lpm[cpu][IS_L1D].h, .m, .x, .e
+//  *   lpm[cpu][IS_L1D].omega()
+
+// L1D->MSHR.occupancy      L1D->MSHR.SIZE
+// L1D->RQ.occupancy        L1D->RQ.SIZE
+// L1D->PQ.occupancy        L1D->PQ.SIZE
+// L2C->MSHR.occupancy      L2C->MSHR.SIZE
+// L2C->RQ.occupancy        L2C->RQ.SIZE
+// L2C->PQ.occupancy        L2C->PQ.SIZE
+
+// CACHE TYPEs
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+
+static bool ByP_model_init = false;
+
+inline bool shall_L1D_Bypass_OnCacheMissedMSHRcap(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (ByP_model_init == false){
+        cout << "Bypass on WINDOW: \navailable = (double)free * camat\nrq_unmatch = 1.0 - (lpmr_l2c / lpmr_l1d) \npq_unmatch = 1.0 - (lpmr_llc / lpmr_l2c) \nimmediate = (double)L2C->RQ.occupancy * rq_unmatch * camat + (double)L2C->PQ.occupancy * pq_unmatch * camat \nfuture = apc_l1d * (lpmr_l2c / lpmr_l1d) * camat + camat;" << endl;
+        
+        ByP_model_init = true;
+    }
+
+    // L1D MSHR not sufficiently occupied → no need to bypass
+    if (L1D->MSHR.occupancy < L1D->MSHR.SIZE)
+        return false;
+
+    uint32_t free = L2C->MSHR.SIZE - L2C->MSHR.occupancy;
+    if (free == 0)
+        return false;
+
+    double camat    = lpm[cpu][L2C_type].c_amat_val;
+    double apc_l1d  = lpm[cpu][L1D_type].apc_val;
+
+    double lpmr_l1d = lpm[cpu][L1D_type].lpmr_val;
+    double lpmr_l2c = lpm[cpu][L2C_type].lpmr_val;
+    double lpmr_llc = lpm[cpu][LLC_type].lpmr_val;
+
+    // Clamp very small values
+    if (lpmr_l1d < 0.001) lpmr_l1d = 0.001;
+    if (lpmr_l2c < 0.001) lpmr_l2c = 0.001;
+    if (lpmr_llc < 0.001) lpmr_llc = 0.001;
+
+    double rq_unmatch = 1.0 - (lpmr_l2c / lpmr_l1d);
+    if (rq_unmatch < 0)
+        rq_unmatch = 0;
+
+    double pq_unmatch = 1.0 - (lpmr_llc / lpmr_l2c);
+    if (pq_unmatch < 0)
+        pq_unmatch = 0;
+
+    double immediate =
+          (double)L2C->RQ.occupancy * rq_unmatch * camat
+        + (double)L2C->PQ.occupancy * pq_unmatch * camat;
+
+    double future = apc_l1d * (lpmr_l2c / lpmr_l1d) * camat + camat;
+
+    double available = (double)free * camat;
+
+    return available > (immediate + future);
+}

@@ -1,0 +1,40 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 412a — ByPw — LLC (κ short/long ratio + DRAM CPA-bloat freeze)
+
+inline bool llc_bypass_init_412a[NUM_CPUS] = {};
+
+#define SHALL_LLC_BYPASS_DEFINED
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init_412a[cpu]) return;
+    cout << "LLC Bypass [412a-ByPw-KappaRatio-CPAFreeze]\n";
+    llc_bypass_init_412a[cpu] = true;
+}
+
+inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    llc_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    double k_now  = get_kappa_short(cpu, LPM_LLC);
+    double k_long = get_kappa_long(cpu, LPM_LLC);
+    if (k_long < 1e-6) return false;
+    if (k_now <= k_long) return false;
+
+    double cpa_s = lpm[cpu][LPM_DRAM].met[MET_WS].cpa_totalCyDivAccesses;
+    double cpa_l = lpm[cpu][LPM_DRAM].met[MET_WL].cpa_totalCyDivAccesses;
+    if (cpa_l < 1.0) return false;
+    if (cpa_s > 1.5 * cpa_l) return false;
+
+    double camat = lpm[cpu][LPM_DRAM].met[MET_WL].camat_activeMemCyDivAccesses;
+    double next_pressure = camat / cpa_l;
+    if (next_pressure > 1.0) next_pressure = 1.0;
+
+    double k_reduce_pct = k_now / k_long;
+    return (k_reduce_pct >= next_pressure);
+}

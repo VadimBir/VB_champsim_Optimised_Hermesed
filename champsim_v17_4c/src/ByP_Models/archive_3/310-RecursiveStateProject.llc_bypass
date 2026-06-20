@@ -1,0 +1,78 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// ============================================================
+// MODEL 304 — RecursiveStateProject (LLC level)
+// Paper: Liu et al. JCST 36(1) 2021, eq. 18, 30, 32, 41–42
+//
+// Terminal level of the recursive state projection chain.
+// Only fires when neither L1 nor L2 bypassed (enforced upstream).
+//
+// Step 1 — Is current LLC miss a pure miss?
+//   overlap_LLC = w_φ(LLC) × w_APC(LLC) × w_MST(LLC)
+//   If ≥ 1.0 → miss overlapped at LLC → NO BYPASS (already non-stalling).
+//   If < 1.0 → pure stall at LLC → bypass to DRAM is the only option.
+//
+// Step 2 — Project DRAM state after bypass:
+//   DRAM has no MSHR cap in the bypass model (accepts all requests).
+//   No "MSHR > 0" check. The only question is whether LLC's pure miss
+//   stall is worse than DRAM's pure miss stall.
+//
+//   w_MST(DRAM): tracked by lpm[cpu][LPM_DRAM]. Represents current
+//   windowed pure-miss stall density at DRAM level.
+//
+//   Case: overlap_LLC < 1.0 (LLC miss is pure)
+//     → Compare MST(LLC) vs MST(DRAM):
+//       If MST(LLC) > MST(DRAM): DRAM cheaper → BYPASS to DRAM.
+//       If MST(LLC) ≤ MST(DRAM): keeping at LLC is better → NO BYPASS.
+//
+//   Reasoning: LLC bypass to DRAM saves the LLC service latency on
+//   this miss but incurs DRAM latency directly. If DRAM is streaming
+//   (low MST because many DRAM requests overlap), bypass is cheap.
+//   If DRAM is saturated (high MST), bypass is expensive.
+//
+// This is the terminal case: no further level to recurse into.
+// DRAM latency is the absolute floor — cannot push down further.
+// ============================================================
+
+inline bool llc_bypass_init[NUM_CPUS] = {};
+
+#define SHALL_LLC_BYPASS_DEFINED
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init[cpu]) return;
+    cout << "LLC Bypass [310-RecursiveStateProject]:\n"
+         << "  Step1: bypass if w_phi(LLC)*w_APC(LLC)*w_MST(LLC) < 1.0 (pure miss at LLC)\n"
+         << "  Step2: bypass to DRAM only if MST(LLC) > MST(DRAM)\n"
+         << "  Terminal case: DRAM is floor, no further recursion" << endl;
+    llc_bypass_init[cpu] = true;
+}
+
+inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    llc_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    const LPM_Tracker& tllc  = lpm[cpu][LPM_LLC];
+    const LPM_Tracker& tdram = lpm[cpu][LPM_DRAM];
+
+    // --- Step 1: is current LLC miss a pure miss? ---
+    double w_phi_llc   = tllc.w.φ_hitCyFracOfActiveCy();
+    double w_apc_llc   = tllc.wm.apc_accessesDivActiveMemCy;
+    double w_mst_llc   = tllc.wm.mst_pureMissCyDivAccesses;
+    double overlap_llc = w_phi_llc * w_apc_llc * w_mst_llc;
+
+    if (overlap_llc >= 1.0) return false;  // LLC miss covered -> not pure -> skip
+
+    // --- Step 2: terminal — compare LLC pure miss cost vs DRAM pure miss cost ---
+    double w_mst_dram = tdram.wm.mst_pureMissCyDivAccesses;
+
+    // Bypass iff LLC stall is more expensive than DRAM stall.
+    // When DRAM is saturated (high w_mst_dram), bypassing makes things worse.
+    // When DRAM is streaming (low w_mst_dram, many overlapping DRAM requests),
+    // bypassing is free/cheap.
+    return (w_mst_llc > w_mst_dram);
+}

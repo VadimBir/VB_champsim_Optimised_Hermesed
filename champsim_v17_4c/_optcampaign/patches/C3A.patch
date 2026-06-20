@@ -1,0 +1,100 @@
+--- /c/Users/vasum/VB_champsim_Optimised_Hermesed/champsim_v17/inc/ooo_cpu.h	2026-06-13 04:09:56.426558300 +0900
++++ /c/Users/vasum/VB_champsim_Optimised_Hermesed/champsim_v17_C3A/inc/ooo_cpu.h	2026-06-19 02:23:09.075212400 +0900
+@@ -50,39 +50,53 @@
+ private:
+     // Map: register -> ALL ROB indices that write to it (in order)
+     // std::unordered_map<uint32_t, std::vector<uint16_t>> reg_producers;
+-    ankerl::unordered_dense::map<uint32_t, std::vector<uint16_t>> reg_producers;
++    // C3A: per-register FRONT-CURSOR. `front` is the index of the first element
++    //      not yet known to be a leading tombstone. Advancing `front` past leading
++    //      tombstones amortizes the remove scan / reverse iteration toward O(1)
++    //      without changing observable order or results: leading entries below the
++    //      cursor are always TOMBSTONE, which both the remove-scan (value compare)
++    //      and get_latest_producer (explicit TOMBSTONE skip) ignore anyway.
++    struct ProducerList {
++        uint32_t front = 0;            // front-cursor: first non-leading-tombstone slot
++        std::vector<uint16_t> vec;     // ROB indices in insertion (program) order
++    };
++    ankerl::unordered_dense::map<uint32_t, ProducerList> reg_producers;
+     uint16_t rob_size;
+ public:
+     void init() {
+         reg_producers.clear();
+         reg_producers.reserve(256);
+         rob_size = ROB_SIZE;
+-        
++
+         constexpr uint8_t MAX_REGISTER_NUM = NUM_INSTR_DESTINATIONS;
+         for (uint8_t reg = 0; reg < MAX_REGISTER_NUM; reg++) {
+-            reg_producers[reg].reserve(ROB_SIZE);
++            reg_producers[reg].vec.reserve(ROB_SIZE);
+         }
+-        
++
+     }
+-    
++
+     // Add when instruction enters ROB
+     void add_producer(uint16_t rob_index, const uint8_t (&destination_registers)[NUM_INSTR_DESTINATIONS_SPARC]) {
+         for (uint32_t i = 0; i < NUM_INSTR_DESTINATIONS; i++) {
+             if (destination_registers[i] != 0) {
+-                reg_producers[destination_registers[i]].emplace_back(rob_index);
++                reg_producers[destination_registers[i]].vec.emplace_back(rob_index);
+             }
+         }
+     }
+-    
++
+     static constexpr uint16_t TOMBSTONE = UINT16_MAX;
+     uint16_t tombstone_count = 0;
+ 
+     // Get latest valid producer in ROB window (early return, skips tombstones)
+     int get_latest_producer(uint32_t reg, uint32_t current_rob, uint32_t rob_head) {
+-        auto& vec = reg_producers[reg];
++        auto& pl = reg_producers[reg];
++        auto& vec = pl.vec;
+         if (vec.empty()) return -1;
+ 
+-        for (auto rit = vec.rbegin(); rit != vec.rend(); ++rit) {
++        // Reverse-iterate down to the front-cursor only. Everything below `front`
++        // is a leading TOMBSTONE (which the original loop would `continue` past),
++        // so bounding here yields the identical result.
++        for (auto rit = vec.rbegin(); rit != vec.rend() - pl.front; ++rit) {
+             if (*rit == TOMBSTONE) continue;
+             if ((rob_head <= current_rob) ?
+                 ((*rit >= rob_head) && (*rit < current_rob)) :
+@@ -97,9 +111,19 @@
+             if (uint8_t reg = instr->destination_registers[i]) {
+                 auto it = reg_producers.find(reg);
+                 if (it != reg_producers.end()) {
+-                    auto& vec = it->second;
+-                    for (auto& v : vec) {
+-                        if (v == rob_index) { v = TOMBSTONE; ++tombstone_count; break; }
++                    auto& pl = it->second;
++                    auto& vec = pl.vec;
++                    // Scan from the front-cursor: slots below it are leading
++                    // TOMBSTONEs that can never equal a real rob_index, so skipping
++                    // them changes nothing about which element gets tombstoned.
++                    for (uint32_t k = pl.front; k < vec.size(); ++k) {
++                        if (vec[k] == rob_index) {
++                            vec[k] = TOMBSTONE; ++tombstone_count;
++                            // Advance the cursor past any now-leading tombstones.
++                            while (pl.front < vec.size() && vec[pl.front] == TOMBSTONE)
++                                ++pl.front;
++                            break;
++                        }
+                     }
+                 }
+             }
+@@ -108,8 +132,10 @@
+     }
+ 
+     void compact() {
+-        for (auto& [reg, vec] : reg_producers) {
++        for (auto& [reg, pl] : reg_producers) {
++            auto& vec = pl.vec;
+             vec.erase(std::remove(vec.begin(), vec.end(), TOMBSTONE), vec.end());
++            pl.front = 0;   // all tombstones removed; reset cursor
+         }
+         tombstone_count = 0;
+     }

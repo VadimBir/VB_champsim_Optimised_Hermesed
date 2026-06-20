@@ -1,0 +1,33 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 1500 — MLPcost — L2
+
+inline bool l2_bypass_init_1500[NUM_CPUS] = {};
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init_1500[cpu]) return;
+    cout << "L2 Bypass [1500-MLPcost]: low overlap + high kappa" << endl;
+    l2_bypass_init_1500[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    auto& bws = lpm[cpu][LPM_L2C].bkt[BKT_WS];
+    uint64_t omega = bws.ω_activeMemCy();
+    if (omega == 0) return false;
+
+    double overlap_frac = (double)bws.cy[CY_X] / (double)omega;
+    if (overlap_frac > 0.25) return false;
+
+    double kap = bws.κ_pureMissFracOfMissCy();
+    return (kap > 0.40);
+}

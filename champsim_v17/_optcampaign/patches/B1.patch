@@ -1,0 +1,59 @@
+--- /c/Users/vasum/VB_champsim_Optimised_Hermesed/champsim_v17/src/ooo_cpu.cc	2026-06-16 23:25:19.641162900 +0900
++++ /c/Users/vasum/VB_champsim_Optimised_Hermesed/champsim_v17_B1/src/ooo_cpu.cc	2026-06-19 02:22:52.833190600 +0900
+@@ -842,13 +842,23 @@
+ 
+     // Fused single-pass: cycle_ready + AND + range mask + stall + dispatch
+     // Only touches words in the active range, not all ROB_WORDS
+-    auto fused_scan = [=, this](uint32_t start, uint32_t end) -> bool {
++    // B1: bind explicit __restrict__ scalar locals so the compiler keeps the
++    // four distinct (non-aliasing) array pointers + ccp + self in registers
++    // across the per-word loop instead of spilling/reloading them around the
++    // opaque do_scheduling() call. Codegen-only; semantics identical.
++    const uint64_t* __restrict__ fc_l   = fc_ptr;
++    const uint64_t* __restrict__ sinf_l = sinf_p;
++    const uint64_t* __restrict__ scmp_l = scmp_p;
++    const uint64_t* __restrict__ ec_l   = ec_ptr;
++    const uint64_t                ccp_l = ccp;
++    O3_CPU* __restrict__          self  = this;
++    auto fused_scan = [fc_l, sinf_l, scmp_l, ec_l, ccp_l, self](uint32_t start, uint32_t end) -> bool {
+         const uint32_t ws = start >> 6;
+         const uint32_t we = (end + 63) >> 6;
+         for (uint32_t w = ws; w < we && w < ROB_WORDS; w++) {
+             const uint32_t base = w << 6;
+             if (w + 1 < we)
+-                __builtin_prefetch(&ec_ptr[(w + 1) << 6], 0, 1);
++                __builtin_prefetch(&ec_l[(w + 1) << 6], 0, 1);
+ 
+             uint64_t rmask = ~0ULL;
+             if (w == ws) rmask &= ~((1ULL << (start & 63)) - 1);
+@@ -856,17 +866,17 @@
+ 
+             uint64_t cr = 0;
+             for (uint32_t b = 0; b < 64; b++)
+-                cr |= (uint64_t)PCYCLE_LE(ec_ptr[base + b], ccp) << b;
++                cr |= (uint64_t)PCYCLE_LE(ec_l[base + b], ccp_l) << b;
+ 
+-            uint64_t ready = fc_ptr[w] & cr & ~sinf_p[w] & ~scmp_p[w] & rmask;
++            uint64_t ready = fc_l[w] & cr & ~sinf_l[w] & ~scmp_l[w] & rmask;
+ 
+-            uint64_t stall = ~(fc_ptr[w] & cr) & rmask;
++            uint64_t stall = ~(fc_l[w] & cr) & rmask;
+             if (stall) {
+                 ready &= (1ULL << (__builtin_ctzll(stall))) - 1;
+                 while (ready) {
+                     bit_offset = __builtin_ctzll(ready);
+                     i = w * 64 + bit_offset;
+-                    do_scheduling(i);
++                    self->do_scheduling(i);
+                     ready &= ready - 1;
+                 }
+                 return false;
+@@ -875,7 +885,7 @@
+             while (ready) {
+                 bit_offset = __builtin_ctzll(ready);
+                 i = w * 64 + bit_offset;
+-                do_scheduling(i);
++                self->do_scheduling(i);
+                 ready &= ready - 1;
+             }
+         }

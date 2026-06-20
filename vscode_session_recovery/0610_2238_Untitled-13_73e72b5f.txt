@@ -1,0 +1,290 @@
+  ┌──────────┬────────────────────────────────────────────────────────────────────┬───────────┐
+  │  AGENT   │                                TASK                                │   TYPE    │
+  ├──────────┼────────────────────────────────────────────────────────────────────┼───────────┤
+  │ P16      │ inner HashSet → inline small-set                                   │ Opus impl │
+  ├──────────┼────────────────────────────────────────────────────────────────────┼───────────┤
+  │ P17      │ emhash reserve + load-factor + u64 mixer                           │ Opus impl │
+  ├──────────┼────────────────────────────────────────────────────────────────────┼───────────┤
+  │ P18      │ address_to_entries slot shrink                                     │ Opus impl │
+  ├──────────┼────────────────────────────────────────────────────────────────────┼───────────┤                                                                                                                                                                                                           
+  │ P19      │ rob_maps slot value packing                                        │ Opus impl │
+  ├──────────┼────────────────────────────────────────────────────────────────────┼───────────┤
+  │ P20      │ persistent sched dirty flags (Idea A, 15 writer sites)             │ Opus impl │
+  ├──────────┼────────────────────────────────────────────────────────────────────┼───────────┤
+  │ P21      │ sched_mem per-word skip (Idea D)                                   │ Opus impl │
+  ├──────────┼────────────────────────────────────────────────────────────────────┼───────────┤                                                                                                                                                                                                              
+  │ P22      │ CACHE::operate full idle-skip (C1, LPM-tick-before-gate fix)       │ Opus impl │                                                                                                                                                                                                           
+  ├──────────┼────────────────────────────────────────────────────────────────────┼───────────┤
+  │ P23      │ DRAM next-event gate (I2, ~2-2.8% est) + I1 sanity check           │ Opus impl │
+  ├──────────┼────────────────────────────────────────────────────────────────────┼───────────┤
+  │ FALCON-1 │ perf-data high-win explorer (build flags/allocator/stall clusters) │ Fable     │
+  ├──────────┼────────────────────────────────────────────────────────────────────┼───────────┤
+  │ FALCON-2 │ code-read: fewer-instr/fewer-branch transforms                     │ Fable     │
+  └──────────┴────────────────────────────────────────────────────────────────────┴───────────┘
+
+
+
+  # champsim_v17_DRAM host-perf optimization report — 2026-06-09
+
+Gate (bit-exact): `FINAL ROI CORE AVG IPC: ;0.51803;` + 16x execution_checksum `140039767200773` + LPM ROI tables digit-identical.
+Baseline (user, uncontended): `=== BINARY TIME: 315.541s (5.26m) ===`
+All times below CONTENDED (parallel sims on host) unless noted. Serialized retime pending.
+
+## 1. Standalone branches (one optimization per dir)
+
+| BRANCH | RESULT | WHAT CHANGED                                                              | TIME      | OUTPUT LINE                          |
+|--------|--------|---------------------------------------------------------------------------|-----------|--------------------------------------|
+| P1     | PASS   | LPM class-run accumulator (batch constant-class cycles), inc/lpm_tracker.h | 311.458s  | FINAL ROI CORE AVG IPC: ;0.51803;    |
+| P2     | PASS   | DRAM sched num_unsched early-out + scan shadow arrays, dram_controller.cc + block.h | 324.449s  | FINAL ROI CORE AVG IPC: ;0.51803;    |
+| P3     | PASS   | get_way tagv shadow ((tag<<1)|valid packed scan), cache.h/cache.cc/lru    | 326.113s  | FINAL ROI CORE AVG IPC: ;0.51803;    |
+| P4     | PASS   | LPM_Tracker transpose cy_t[class][bucket] (1-row tick), lpm_tracker.h     | 316.906s  | FINAL ROI CORE AVG IPC: ;0.51803;    |
+| P5     | PASS*  | schedule_instruction lazy fused_scan (stop at first stall), ooo_cpu.cc    | 393.276s* | FINAL ROI CORE AVG IPC: ;0.51803;    |
+| P6     | PASS   | check_queue reads fallback_value direct (proxy machinery proven dead), block.cc | 316.814s  | FINAL ROI CORE AVG IPC: ;0.51803;    |
+| P7     | PASS   | emhash7 swap: rob_maps + address_to_lq + address_to_entries, ooo_cpu.cc   | 318.602s  | FINAL ROI CORE AVG IPC: ;0.51803;    |
+| P7c    | PASS   | emhash7::HashSet swap: pending_lqs + lqs_to_process + address_to_lq inner set (hash_set3.hpp added) | 314.606s  | FINAL ROI CORE AVG IPC: ;0.51803;    |
+| P8     | PASS   | LPM_Tracker hot-field colocation reorder (sizeof 704→688, 9→6 lines), lpm_tracker.h | 320.968s  | FINAL ROI CORE AVG IPC: ;0.51803;    |
+| P9     | PASS   | cache.h `auto& re` ref hoist (item D; 6 analyzer items honest-skipped)    | 326.853s  | FINAL ROI CORE AVG IPC: ;0.51803;    |
+| P10    | PASS   | AddressProxy REMOVED → plain uint64 (PACKET 256→192B, QUEUE 672→144B), block.h | 314.382s  | FINAL ROI CORE AVG IPC: ;0.51803;    |
+| P12    | SKIP   | dep-array colocation — premise false (one array, not two); no edits       | —         | — (honest skip, WORKLOG only)        |
+| P14    | PASS   | ooo_model_instr reorder 136→128B (3→2 cachelines), inc/instruction.h      | 289.647s  | FINAL ROI CORE AVG IPC: ;0.51803;    |
+| P15    | PASS   | schedule_instr+schedule_mem dirty-check skip-guards (zero-superset OR → return), ooo_cpu.cc; base=v18; 1c 13.732s vs 14.013s | 292.255s  | FINAL ROI CORE AVG IPC: ;0.51803;    |
+| P23    | PASS   | DRAM controller next-event gate (skip channel loop when now<min), dram_controller.cc; base=v18.11; I1=NO-OP (SANITY off) | 287.904s  | FINAL ROI CORE AVG IPC: ;0.51803;    |
+| P28    | PASS   | fetch_instruction PACKET template hoist, ooo_cpu.cc; base=v18.11 | 285.202s  | FINAL ROI CORE AVG IPC: ;0.51803;    |
+| W3-B   | PASS   | B8 (compact thresh 128→32) + B1 (lambda capture/spill hoist: __restrict ptrs + noinline do_scheduling/reg_dependency) + B3 (per-word dirty pre-skip strict-superset of P15 with safe stall short-circuit when ~fc&rmask!=0); B2 deferred (linked-list spec misses ROB-slot reuse invalidation); ooo_cpu.cc(+tracker hdr); base=v19 | 269.656s | FINAL ROI CORE AVG IPC: ;0.51803;    |
+
+*P5 time heavily contended + suspect slower than base; excluded from stack until serialized retime proves otherwise.
+
+## 2. Combination branches
+
+| BRANCH | RESULT | WHAT CHANGED                                                | TIME      | OUTPUT LINE                       |
+|--------|--------|--------------------------------------------------------------|-----------|-----------------------------------|
+| P1X    | PASS   | P1 + P10 (accumulator + proxy removal); peak RSS −5.8 MB    | 299.734s  | FINAL ROI CORE AVG IPC: ;0.51803; |
+| P11    | PASS   | P1X + O3 hoists/prefetch (exec_mem, sched_mem, update_rob)  | 298.235s  | FINAL ROI CORE AVG IPC: ;0.51803; |
+| P13    | PASS   | P11 + RT-queue event_cycle mirror arrays (kills 8.79% LSQ-line stall load) | 303.996s  | FINAL ROI CORE AVG IPC: ;0.51803; |
+
+## 3. STACK — one-by-one consistency proof (cumulative, gate after EACH add)
+
+| STAGE | ADDED            | RESULT | TIME      | CONTENTION | OUTPUT LINE                       |
+|-------|------------------|--------|-----------|------------|-----------------------------------|
+| 0     | base = P1        | PASS   | 311.458s  | —          | FINAL ROI CORE AVG IPC: ;0.51803; |
+| 1     | +P2              | PASS   | 311.260s  | 4 sims     | FINAL ROI CORE AVG IPC: ;0.51803; |
+| 2     | +P6              | PASS   | 305.687s  | 7 sims     | FINAL ROI CORE AVG IPC: ;0.51803; |
+| 3     | +P7 (rob_maps)   | PASS   | 303.386s  | 4 sims     | FINAL ROI CORE AVG IPC: ;0.51803; |
+| 4     | +P9D             | PASS   | 308.598s  | 1 sim      | FINAL ROI CORE AVG IPC: ;0.51803; |
+| 5     | +P8              | PASS   | 300.253s  | 1 sim      | FINAL ROI CORE AVG IPC: ;0.51803; |
+| 6     | +P10 (proxy removal, block.h merge w/ P2) | PASS | 295.022s  | 3 sims     | FINAL ROI CORE AVG IPC: ;0.51803; |
+| 7     | +P11 (O3 hoists) | PASS   | 295.149s  | 4 sims     | FINAL ROI CORE AVG IPC: ;0.51803; |
+| 8     | +P7 extended map swaps | PASS | 297.424s | 1 sim     | FINAL ROI CORE AVG IPC: ;0.51803; |
+| 9     | +P7c set swaps (emhash HashSet) | PASS | 296.824s | 1 sim | FINAL ROI CORE AVG IPC: ;0.51803; |
+| 10    | +P14 ooo_model_instr 128B reorder | PASS | 290.574s | 3 sims | FINAL ROI CORE AVG IPC: ;0.51803; |
+| 11    | +P15 schedule dirty-check guards | PASS | 287.400s | 3 sims | FINAL ROI CORE AVG IPC: ;0.51803; |
+
+v18 stages 10-11 added (P14+P15). Every stage gate-PASS bit-exact (IPC + 16x checksums; LPM ROI diff vs P2 ref = 0 lines for stages 8-11).
+
+## 4. Profiles (gate-exact CLI, bit-exact IPC both runs)
+
+| BINARY | HOST CPI | L1d MISS | BR MISS | TOP SELF%                                            |
+|--------|----------|----------|---------|------------------------------------------------------|
+| P1     | 0.467    | 12.50%   | 1.54%   | exec_mem 11.08 / sched_mem 10.83 / sched_inst 8.83   |
+| P1X    | 0.453    | 12.82%   | 1.56%   | sched_mem 11.11 / exec_mem 10.82 / sched_inst 9.30   |
+
+DRAM controller collapsed 23.79% → 4.04% (P1 accumulator). LPM tick left top-15. O3 back-end now dominates (~37%).
+
+## 5. Pending at report time
+
+- STACK2 stages 6-8 (P10/P11/P7ext merges) — agent running, will append.
+- P13 LANDED: PASS 303.996s @4-sim contention (table above); no-mutation-while-queued proof in P13/WORKLOG.md.
+- event_cycle u64→u32 probe VERDICT: UNSAFE — raw unbounded cycles stored; u32 wrap re-opens the documented PCYCLE wrap-deadlock bug class (cycle_pack.h disabled packing for this reason; a prior u32 ec_ptr attempt exists in .bk backups). NOT pursued.
+- SERIALIZED retime (idle host, baseline + all PASS dirs) — required for true deltas.
+
+## 6. Key discoveries
+
+- AddressProxy was dead machinery: vec_ptr nullptr project-wide (ctor value-copy bug never bound; quick_reset caller commented out). Removal = biggest single win (PACKET −1 cache line).
+- SPEC_P6 original vector-scan FAILED (0.44141) — exposed the above; honest abort → option B → P10.
+- LPM accumulator was initially INERT (extra guard); fix made it the strongest base (311s standalone).
+- All landed changes proven bit-exact: IPC + 16 checksums + full LPM ROI tables digit-identical per branch.
+
+## 7. FINAL SERIALIZED TIMING (idle host, one sim at a time)
+
+Host idle status: confirmed before and after run sequence — `pgrep -c -f quick_v14` returned 1 (self-match only); no `perceptron-no-Zion1` simulator processes present at any point. All 4 sims ran strictly back-to-back on otherwise idle host.
+
+| DIR                        | RESULT  | TIME       | Δ vs baseline       | OUTPUT LINE                                         |
+|----------------------------|---------|------------|---------------------|-----------------------------------------------------|
+| champsim_v17_DRAM          | 0.51803 | 327.909s   |       0.000s ( 0.00%) | `=== BINARY TIME: 327.909s (5.47m) ===`             |
+| champsim_v17_DRAM_STACK    | 0.51803 | 293.054s   |     -34.855s (-10.63%) | `=== BINARY TIME: 293.054s (4.88m) ===`             |
+| champsim_v17_DRAM_P11      | 0.51803 | 296.192s   |     -31.717s ( -9.67%) | `=== BINARY TIME: 296.192s (4.94m) ===`             |
+| champsim_v17_DRAM_P13      | 0.51803 | 298.596s   |     -29.313s ( -8.94%) | `=== BINARY TIME: 298.596s (4.98m) ===`             |
+
+All four runs gate-matched `FINAL ROI CORE AVG IPC: ;0.51803;` (bit-exact). No anomalies.
+
+## 8. v18 FINAL MERGED DIR
+
+DIR: `/home/cc/champsim_VB/champsim_v18_DRAM`
+SOURCE: copied from `/home/cc/champsim_VB/champsim_v17_DRAM_STACK` (STACK stages 0-9, the fast-only merged set). P3/P4/P5/P13 intentionally excluded as slower / suspect per Section 3 evidence.
+CREATED: 2026-06-10. Clean rebuild forced (bin/ binary + obj/ tree + 4 stage backup files removed before gate).
+
+### Gate PASS evidence (run 1, /tmp/v18_gate.log)
+```
+FINAL ROI CORE AVG IPC: ;0.51803;
+Core_0_execution_checksum 140039767200773
+... (all 16 cores) ...
+Core_15_execution_checksum 140039767200773
+=== BINARY TIME: 295.661s (4.93m) ===
+```
+Checksum match: 16/16 cores at 140039767200773.
+LPM ROI per-CPU diff vs `/home/cc/champsim_VB/champsim_v17_DRAM_P2/P2_stage2_sim.log`: CPU0..CPU15 all diff_lines=0. TOTAL_LPM_DIFF=0 (bit-identical).
+
+### Serialized retime (idle host, /tmp/v18_retime.log)
+Host idle confirmed: `pgrep -c -f quick_v14` = 1 (self), no `perceptron-no-Zion1` sim binaries running.
+```
+FINAL ROI CORE AVG IPC: ;0.51803;
+Core_0_execution_checksum 140039767200773
+Core_15_execution_checksum 140039767200773
+=== BINARY TIME: 290.264s (4.84m) ===
+```
+
+| DIR                  | RESULT  | TIME      | Δ vs baseline 327.909s | Δ vs STACK 293.054s |
+|----------------------|---------|-----------|------------------------|---------------------|
+| champsim_v18_DRAM    | 0.51803 | 290.264s  | -37.645s (-11.48%)     | -2.790s (-0.95%)    |
+
+v18 = officially fastest gate-proven bit-exact merged tree.
+
+Note: stages 10-11 merged on 2026-06-10 (+P14 ooo_model_instr 128B reorder; +P15 schedule dirty-check guards). New 16c GATE B contended times: stage 10 = 290.574s (4.84m); stage 11 = 287.400s (4.79m). Both PASS bit-exact with LPM ROI per-CPU diff vs P2 = 0 lines.
+
+
+## 9. WAVE-2 SEQUENTIAL RESULTS (2026-06-10, idle host, strictly sequential)
+
+All runs serial-foreground, one sim at a time, host idle (`pgrep -c -f quick_v14`=1 self). Gate cmd:
+`MODEL=4000fix-KappaPhiL1L2; ./quick_v14.sh --glc --dir <D> -p 1 --L1 no --L2 Zion1 --L3 no --trace LLM256.Pythiapre30Phase15xpost20-21M_14M -d 1 -c {1,16} -bypca --l1byp $MODEL --l2byp $MODEL --l3byp $MODEL --ocp none --repl lru --time`. Gate A target IPC=0.55145 / Gate B IPC=0.51803 + 16x checksum=140039767200773 + LPM ROI diff vs /home/cc/champsim_VB/champsim_v17_DRAM_P2/P2_stage2_sim.log = 0 lines.
+
+Baseline anchor for Δ: v18_DRAM serial 16c = **286.216s** (rerun 2026-06-10 09:07).
+
+| BRANCH    | RESULT       | WHAT CHANGED                                                                                                | 1c TIME  | 16c TIME  | Δ vs v18 base       | OUTPUT LINE                       |
+|-----------|--------------|-------------------------------------------------------------------------------------------------------------|----------|-----------|---------------------|-----------------------------------|
+| P16       | PASS         | inline SmallLqSet (7 inline + heap-overflow) replacing emhash7::HashSet for LQ_PendingLoads::address_to_lq  | 13.463s  | 287.089s  | +0.873s  (+0.30%)   | FINAL ROI CORE AVG IPC: ;0.51803; |
+| P17       | PASS         | EMH_INT_HASH=2 Murmur3 finalizer + LQ/ROB/SQ map pre-reserve to per-CPU SIZE                                 | 13.901s  | 293.113s  | +6.897s  (+2.41%)   | FINAL ROI CORE AVG IPC: ;0.51803; |
+| P18       | SKIP         | slot 88B floor (rejected pre-Wave2, see Section 1)                                                          | —        | —         | —                   | —                                 |
+| P19       | SKIP         | rob_maps reader dead (rejected pre-Wave2, see Section 1)                                                    | —        | —         | —                   | —                                 |
+| P19B      | PASS         | TRUE_SANITY_CHECK guards around 3 debug-mode rob_maps blocks (eliminate dead branches at NDEBUG)            | 13.433s  | 284.173s  | -2.043s  (-0.71%)   | FINAL ROI CORE AVG IPC: ;0.51803; |
+| P20       | FAIL         | persistent dirty-flag replacing P15 OR-fold predicate: deadlock — assertion `0` in print_deadlock at 2.206s | 2.206s   | n/a       | —                   | src/main.cc:908 Assertion '0' failed; Aborted (core dumped) |
+| P21       | PASS         | scan_and_schedule: skip word when `stall==0 && (ready[w]&rmask)==0` (bit-exact no-op short-circuit)         | 13.647s  | 282.230s  | -3.986s  (-1.39%)   | FINAL ROI CORE AVG IPC: ;0.51803; |
+| P22       | FAIL on proof| dirty-flag in fetch path violates has_work⇏miss_active=0 invariant (rejected pre-Wave2)                     | —        | —         | —                   | —                                 |
+| P23       | PASS         | DRAM ctrl_next_event_packed gate: skip `for ch` loop when no event due + WM idle (lazy refresh)             | 13.576s  | 287.904s  | +1.688s  (+0.59%)   | FINAL ROI CORE AVG IPC: ;0.51803; |
+| P24       | PASS         | retire loops: explicit `break` when head not ready (early-exit 4 spin no-op sites)                          | 12.621s  | 274.071s  | -12.145s (-4.24%)   | FINAL ROI CORE AVG IPC: ;0.51803; |
+| P25       | PASS         | Makefile codegen: drop `-fno-omit-frame-pointer` (L66) → -O3 default omits RBP, freed for register alloc    | 13.460s  | 285.395s  | -0.821s  (-0.29%)   | FINAL ROI CORE AVG IPC: ;0.51803; |
+| P26       | PASS         | DTLB inj: lazy PACKET template copy (sq_data_packet + lq_data_packet declared inside conditional)           | 13.463s  | 288.996s  | +2.780s  (+0.97%)   | FINAL ROI CORE AVG IPC: ;0.51803; |
+| P27       | PASS (slower)| ctz-iterate fc&rmask bits only for PCYCLE_LE in scan_and_schedule; algebraic stall rewrite                  | 17.287s  | 354.142s  | +67.926s (+23.73%)  | FINAL ROI CORE AVG IPC: ;0.51803; |
+| P28       | PASS         | F4: fetch_instruction PACKET template hoist (TRACE_TEMPLATE + FETCH_PACKET_TEMPLATE, 13/17 fields hoisted)  | 13.598s  | 285.499s  | -0.717s  (-0.25%)   | FINAL ROI CORE AVG IPC: ;0.51803; |
+
+All PASS rows: 16x execution_checksum = 140039767200773, LPM ROI per-CPU diff vs P2_stage2_sim.log = 0 lines (192 LPM lines compared).
+
+P23 16c (287.904s) was measured pre-Wave2 (WORKLOG L220-236, contended host); P25 16c (285.395s) measured pre-Wave2 (WORKLOG_P25 L84-95). Both kept verbatim; their reported time deltas may include residual contention.
+
+P25 stray row from /home/cc/champsim_VB/champsim_v18_DRAM_P25/OPT_REPORT.md is consolidated here (matches PASS 285.395s; codegen-only; no STACK conflict because Makefile is orthogonal to src/).
+
+### Ranking by Δ (negative = faster vs v18 baseline)
+
+1. **P24**  -12.145s  (-4.24%)  retire early-break
+2. P21  -3.986s  (-1.39%)  scan_and_schedule word-skip
+3. P19B -2.043s  (-0.71%)  TRUE_SANITY_CHECK guards
+4. P25  -0.821s  (-0.29%)  drop -fno-omit-frame-pointer (Makefile)
+5. P28  -0.717s  (-0.25%)  fetch_instruction PACKET template hoist
+6. P16  +0.873s  (+0.30%)  SmallLqSet (within noise)
+7. P23  +1.688s  (+0.59%)  DRAM ctrl_next_event_packed [pre-Wave2 contended]
+8. P26  +2.780s  (+0.97%)  lazy DTLB PACKET copy
+9. P17  +6.897s  (+2.41%)  EMH_INT_HASH=2 + map reserve
+10. P27  +67.926s (+23.73%) sparse-ctz PCYCLE_LE  (REGRESSION — keep IPC-exact, but DO NOT MERGE)
+
+P20 FAIL (deadlock) — restored from src/ooo_cpu.cc.P20_BK; not eligible for merge.
+
+### Recommended merge order (proven-winners only)
+
+Merge into a fresh v19 stack in this order; gate after each, rollback that stage on regression. Skip P27/P17/P26/P16/P23/P20.
+
+1. **P25 (Makefile)** — orthogonal to all src/ edits; merge first; no conflict surface.
+2. **P21** — 2-line append at scan_and_schedule (early-skip word); minimal hunk.
+3. **P19B** — 3 isolated TRUE_SANITY_CHECK guards around v18-existing debug blocks.
+4. **P24** — 5 isolated `break` inserts at distinct retire-loop sites (lines 1434/1459/1505/1531/1532 in P24_BK).
+5. **P28** — fetch_instruction template hoist; 2 PACKET hoists + per-loop field-write reshuffle.
+
+### ooo_cpu.cc function-conflict map (P16/P17/P20/P21/P24/P26/P27/P28)
+
+All seven PASS/-FAIL branches modify ONLY src/ooo_cpu.cc (P25 modifies Makefile only).
+
+| Branch | Function(s) touched in ooo_cpu.cc                                                 | Line region                              | Conflicts with                          |
+|--------|------------------------------------------------------------------------------------|------------------------------------------|------------------------------------------|
+| P16    | top-of-file SmallLqSet decl + LQ_PendingLoads::address_to_lq type                  | ~L298 type swap; new struct ~L297-384    | P17 (LQ_PendingLoads ctor); P19B (none)  |
+| P17    | LQ_PendingLoads ctor + ROB_HashTable ctor + SQ_AddressMap ctor + EMH_INT_HASH macro | ~L7 macro; ~L302/355/413 ctors           | P16 (LQ_PendingLoads layout)             |
+| P19B   | 3 #ifdef TRUE_SANITY_CHECK guards inside ROB_HashTable debug helpers               | ~L357/383/391                            | none                                     |
+| P20    | scan_and_schedule + schedule_instruction + schedule_memory_instruction (dirty flag) | ~L505/616/677/811/836/906/1118           | P21 (scan_and_schedule); P27 (scan_and_schedule body) — but P20 is FAIL anyway |
+| P21    | scan_and_schedule word-skip                                                        | ~L1143 (2 lines append)                  | P27 (same loop; replace strategy)        |
+| P24    | retire / commit_rob spin sites                                                     | ~L1434/1459/1505/1531/1532               | none (distinct from schedule path)       |
+| P26    | DTLB inject paths sq_data_packet / lq_data_packet                                  | ~L1401/1408 and ~L1472/1479              | none                                     |
+| P27    | scan_and_schedule PCYCLE_LE bit-iteration body                                     | ~L869-887                                | P21 (same loop word-level skip)          |
+| P28    | fetch_instruction PACKET template hoist (Loop 1 trace_packet, Loop 2 fetch_packet) | ~L748-761 and L785-797                   | none                                     |
+
+Pairwise-safe set for the recommended merge order: {P25, P21, P19B, P24, P28} — no two touch the same function body.
+
+## 10. v19 FINAL — v18 + P24 + P21 (stacked, 2026-06-10)
+
+**Composition:** v19 = v18(11 opts: P1+P2+P6+P7+P8+P9+P10+P11+P12+P14+P15) + P24 + P21.
+P19B/P25/P28 explicitly excluded per master directive.
+
+**Source:** `cp -a champsim_v18_DRAM champsim_v19_DRAM`; cleaned 3 stale binaries + 8 backup files.
+
+### Stage gate results
+
+| Stage | Add | 1c IPC | 1c BIN s | 16c IPC | 16x checksum | 16c BIN s | LPM diff vs P2 ref |
+|------:|-----|------:|---------:|--------:|:------------:|----------:|:------------------:|
+| 1 | +P24 | 0.55145 | 12.612 | 0.51803 | 140039767200773 | 271.962 | 0 |
+| 2 | +P21 | 0.55145 | 12.625 | 0.51803 | 140039767200773 | 269.573 | 0 |
+
+Both stages bit-exact (IPC + 16x checksum + LPM ROI all identical to v17_DRAM_P2 reference).
+
+### Official v19 16c sequential run
+
+```
+log: /tmp/v19_official_16c.log
+FINAL ROI CORE AVG IPC: ;0.51803;
+Core_0..15_execution_checksum 140039767200773 (16/16)
+=== BINARY TIME: 272.586s (4.54m) ===
+host load avg 1.39 (idle); pgrep -c -f quick_v14 = 1 (self)
+```
+
+### Deltas
+
+| Reference | Time (s) | Δ vs v19 | % |
+|---|---:|---:|---:|
+| v18 baseline (`/tmp/v18base_phase2.log`) | 286.216 | −13.630 | −4.76% |
+| P24-alone (Section 9 gate) | 274.071 |  −1.485 | −0.54% |
+| P21-alone (Section 9 gate) | 282.230 |  −9.644 | −3.42% |
+
+v19 reaches ≈ v18 − 4.76% wall-time at fully bit-exact IPC/checksums/LPM. P24 dominates (deeper savings inside execute_memory_instruction RT-loops); P21 contributes residual schedule_memory_instruction word-skip savings; their functions are disjoint so stack is additive without conflict.
+
+## Wave-3 Slice C — ACCEL_C update_rob retire-side trackers (2026-06-10)
+
+Section 1 row:
+
+| W3-C | PASS | C4 (tombstone-compact amortize), C5 (RegDep direct-index array), C3A (ADT vec front-cursor); C1 already-applied; C7 skipped per conservative bit-exact obligation; inc/instruction.h + inc/ooo_cpu.h; base=v19 | 270.277s | FINAL ROI CORE AVG IPC: ;0.51803; |
+| W3-D | PASS | D2 (lpm_operate signature overload taking LPM_Tracker& T; 3 cache.cc callers pass &lpm[c][ct] — kills per-call imul $0x2c0), D8 (port P28-F4: PACKET trace_packet/fetch_packet hoist via TRACE_TEMPLATE/FETCH_PACKET_TEMPLATE in fetch_instruction), D5 (skip WQ.check_queue when packet->instruction==1; WQ-writer audit proves L1I/ITLB packets never enter WQ), D1 (colocate run_clsbyp=uint16{cls<<8|byp_inc} shadow adjacent to prev_load_miss; fuse 5-way cmp/jne chain into 4-term dz_all with single u16 cmp); inc/lpm_tracker.h, src/cache.cc, src/ooo_cpu.cc; base=v19 | 271.432s | FINAL ROI CORE AVG IPC: ;0.51803; |
+| W3-A | PASS | A8 (__builtin_expect on operate_lsq 4-way RTS/RTL empty guard, hint-only); A4 already-applied in v19 base at cache.cc:1034 (`has_work==0` early-exit); A6 PARK (curr_cy/ccp already locally hoisted at ooo_cpu.cc:1398; further hoist needs CACHE::operate signature refactor); A3 PARK (operate-level has_work skip absorbs guard cost); A1 PARK (per-spec CAUTION re P3 SoA shadow no-clear-win; multi-hour refactor); src/ooo_cpu.cc; base=v19 | 275.129s | FINAL ROI CORE AVG IPC: ;0.51803; |
+| W3-B | PASS | B8 (compact threshold 128→32 in inc/ooo_cpu.h), B1 (lambda capture rewrite: `[=, this]` → explicit `__restrict__` scalar locals fc_l/sinf_l/scmp_l/ec_l/ccp_l/self at fused_scan, kills opaque-call spill reload at +0x86), B3 (per-word dirty pre-skip: `dirty_word = fc & ~sinf & ~scmp & rmask`; short-circuit return false before 64× AVX cr build when dirty_word==0 ∧ ~fc&rmask≠0); B2 PARK (largest refactor, spec recommends last; not applied by sibling); inc/ooo_cpu.h, src/ooo_cpu.cc; base=v19 | 271.529s | FINAL ROI CORE AVG IPC: ;0.51803; |
+
+
+
+THIS IS HOW I TEST THE DIR:
+MODEL="4000fix-KappaPhiL1L2" && ./quick_v14.sh --glc --dir champsim_v17_DRAM -p 1 --L1 no --L2 Zion1 --L3 no --trace LLM256.Pythiapre30Phase15xpost20-21M_14M -d 1 -c 16 -bypca --l1byp $MODEL --l2byp $MODEL --l3byp  $MODEL --ocp none --repl lru --time
+
+# THE EQUIVALENCY RESUTLS: 
+FINAL ROI CORE AVG IPC: ;0.51803;
+
+=== BINARY TIME: XXX.xxxs (X.XXm) ===
+
+# JOB: 
+1. CREATE A DUPLICATE OF THE DIR AND TRY THE SINGLE IMPLEMENTATION
+2. ONCE IMPLEMENTED, TEST IT OUT, AND TIME IT ...  
+3. YOU ACT AS A BRAIN FOR THE AGENT TO GO AND IMPLEMENT IT (YOU SHOULD USE OPUS AGENT, BUT NOTE THAT THERE MAY BE A FAKINGNESS OF CERTAIN STEPS ... SO ... OPUS MUST GIVE SOME ACK DETAILS OF WHAT ITS DOING AT EVERY STEP ... SO YOU KNOW ITS DOING IT RIGHT ... AS THE SAME TIME THE OPUS MUST LOOK FOR THE LARGER PICTURE OF THE CODE AS A LOT OF DEPENDENCES WOULD CAUSE A CAVEAT SOLUTION)
+4. FOR NOW, JUST DO EACH OF THE OPTIMISATIONS YOU HAVE SUGGESTED. 
+
+
+THE v17_DRAM TIME: 315.541s (5.26m)

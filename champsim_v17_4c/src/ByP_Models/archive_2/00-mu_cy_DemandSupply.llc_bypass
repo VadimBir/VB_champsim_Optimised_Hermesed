@@ -1,0 +1,54 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+inline bool llc_bypass_init[NUM_CPUS] = {};
+
+
+// ============================================================
+// METHOD 1: SUPPLY/DEMAND — C-AMAT budget at next level
+// available = free_next × camat_next
+// immediate = (RQ+PQ).occ_next × camat_next
+// future    = μ(current) × camat_next   [Eq 14+52: propagation pressure]
+// entry     = camat_next                [Eq 30: one bypass slot cost]
+// bypass iff available > immediate + future + entry
+// ============================================================
+
+// --- M1 LLC ---
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init[cpu]) return;
+        cout << "LLC Bypass [M1 Supply/Demand]:\n"
+             << "  No DRAM tracker: use LLC camat as DRAM penalty proxy\n"
+             << "  available = free_LLC * camat_LLC\n"
+             << "  immediate = (LLC.RQ+PQ).occ * camat_LLC\n"
+             << "  future    = mu(LLC) * camat_LLC\n"
+             << "  entry     = camat_LLC\n"
+             << "  bypass iff available > immediate+future+entry\n";
+    llc_bypass_init[cpu] = true;
+}
+
+#define SHALL_LLC_BYPASS_DEFINED
+inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    llc_bypass_initialize(cpu, L1D, L2C, LLC);
+    if (LLC->RQ.occupancy >= LLC->RQ.SIZE) return false;
+
+    const auto& t3 = lpm[cpu][LLC_type];
+
+    double camat  = t3.gm.camat_activeMemCyDivAccesses;
+    if (camat <= 0.0) return false;
+
+    double mu_llc = t3.g.µ_missCyFracOfActiveCy();
+    uint32_t free = LLC->MSHR.SIZE - LLC->MSHR.occupancy;
+
+    double available = (double)free                                   * camat;
+    double immediate = (double)(LLC->RQ.occupancy + LLC->PQ.occupancy) * camat;
+    double future    = mu_llc                                         * camat;
+    double entry     =                                                  camat;
+
+    return available > (immediate + future + entry);
+}

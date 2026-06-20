@@ -1,0 +1,126 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// ============================================================
+// MODEL 500 — ByP_PureMissPortion (L2 level)
+//
+// Same 2-Side Division applied at L2:
+//
+// ═══ SIDE 1: L2 request — Do we WANT to bypass this L2 miss? ═══
+//   Goal: Reduce pure miss cycles m(L2) => reduce MST(L2) => reduce C-AMAT(L2)
+//
+//   Case 1: L2C.MSHR.occupancy == 0 => lone L2 miss
+//     Current: RQ coverage of MST(L2)
+//     Future: UMC(L2) / CPA(L2) > 1 => covered
+//
+//   Case 2: L2C.MSHR.occupancy > 0
+//     Current: inflight MSHR coverage of MST(L2)
+//     Future: UMC(L2) / CPA(L2) > 1 => covered
+//
+// ═══ SIDE 2: LLC forward — Can LLC take it? ═══
+//   allow_ByP IFF (MSHR_LLC - (Occ_LLC + 1)) >= L2_MSHR_free * MR_LLC
+// ============================================================
+
+inline bool l2_bypass_init_500[NUM_CPUS] = {};
+
+inline double llc_mr_est_500[NUM_CPUS] = {};
+inline uint64_t llc_prev_acc_500[NUM_CPUS] = {};
+inline uint64_t llc_prev_miss_500[NUM_CPUS] = {};
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init_500[cpu]) return;
+    cout << "L2 Bypass [500-ByP_PureMissPortion]:\n"
+         << "  Side1 (Want?): Pure miss detection via MSHR/RQ coverage + APC predict\n"
+         << "  Side2 (Can?): LLC MSHR guard: (LLC_SIZE-(Occ+1)) >= free_L2 * MR_LLC" << endl;
+    llc_mr_est_500[cpu] = 0.5;
+    llc_prev_acc_500[cpu] = 0;
+    llc_prev_miss_500[cpu] = 0;
+    l2_bypass_init_500[cpu] = true;
+}
+
+inline uint32_t l2_estimate_mst(CACHE *cache, int cpu) {
+    uint64_t total_miss = cache->sim_miss[cpu][0] + cache->sim_miss[cpu][1];
+    if (total_miss > 0 && cache->total_miss_latency > 0)
+        return (uint32_t)(cache->total_miss_latency / total_miss);
+    return cache->LATENCY * 2;
+}
+
+inline uint32_t l2_rq_coverage(CACHE *L2C, uint32_t mst) {
+    uint32_t covered = 0;
+    for (uint16_t i = 0; i < L2C->RQ.SIZE; i++) {
+        if (L2C->RQ.entry[i].address == 0) continue;
+        covered += L2C->LATENCY;
+        if (covered >= mst) return mst;
+    }
+    return covered;
+}
+
+inline uint32_t l2_mshr_coverage(CACHE *L2C, uint32_t mst, uint32_t curr_cy) {
+    uint32_t covered = 0;
+    for (uint16_t i = 0; i < L2C->MSHR.SIZE; i++) {
+        if (L2C->MSHR.entry[i].address == 0) continue;
+        uint32_t ev = L2C->MSHR.entry[i].event_cycle;
+        if (ev > curr_cy) {
+            covered += (ev - curr_cy);
+            if (covered >= mst) return mst;
+        }
+    }
+    return covered;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    uint32_t curr_cy = (uint32_t)current_core_cycle[cpu];
+    uint32_t mst = l2_estimate_mst(L2C, cpu);
+
+    // ═══ SIDE 1: Do we WANT to bypass? ═══
+    bool want_bypass = false;
+    double apc = lpm[cpu][LPM_L2C].gm.apc_accessesDivActiveMemCy;
+    double cpa = (apc > 0.001) ? (1.0 / apc) : 9999.0;
+
+    if (L2C->MSHR.occupancy == 0) {
+        uint32_t rq_cov = l2_rq_coverage(L2C, mst);
+        bool mostly_covered = (rq_cov >= mst / 2);
+        uint32_t umc = (mst > rq_cov) ? (mst - rq_cov) : 0;
+        bool future_covers = (umc > 0) && ((double)umc / cpa > 1.0);
+        want_bypass = !mostly_covered && !future_covers;
+    }
+    else {
+        uint32_t mshr_cov = l2_mshr_coverage(L2C, mst, curr_cy);
+        bool mostly_covered = (mshr_cov >= mst / 2);
+        uint32_t umc = (mst > mshr_cov) ? (mst - mshr_cov) : 0;
+        bool future_covers = (umc > 0) && ((double)umc / cpa > 1.0);
+        want_bypass = !mostly_covered && !future_covers;
+    }
+
+    if (!want_bypass) return false;
+
+    // ═══ SIDE 2: Can LLC take it? ═══
+    uint64_t llc_total = LLC->sim_access[cpu][0] + LLC->sim_access[cpu][1];
+    uint64_t llc_miss  = LLC->sim_miss[cpu][0] + LLC->sim_miss[cpu][1];
+    if (llc_total > llc_prev_acc_500[cpu] + 500) {
+        uint64_t da = llc_total - llc_prev_acc_500[cpu];
+        uint64_t dm = llc_miss - llc_prev_miss_500[cpu];
+        double new_mr = (da > 0) ? (double)dm / da : 0.5;
+        llc_mr_est_500[cpu] = 0.9 * llc_mr_est_500[cpu] + 0.1 * new_mr;
+        llc_prev_acc_500[cpu] = llc_total;
+        llc_prev_miss_500[cpu] = llc_miss;
+    }
+
+    int32_t free_llc_after = (int32_t)LLC->MSHR.SIZE - (int32_t)(LLC->MSHR.occupancy + 1);
+    uint32_t free_l2 = L2C->MSHR.SIZE - L2C->MSHR.occupancy;
+    double mr = llc_mr_est_500[cpu];
+    if (mr < 0.01) mr = 0.01;
+
+    bool llc_can_absorb = (free_llc_after >= 0) && ((double)free_llc_after >= (double)free_l2 * mr);
+
+    return llc_can_absorb;
+}

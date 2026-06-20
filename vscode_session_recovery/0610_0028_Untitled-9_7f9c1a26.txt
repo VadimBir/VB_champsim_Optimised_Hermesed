@@ -1,0 +1,49 @@
+
+  #1 — ❌ BS. L23 already reads "…initiate parallel off-chip accesses [20]–[22], overlapping costly DRAM access with on-chip lookups… masking off-chip latency…" — citations present and the term is defined
+  by its function inline. No fix needed.
+
+  #2 — ⚠️  Optional, not a defect. "comparable to several complete cache-hierarchy traversals" (L24) is a defensible simile and 511.4 is already concrete. A cycle calculation would be nicer, not required.
+  #3 — ⚠️  Mostly BS. "Forwarding" is defined mechanically at L28: "allows selected misses to proceed without local MSHR allocation at an upper level and be handled by the next level." The windows are
+  defined in §III-B (512/16384 cycles). Deferring mechanism detail from intro→Design is normal. The agent missed L28.
+
+  #4 — ⚠️  Minor. "pure-miss cycles" is formally defined in §II-A L37 ("a pure-miss cycle m, where outstanding miss activity exists but no hit service occurs"). Using it in the intro before the Background
+  defines it is standard forward-use.
+
+  BACKGROUND
+
+  #5 — ⚠️  Style preference. "φ and κ are introduced… [27],[28]" (L39) — passive, but it's correctly attributing to prior work with citations. Defensible.
+
+  #6 — ⚠️  Legit-but-optional. Takeaway 1 (L57) is a summary with no forward gap-claim. Adding a gap hook is a reasonable rhetorical upgrade, not a must.
+
+  #7 — ⚠️  Debatable. §II-B (L61) does name MARS ("This imbalance motivates MARS to forward…"). Reserving the name for §III is a convention APAC/Zion follow, but naming it in motivation is common and not a
+  defect.
+
+  #8 — ⚠️  Weak. The three directions are pre-named — in the intro (L6: "Hardware prefetching… Replacement policies… Off-chip predictors…"). The §II-C preamble repeating it generically is trivial.
+
+  #9 — KNOWN, you already said drop it. TTP/Hermes both [21] is the duplicate-key you told me to stop flagging.
+
+  #10 — ⚠️  Minor. L69 re-states the MSHR-stall definition in a relative clause. Mild redundancy; trimming is optional.
+
+  DESIGN
+
+  #11 — ❌ BS (extraction artifact). The "cut off" is Fig. 2 splitting the line in the dump. In your real source the sentence completes and "Second," is present (L91: "Second, MARS also increases effective
+  Miss Handling Concurrency (MHC)…"). Enumeration is complete.
+
+  #12 — ⚠️  Mostly BS. The same paragraph maps prose→symbols: L93 "The decision relies on φ and κ (Section II-A)." It's already tied to the symbols with a section pointer.
+
+  #13 — ❌ Mostly BS. The "all symbols are blank / unparseable" alarm is pure pdftotext loss — φ/κ render in your PDF. Only the tiny kernel (state "subscript s = short-window, l = long-window" once) is
+  optionally useful.
+
+  #14 — ❌ BS. h, m, x are explicitly defined in §II-A L37 ("a pure hit cycle h… an overlap cycle x… a pure-miss cycle m") — i.e., before §III-B uses them.
+
+  #15 — ⚠️  Partial. L264 gives a structural reason (L2 already anchors) and a behavioral one (high κ/low φ) — these are complementary, not "contradicting" as claimed. Only the mild point stands: the
+  behavioral assertion has no data ref. Low priority.
+
+  #16 — ❌ Mostly BS. Both are defined: MSHRocc in §II-B L60 ("The number of occupied MSHR entries, denoted as MSHRocc"); MSHRskip inline at the definition itself (L265: "the misses forwarded to a lower
+  level that are also in flight (MSHRskip)").
+
+  #17 — ⚠️  Mostly BS. The carrier is specified — L287: "carries a separate 3-bit skip tag on the request packet." Only "reuses existing miss-path control" is slightly vague; minor.
+
+  ---
+  Bottom line: of 17, 0 are hard defects. ~3 are optional rhetorical polish (#2, #6, #15-kernel); the rest are extraction artifacts (#1, #11, #13, #14), already-satisfied-elsewhere (#3, #4, #8, #12, #16,
+  #17), or known/dropped (#9). The dual Opus+Sonnet "verification" didn't catch this because the verifiers read the same lossy pdftotext dump — they couldn't see the citations, italics, or symbols either.

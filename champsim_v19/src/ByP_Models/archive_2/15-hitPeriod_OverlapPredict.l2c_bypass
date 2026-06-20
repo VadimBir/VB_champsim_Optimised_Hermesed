@@ -1,0 +1,46 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+inline bool l2_bypass_init[NUM_CPUS] = {};
+
+
+// ============================================================
+// METHOD 6: HIT PERIODICITY / OVERLAP PREDICTION
+// bypass iff camat_next * phi_current < camat_current
+// miss completes before next hit arrives => no fill reuse => bypass
+// [Eq13,37]
+// ============================================================
+
+// --- M6 L2C ---
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init[cpu]) return;
+        cout << "L2C Bypass [M6 Hit Periodicity / Overlap Predict]:\n"
+             << "  T_h_approx = camat_L2C / phi_L2C  [Eq13,37]\n"
+             << "  bypass iff camat_LLC * phi_L2C < camat_L2C\n";
+    l2_bypass_init[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+    if (LLC->RQ.occupancy >= LLC->RQ.SIZE) return false;
+
+    const auto& t2 = lpm[cpu][L2C_type];
+    const auto& t3 = lpm[cpu][LLC_type];
+
+    double total = t2.w.h_pureHitCy + t2.w.m_pureMissCy + t2.w.x_overlapCy + t2.w.e_idleCy;
+    if (total <= 0.0) return false;
+    double phi = t2.w.h_pureHitCy / total;
+    if (phi <= 0.0) return false;
+
+    double camat_cur  = t2.gm.camat_activeMemCyDivAccesses;
+    double camat_next = t3.gm.camat_activeMemCyDivAccesses;
+    if (camat_cur <= 0.0 || camat_next <= 0.0) return false;
+
+    return (camat_next * phi) < camat_cur;
+}

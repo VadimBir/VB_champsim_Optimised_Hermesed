@@ -1,0 +1,11 @@
+--- /c/Users/vasum/VB_champsim_Optimised_Hermesed/champsim_v17/src/ooo_cpu.cc	2026-06-16 23:25:19.641162900 +0900
++++ /c/Users/vasum/VB_champsim_Optimised_Hermesed/champsim_v17_P21/src/ooo_cpu.cc	2026-06-19 02:15:42.324293200 +0900
+@@ -1120,6 +1120,8 @@
+            }
+ 
+            uint64_t word = ready[w] & rmask;
++           // P21: skip empty word — no-op when nothing ready and no stall
++           if (stall == 0 && word == 0) continue;
+            while (word) {
+                uint32_t b = __builtin_ctzll(word);
+                uint32_t idx = w * 64 + b;

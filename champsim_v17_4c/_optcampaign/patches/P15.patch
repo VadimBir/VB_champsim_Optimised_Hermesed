@@ -1,0 +1,23 @@
+--- /c/Users/vasum/VB_champsim_Optimised_Hermesed/champsim_v17/src/ooo_cpu.cc	2026-06-16 23:25:19.641162900 +0900
++++ /c/Users/vasum/VB_champsim_Optimised_Hermesed/champsim_v17_P15/src/ooo_cpu.cc	2026-06-19 02:21:48.936662900 +0900
+@@ -840,6 +840,20 @@
+     const uint32_t head = ROB.head;
+     const uint32_t limit = ROB.next_fetch[1];
+ 
++    // P15: OR-fold dirty-check skip-guard. The fused scan can only schedule a
++    // bit where (fc & cr & ~sinf & ~scmp & rmask) is set. Since cr and rmask
++    // only narrow, (fc & ~sinf & ~scmp) is a strict per-word superset of any
++    // schedulable bit. Folding it over ALL ROB_WORDS is a superset of the
++    // scanned range, so if the fold is zero nothing can be scheduled this cycle
++    // and the scan would have no side effects -> safe early return (true no-op).
++    {
++        uint64_t dirty = 0;
++        for (uint32_t w = 0; w < ROB_WORDS; w++)
++            dirty |= fc_ptr[w] & ~sinf_p[w] & ~scmp_p[w];
++        if (dirty == 0)
++            return;
++    }
++
+     // Fused single-pass: cycle_ready + AND + range mask + stall + dispatch
+     // Only touches words in the active range, not all ROB_WORDS
+     auto fused_scan = [=, this](uint32_t start, uint32_t end) -> bool {

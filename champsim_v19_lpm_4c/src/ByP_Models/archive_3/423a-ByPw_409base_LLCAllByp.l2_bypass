@@ -1,0 +1,33 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+inline bool l2_bypass_init_423a[NUM_CPUS] = {};
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init_423a[cpu]) return;
+    cout << "L2 Bypass [423a-409base_LLCAllByp]\n";
+    l2_bypass_init_423a[cpu] = true;
+}
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+    double k_now  = get_kappa_short(cpu, LPM_L2C);
+    double k_long = get_kappa_long(cpu, LPM_L2C);
+    if (k_long < 1e-6) return false;
+    if (k_now <= k_long) return false;
+    double llc_mr = lpm[cpu][LPM_LLC].bkt[BKT_WL].load_missRate();
+    if (llc_mr < 0.01) llc_mr = 0.01;
+    uint32_t l2_free  = L2C->MSHR.SIZE - L2C->MSHR.occupancy;
+    int32_t  llc_free = (int32_t)LLC->MSHR.SIZE - (int32_t)LLC->MSHR.occupancy;
+    if (llc_free <= 0) return false;
+    uint32_t llc_reserved = (uint32_t)((double)l2_free * llc_mr + 0.999);
+    if (llc_reserved < 1) llc_reserved = 1;
+    int32_t llc_available = llc_free - (int32_t)llc_reserved;
+    if (llc_available <= 0) return false;
+    double k_reduce_pct = k_now / k_long;
+    double llc_used_pct = 1.0 - (double)llc_available / (double)LLC->MSHR.SIZE;
+    return (k_reduce_pct >= llc_used_pct);
+}
