@@ -1742,7 +1742,7 @@ void CACHE::prefetcher_feedback(uint64_t &pref_gen, uint64_t &pref_fill, uint64_
 }
 
 // ===== handle_* sub-helpers moved from cache.h (Phase 0) =====
-void CACHE::return_to_upper_level(PACKET& packet) {
+inline void CACHE::return_to_upper_level(PACKET& packet) {
         DP_RET_M("RETURN_UP_ENTRY", &packet);
         if (packet.instruction) {
             DP_RET_M("RETURN_UP_to_icache", &packet);
@@ -1754,7 +1754,7 @@ void CACHE::return_to_upper_level(PACKET& packet) {
         DP_RET_M("RETURN_UP_DONE", &packet);
     }
 
-void CACHE::handle_read_hit_processed(int index, uint32_t set, uint32_t way) {
+inline void CACHE::handle_read_hit_processed(int index, uint32_t set, uint32_t way) {
         if (cache_type == IS_ITLB) {
             RQ.entry[index].instruction_pa = block[set][way].data;
             if (PROCESSED.occupancy < PROCESSED.SIZE) {
@@ -1794,7 +1794,7 @@ void CACHE::handle_read_hit_processed(int index, uint32_t set, uint32_t way) {
         }
     }
 
-bool CACHE::handle_read_hit_bypass_return(uint16_t read_cpu, int index) {
+inline bool CACHE::handle_read_hit_bypass_return(uint16_t read_cpu, int index) {
         IF_BYP_L1(
         if ((cache_type == IS_L2C) && (RQ.entry[index].type == LOAD
                 && RQ.entry[index].l1_bypassed == 1 && !RQ.entry[index].instruction)) {
@@ -1821,7 +1821,7 @@ bool CACHE::handle_read_hit_bypass_return(uint16_t read_cpu, int index) {
         return false;
     }
 
-void CACHE::handle_read_hit_pf_operate(uint16_t read_cpu, int index, uint32_t set, uint32_t way) {
+inline void CACHE::handle_read_hit_pf_operate(uint16_t read_cpu, int index, uint32_t set, uint32_t way) {
         if (RQ.entry[index].type == LOAD) {
             if (cache_type == IS_L1D)
                 l1d_prefetcher_operate(RQ.entry[index].full_addr, RQ.entry[index].ip, 1, RQ.entry[index].type);
@@ -1835,14 +1835,14 @@ void CACHE::handle_read_hit_pf_operate(uint16_t read_cpu, int index, uint32_t se
         }
     }
 
-void CACHE::handle_read_hit_replacement(uint16_t read_cpu, int index, uint32_t set, uint32_t way) {
+inline void CACHE::handle_read_hit_replacement(uint16_t read_cpu, int index, uint32_t set, uint32_t way) {
         if (cache_type == IS_LLC)
             llc_update_replacement_state(read_cpu, set, way, block[set][way].full_addr, RQ.entry[index].ip, 0, RQ.entry[index].type, 1);
         else
             update_replacement_state(read_cpu, set, way, block[set][way].full_addr, RQ.entry[index].ip, 0, RQ.entry[index].type, 1);
     }
 
-void CACHE::handle_read_hit_stats(uint16_t read_cpu, int index) {
+inline void CACHE::handle_read_hit_stats(uint16_t read_cpu, int index) {
         sim_hit[read_cpu][RQ.entry[index].type]++;
         sim_access[read_cpu][RQ.entry[index].type]++;
         lpm_shadow_inc(read_cpu, RQ.entry[index].type, false);
@@ -1852,7 +1852,7 @@ void CACHE::handle_read_hit_stats(uint16_t read_cpu, int index) {
         }
     }
 
-void CACHE::handle_read_hit_return(int index) {
+inline void CACHE::handle_read_hit_return(int index) {
         bool fire = (RQ.entry[index].fill_level < fill_level);
         DP_FILL_M(("HIT_RET_CHK rq.fill=" + std::to_string(RQ.entry[index].fill_level) + " self.fill=" + std::to_string(fill_level) + " fire=" + (fire?"Y":"N")).c_str(), &RQ.entry[index]);
         if (fire) {
@@ -1861,7 +1861,7 @@ void CACHE::handle_read_hit_return(int index) {
         }
     }
 
-void CACHE::handle_read_hit_pf_useful_and_remove(int index, uint32_t set, uint32_t way) {
+inline void CACHE::handle_read_hit_pf_useful_and_remove(int index, uint32_t set, uint32_t way) {
         DP_FILL_M(("HIT_REMOVE pf_used=" + std::string(block[set][way].prefetch?"Y":"N") + " set=" + std::to_string(set) + " way=" + std::to_string(way)).c_str(), &RQ.entry[index]);
         if (block[set][way].prefetch) {
             pf_useful++;
@@ -1874,7 +1874,7 @@ void CACHE::handle_read_hit_pf_useful_and_remove(int index, uint32_t set, uint32
         reads_available_this_cycle--;
     }
 
-void CACHE::handle_read_miss_new_llc(int index, uint8_t& miss_handled) {
+inline void CACHE::handle_read_miss_new_llc(int index, uint8_t& miss_handled) {
         DP_FILL_M("NEW_LLC_ENTRY", &RQ.entry[index]);
         if (lower_level->get_occupancy(1, RQ.entry[index].address) == lower_level->get_size(1, RQ.entry[index].address)) {
             DP_FILL_M("NEW_LLC_DRAM_FULL_STALL", &RQ.entry[index]);
@@ -1890,7 +1890,7 @@ void CACHE::handle_read_miss_new_llc(int index, uint8_t& miss_handled) {
         }
     }
 
-void CACHE::handle_read_miss_new_other(uint16_t read_cpu, int index, uint8_t& miss_handled) {
+inline void CACHE::handle_read_miss_new_other(uint16_t read_cpu, int index, uint8_t& miss_handled) {
         DP_FILL_M("NEW_OTHER_ENTRY", &RQ.entry[index]);
         if (lower_level && lower_level->get_occupancy(1, RQ.entry[index].address) == lower_level->get_size(1, RQ.entry[index].address)) {
             DP_FILL_M("NEW_OTHER_LOWER_FULL_STALL", &RQ.entry[index]);
@@ -1914,14 +1914,14 @@ void CACHE::handle_read_miss_new_other(uint16_t read_cpu, int index, uint8_t& mi
         }
     }
 
-void CACHE::handle_read_miss_mshr_full(int index, uint8_t& miss_handled) {
+inline void CACHE::handle_read_miss_mshr_full(int index, uint8_t& miss_handled) {
         DP_FILL_M(("MSHR_FULL_STALL type=" + std::to_string(RQ.entry[index].type)).c_str(), &RQ.entry[index]);
         miss_handled = 0;
         STALL[RQ.entry[index].type]++;
         pure_MSHR_Admission_STALL[RQ.entry[index].type]++;
     }
 
-void CACHE::handle_read_miss_inflight_merge_deps(int index, int mshr_index) {
+inline void CACHE::handle_read_miss_inflight_merge_deps(int index, int mshr_index) {
         DP_FILL_M(("MERGE_DEPS idx=" + std::to_string(mshr_index) + " rq.type=" + std::to_string(RQ.entry[index].type) + " rq.instr=" + std::to_string(RQ.entry[index].instruction) + " rq.lq=" + std::to_string(RQ.entry[index].lq_index) + " rq.sq=" + std::to_string(RQ.entry[index].sq_index)).c_str(), &RQ.entry[index]);
         if (RQ.entry[index].type == RFO) {
             if (RQ.entry[index].l1_bypassed)
@@ -1956,14 +1956,14 @@ void CACHE::handle_read_miss_inflight_merge_deps(int index, int mshr_index) {
         }
     }
 
-void CACHE::handle_read_miss_inflight_fill_level(int index, int mshr_index) {
+inline void CACHE::handle_read_miss_inflight_fill_level(int index, int mshr_index) {
         uint8_t pre_fl = MSHR.entry[mshr_index].fill_level;
         if (RQ.entry[index].fill_level < MSHR.entry[mshr_index].fill_level)
             MSHR.entry[mshr_index].fill_level = RQ.entry[index].fill_level;
         DP_FILL_M(("INFLIGHT_FILL_LVL idx=" + std::to_string(mshr_index) + " pre=" + std::to_string(pre_fl) + " rq=" + std::to_string(RQ.entry[index].fill_level) + " post=" + std::to_string(MSHR.entry[mshr_index].fill_level) + " promoted=" + ((pre_fl != MSHR.entry[mshr_index].fill_level)?"Y":"N")).c_str(), &MSHR.entry[mshr_index]);
     }
 
-void CACHE::handle_read_miss_inflight_bypass_l1_mismatch(int index, int mshr_index) {
+inline void CACHE::handle_read_miss_inflight_bypass_l1_mismatch(int index, int mshr_index) {
 #ifdef BYPASS_L1_LOGIC
         if (cache_type == IS_L2C) {
             if (RQ.entry[index].l1_bypassed != MSHR.entry[mshr_index].l1_bypassed) {
@@ -2025,7 +2025,7 @@ void CACHE::handle_read_miss_inflight_bypass_l1_mismatch(int index, int mshr_ind
 #endif
     }
 
-void CACHE::handle_read_miss_inflight_bypass_l2_mismatch(int index, int mshr_index) {
+inline void CACHE::handle_read_miss_inflight_bypass_l2_mismatch(int index, int mshr_index) {
 #ifdef BYPASS_L2_LOGIC
         if (cache_type == IS_LLC) {
             if (RQ.entry[index].l2_bypassed != MSHR.entry[mshr_index].l2_bypassed) {
@@ -2094,7 +2094,7 @@ void CACHE::handle_read_miss_inflight_bypass_l2_mismatch(int index, int mshr_ind
 #endif
     }
 
-void CACHE::handle_read_miss_inflight_prefetch_takeover(int index, int mshr_index) {
+inline void CACHE::handle_read_miss_inflight_prefetch_takeover(int index, int mshr_index) {
         DP_FILL_M(("PF_TAKEOVER_PRE idx=" + std::to_string(mshr_index) + " mshr.type=" + std::to_string(MSHR.entry[mshr_index].type) + " rq.type=" + std::to_string(RQ.entry[index].type) + " mshr.ret=" + std::to_string(MSHR.entry[mshr_index].returned)).c_str(), &MSHR.entry[mshr_index]);
         pf_late++;
         merge_with_prefetch(MSHR.entry[mshr_index], RQ.entry[index]);
@@ -2113,7 +2113,7 @@ void CACHE::handle_read_miss_inflight_prefetch_takeover(int index, int mshr_inde
         DP_FILL_M(("PF_TAKEOVER_POST idx=" + std::to_string(mshr_index) + " mshr.type=" + std::to_string(MSHR.entry[mshr_index].type) + " mshr.fill=" + std::to_string(MSHR.entry[mshr_index].fill_level) + " mshr.ret=" + std::to_string(MSHR.entry[mshr_index].returned)).c_str(), &MSHR.entry[mshr_index]);
     }
 
-void CACHE::handle_read_miss_inflight_non_prefetch_merge(int index, int mshr_index) {
+inline void CACHE::handle_read_miss_inflight_non_prefetch_merge(int index, int mshr_index) {
         DP_FILL_M(("NONPF_MERGE idx=" + std::to_string(mshr_index) + " mshr.type=" + std::to_string(MSHR.entry[mshr_index].type) + " rq.type=" + std::to_string(RQ.entry[index].type) + " rq.lq=" + std::to_string(RQ.entry[index].lq_index)).c_str(), &MSHR.entry[mshr_index]);
         if (RQ.entry[index].instruction) {
             MSHR.entry[mshr_index].rob_index_depend_on_me.insert(RQ.entry[index].rob_index);
@@ -2127,7 +2127,7 @@ void CACHE::handle_read_miss_inflight_non_prefetch_merge(int index, int mshr_ind
         }
     }
 
-void CACHE::handle_read_miss_handled_pf_operate(uint16_t read_cpu, int index) {
+inline void CACHE::handle_read_miss_handled_pf_operate(uint16_t read_cpu, int index) {
         if (RQ.entry[index].type == LOAD) {
             DP_FILL_M("MISS_PF_OPERATE", &RQ.entry[index]);
             if (cache_type == IS_L1D)
@@ -2142,7 +2142,7 @@ void CACHE::handle_read_miss_handled_pf_operate(uint16_t read_cpu, int index) {
         }
     }
 
-void CACHE::handle_read_miss_handled_stats_remove(int index) {
+inline void CACHE::handle_read_miss_handled_stats_remove(int index) {
         DP_FILL_M("MISS_REMOVE_RQ", &RQ.entry[index]);
         MISS[RQ.entry[index].type]++;
         ACCESS[RQ.entry[index].type]++;
@@ -2150,7 +2150,7 @@ void CACHE::handle_read_miss_handled_stats_remove(int index) {
         reads_available_this_cycle--;
     }
 
-void CACHE::handle_writeback_hit(uint16_t writeback_cpu, int index, uint32_t set, uint32_t way) {
+inline void CACHE::handle_writeback_hit(uint16_t writeback_cpu, int index, uint32_t set, uint32_t way) {
         DP_FILL_M(("WB_HIT set=" + std::to_string(set) + " way=" + std::to_string(way) + " wq.fill=" + std::to_string(WQ.entry[index].fill_level) + " self.fill=" + std::to_string(fill_level)).c_str(), &WQ.entry[index]);
         if (cache_type == IS_LLC)
             llc_update_replacement_state(writeback_cpu, set, way, block[set][way].full_addr, WQ.entry[index].ip, 0, WQ.entry[index].type, 1);
@@ -2175,7 +2175,7 @@ void CACHE::handle_writeback_hit(uint16_t writeback_cpu, int index, uint32_t set
         WQ.remove_queue(&WQ.entry[index]);
     }
 
-void CACHE::handle_writeback_miss_new(int index, uint8_t& miss_handled) {
+inline void CACHE::handle_writeback_miss_new(int index, uint8_t& miss_handled) {
         DP_FILL_M("WB_MISS_NEW_ENTRY", &WQ.entry[index]);
         if (cache_type == IS_LLC) {
             if (lower_level->get_occupancy(1, WQ.entry[index].address) == lower_level->get_size(1, WQ.entry[index].address)) {
@@ -2198,12 +2198,12 @@ void CACHE::handle_writeback_miss_new(int index, uint8_t& miss_handled) {
         }
     }
 
-void CACHE::handle_writeback_miss_mshr_full(int index, uint8_t& miss_handled) {
+inline void CACHE::handle_writeback_miss_mshr_full(int index, uint8_t& miss_handled) {
         miss_handled = 0;
         STALL[WQ.entry[index].type]++;
     }
 
-void CACHE::handle_writeback_miss_inflight(int index, int mshr_index) {
+inline void CACHE::handle_writeback_miss_inflight(int index, int mshr_index) {
         DP_FILL_M(("WB_INFLIGHT idx=" + std::to_string(mshr_index) + " wq.fill=" + std::to_string(WQ.entry[index].fill_level) + " mshr.fill=" + std::to_string(MSHR.entry[mshr_index].fill_level) + " mshr.type=" + std::to_string(MSHR.entry[mshr_index].type)).c_str(), &WQ.entry[index]);
         if (WQ.entry[index].fill_level < MSHR.entry[mshr_index].fill_level)
             MSHR.entry[mshr_index].fill_level = WQ.entry[index].fill_level;
@@ -2213,19 +2213,19 @@ void CACHE::handle_writeback_miss_inflight(int index, int mshr_index) {
         DP_FILL_M(("WB_INFLIGHT_POST idx=" + std::to_string(mshr_index) + " mshr.fill=" + std::to_string(MSHR.entry[mshr_index].fill_level)).c_str(), &MSHR.entry[mshr_index]);
     }
 
-void CACHE::handle_writeback_miss_handled_stats_remove(int index) {
+inline void CACHE::handle_writeback_miss_handled_stats_remove(int index) {
         MISS[WQ.entry[index].type]++;
         ACCESS[WQ.entry[index].type]++;
         WQ.remove_queue(&WQ.entry[index]);
     }
 
-uint32_t CACHE::handle_writeback_find_victim(uint32_t writeback_cpu, int index, uint32_t set) {
+inline uint32_t CACHE::handle_writeback_find_victim(uint32_t writeback_cpu, int index, uint32_t set) {
         if (cache_type == IS_LLC)
             return llc_find_victim(writeback_cpu, WQ.entry[index].instr_id, set, block[set], WQ.entry[index].ip, WQ.entry[index].full_addr, WQ.entry[index].type);
         return find_victim(writeback_cpu, WQ.entry[index].instr_id, set, block[set], WQ.entry[index].ip, WQ.entry[index].full_addr, WQ.entry[index].type);
     }
 
-void CACHE::handle_writeback_evict_dirty(uint32_t writeback_cpu, int index, uint32_t set, uint32_t way, uint8_t& do_fill) {
+inline void CACHE::handle_writeback_evict_dirty(uint32_t writeback_cpu, int index, uint32_t set, uint32_t way, uint8_t& do_fill) {
         if (block[set][way].dirty && lower_level) {
             if (lower_level->get_occupancy(2, block[set][way].address) == lower_level->get_size(2, block[set][way].address)) {
                 do_fill = 0;
@@ -2247,7 +2247,7 @@ void CACHE::handle_writeback_evict_dirty(uint32_t writeback_cpu, int index, uint
         }
     }
 
-void CACHE::handle_writeback_do_fill(uint32_t writeback_cpu, int index, uint32_t set, uint32_t way) {
+inline void CACHE::handle_writeback_do_fill(uint32_t writeback_cpu, int index, uint32_t set, uint32_t way) {
         DP_FILL_M(("WB_DO_FILL set=" + std::to_string(set) + " way=" + std::to_string(way) + " wq.fill=" + std::to_string(WQ.entry[index].fill_level) + " self.fill=" + std::to_string(fill_level)).c_str(), &WQ.entry[index]);
         if (cache_type == IS_L1D)
             l1d_prefetcher_cache_fill(WQ.entry[index].full_addr, set, way, 0, block[set][way].address<<LOG2_BLOCK_SIZE, WQ.entry[index].pf_metadata);
@@ -2276,13 +2276,13 @@ void CACHE::handle_writeback_do_fill(uint32_t writeback_cpu, int index, uint32_t
         WQ.remove_queue(&WQ.entry[index]);
     }
 
-uint32_t CACHE::handle_fill_find_victim(uint16_t fill_cpu, uint16_t mshr_index, uint32_t set) {
+inline uint32_t CACHE::handle_fill_find_victim(uint16_t fill_cpu, uint16_t mshr_index, uint32_t set) {
         if (cache_type == IS_LLC)
             return llc_find_victim(fill_cpu, MSHR.entry[mshr_index].instr_id, set, block[set], MSHR.entry[mshr_index].ip, MSHR.entry[mshr_index].full_addr, MSHR.entry[mshr_index].type);
         return find_victim(fill_cpu, MSHR.entry[mshr_index].instr_id, set, block[set], MSHR.entry[mshr_index].ip, MSHR.entry[mshr_index].full_addr, MSHR.entry[mshr_index].type);
     }
 
-void CACHE::handle_fill_evict_dirty(uint16_t fill_cpu, uint16_t mshr_index, uint32_t set, uint32_t way, uint8_t& do_fill) {
+inline void CACHE::handle_fill_evict_dirty(uint16_t fill_cpu, uint16_t mshr_index, uint32_t set, uint32_t way, uint8_t& do_fill) {
         if (block[set][way].dirty && lower_level) {
             if (lower_level->get_occupancy(2, block[set][way].address) == lower_level->get_size(2, block[set][way].address)) {
                 DP_FILL_M(("FILL_EVICT_STALL set=" + std::to_string(set) + " way=" + std::to_string(way) + " idx=" + std::to_string(mshr_index)).c_str(), &MSHR.entry[mshr_index]);
@@ -2307,7 +2307,7 @@ void CACHE::handle_fill_evict_dirty(uint16_t fill_cpu, uint16_t mshr_index, uint
         }
     }
 
-void CACHE::handle_fill_pf_fill(uint16_t fill_cpu, uint16_t mshr_index, uint32_t set, uint32_t way) {
+inline void CACHE::handle_fill_pf_fill(uint16_t fill_cpu, uint16_t mshr_index, uint32_t set, uint32_t way) {
         if (cache_type == IS_L1D)
             l1d_prefetcher_cache_fill(MSHR.entry[mshr_index].full_addr, set, way, (MSHR.entry[mshr_index].type == PREFETCH) ? 1 : 0, block[set][way].address<<LOG2_BLOCK_SIZE, MSHR.entry[mshr_index].pf_metadata);
         if (cache_type == IS_L2C)
@@ -2319,14 +2319,14 @@ void CACHE::handle_fill_pf_fill(uint16_t fill_cpu, uint16_t mshr_index, uint32_t
         }
     }
 
-void CACHE::handle_fill_replacement(uint16_t fill_cpu, uint16_t mshr_index, uint32_t set, uint32_t way) {
+inline void CACHE::handle_fill_replacement(uint16_t fill_cpu, uint16_t mshr_index, uint32_t set, uint32_t way) {
         if (cache_type == IS_LLC)
             llc_update_replacement_state(fill_cpu, set, way, MSHR.entry[mshr_index].full_addr, MSHR.entry[mshr_index].ip, block[set][way].full_addr, MSHR.entry[mshr_index].type, 0);
         else
             update_replacement_state(fill_cpu, set, way, MSHR.entry[mshr_index].full_addr, MSHR.entry[mshr_index].ip, block[set][way].full_addr, MSHR.entry[mshr_index].type, 0);
     }
 
-void CACHE::handle_fill_stats(uint16_t fill_cpu, uint16_t mshr_index) {
+inline void CACHE::handle_fill_stats(uint16_t fill_cpu, uint16_t mshr_index) {
         sim_miss[fill_cpu][MSHR.entry[mshr_index].type]++;
         sim_access[fill_cpu][MSHR.entry[mshr_index].type]++;
         lpm_shadow_inc(fill_cpu, MSHR.entry[mshr_index].type, true);
@@ -2338,14 +2338,14 @@ void CACHE::handle_fill_stats(uint16_t fill_cpu, uint16_t mshr_index) {
         }
     } 
 
-void CACHE::handle_fill_cache_and_dirty(uint16_t mshr_index, uint32_t set, uint32_t way) {
+inline void CACHE::handle_fill_cache_and_dirty(uint16_t mshr_index, uint32_t set, uint32_t way) {
         fill_cache(set, way, &MSHR.entry[mshr_index]);
         DP_FILL(MSHR.entry[mshr_index], set, way);
         if (cache_type == IS_L1D && MSHR.entry[mshr_index].type == RFO)
             block[set][way].dirty = 1;
     }
 
-void CACHE::handle_fill_return(uint16_t mshr_index) {
+inline void CACHE::handle_fill_return(uint16_t mshr_index) {
         bool fire = (MSHR.entry[mshr_index].fill_level < fill_level);
         DP_FILL_RETURN(mshr_index, fire);
         DP_FILL_M(("FILL_RET_CHK mshr.fill=" + std::to_string(MSHR.entry[mshr_index].fill_level) + " self.fill=" + std::to_string(fill_level) + " fire=" + (fire?"Y":"N") + " idx=" + std::to_string(mshr_index)).c_str(), &MSHR.entry[mshr_index]);
@@ -2357,7 +2357,7 @@ void CACHE::handle_fill_return(uint16_t mshr_index) {
         }
     }
 
-void CACHE::handle_fill_processed_and_bypass_return(uint16_t fill_cpu, uint16_t mshr_index, uint32_t set, uint32_t way) {
+inline void CACHE::handle_fill_processed_and_bypass_return(uint16_t fill_cpu, uint16_t mshr_index, uint32_t set, uint32_t way) {
         if (cache_type == IS_ITLB) {
             MSHR.entry[mshr_index].instruction_pa = block[set][way].data;
             if (PROCESSED.occupancy < PROCESSED.SIZE)
@@ -2554,7 +2554,7 @@ void CACHE::handle_fill_processed_and_bypass_return(uint16_t fill_cpu, uint16_t 
 #endif
     }
 
-void CACHE::handle_fill_remove(uint16_t fill_cpu, uint16_t mshr_index) {
+inline void CACHE::handle_fill_remove(uint16_t fill_cpu, uint16_t mshr_index) {
         DP_FILL_M(("REMOVE idx=" + std::to_string(mshr_index) + " nret=" + std::to_string(MSHR.num_returned)).c_str(), &MSHR.entry[mshr_index]);
         // LPM counter: MSHR removal (normal fill path)
         {
