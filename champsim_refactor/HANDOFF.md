@@ -63,7 +63,17 @@ Offloaded methods originally **in-class** (implicitly inline) → mark `inline` 
 ## 11. RULES
 NEVER edit frozen/checkpoint dirs (dup only). NEVER rm dirs w/o explicit ask. NEVER >1 build/sim parallel (OOM); wall-timing serial+clean. All agents Opus. No `2>&1`/`2>/dev/null`/`||true`/`||echo`. Honest, never fake numbers (life-critical sim). `act` cmd absent here — don't fake ACKs. Scratch → `%TEMP%`, not repo.
 
-## 12. AFK CAMPAIGN (agent `af7f07c0`) + NEXT
-P1: time `v19_avx2_lpm` vs `champsim_refactor` (clang, 5× interleaved). P2: `flat_branch_mispredicted`→rob_events, gate, 5×. P3: `rob_maps` sanity-wrap, gate, 5× → `CAMPAIGN_RESULTS.md`; commits winners, reverts losers.
-NEXT: read `CAMPAIGN_RESULTS.md` → register-id histogram (prove 138 + depth distribution, gate-neutral) → reg_producers resizable A/B (expect flat).
+## 12. AFK CAMPAIGN — DONE (results in `CAMPAIGN_RESULTS.md`)
+Sim-kill issue was RESOLVED: it was OOM from prior stalled agents running OVERLAPPING parallel sims. Clean env
+(single run 208.2s, checksum exact). All campaign timing driven from main loop via ONE background driver, sims
+STRICTLY SERIAL (no parallelism, no OOM). Baseline rock-stable: prefold mean = 205.20s across two independent sessions.
+- **P1 (refactor vs non-refactor, 5× interleaved):** wall 209.40 vs 209.96 — EQUAL (0.27%, in noise). checksum+IPC
+  bit-exact. ⇒ refactor validated (arch-identical + host-neutral).
+- **P2 (flat_branch_mispredicted→rob_events SoA bitset, 5× A/B):** checksum+IPC exact BUT prefold faster 5/5 paired,
+  fold +1.3% SLOWER (growing hot rob_events_cpu hurts cycle-scan locality > deleting cold 4KB array helps). ⇒ REJECTED, reverted.
+- **P3 (rob_maps sanity-wrap, 5× A/B):** wrapped add_rob_idx(:547)+retire_rob_idx(:2082) under `#ifdef TRUE_SANITY_CHECK`
+  (write-only map, reader only under that off flag). checksum+IPC exact, p3 faster 5/5 paired, **+1.09%** (202.96 vs 205.20),
+  bin 9216 B smaller. ⇒ **KEPT, committed `b4676d3`, pushed origin/master.** Canonical `champsim_refactor/bin/champsim.exe` = P3 build.
+OPTIONAL NEXT (low value, user waved off 138 with "FK IT I GUESS"): register-id histogram (confirm 138, gate-neutral);
+reg_producers resizable A/B (already reasoned wall-flat/trace-dep). Do ONLY if user re-asks.
 Memory files: `project_afk_opt_loop.md`, `project_win_v17_reconstruction.md`, `feedback_scratch_files_to_temp.md`.
