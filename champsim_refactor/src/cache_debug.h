@@ -71,6 +71,121 @@
 #endif
 // ==== END TRUE_SANITY_CHECK macros (cache.cc local) ====
 
+// ==== Inline DP-block macros lifted from cache.cc (token-identical) ====
+// Each expands to the EXACT tokens of the former inline DP(...) block.
+#define DP_HF_LLC_ENTRY(mshr_index, fill_cpu) DP( if (DP_GATE_WW(current_core_cycle[fill_cpu], fill_cpu, MSHR.entry[mshr_index].address, MSHR.entry[mshr_index].instr_id) && cache_type == IS_LLC) { \
+            cout << "[LLC_handle_fill_ENTRY] mshr_idx: " << mshr_index \
+                 << " addr: 0x" << hex << MSHR.entry[mshr_index].address << dec \
+                 << " full_addr: 0x" << hex << MSHR.entry[mshr_index].full_addr << dec \
+                 << " type: " << (int)MSHR.entry[mshr_index].type \
+                 << " fill_level: " << (int)MSHR.entry[mshr_index].fill_level \
+                 << " returned: " << (int)MSHR.entry[mshr_index].returned \
+                 << " event_cycle: " << MSHR.entry[mshr_index].event_cycle \
+                 << " cpu: " << (int)MSHR.entry[mshr_index].cpu \
+                 << " cy: " << current_core_cycle[fill_cpu] << endl; \
+        })
+
+#define DP_OPERATE_RQ_HEAD() DP( do { if (DP_GATE_WW(current_core_cycle[cpu],cpu,RQ.entry[RQ.head].address,RQ.entry[RQ.head].instr_id)) { \
+        cout << NAME << " RQ_HEAD idx:" << RQ.head << " iid:" << RQ.entry[RQ.head].instr_id \
+             << " MSHR_HEAD idx:" << MSHR.head << " iid:" << MSHR.entry[MSHR.head].instr_id << endl; \
+    } } while(0) )
+
+#define DP_ADDRQ_BYP_WQ_HIT(packet, wq_index) DP( do { if (packet->l1_bypassed == 1 && wq_index != -1 && DP_GATE_WW(current_core_cycle[packet->cpu],packet->cpu,packet->address,packet->instr_id)) { \
+        cout << " > add_rq(): ByP wq hit idx:" << wq_index << " iid:" << packet->instr_id << " addr:" << hex << packet->address << dec << endl; \
+    } } while(0) )
+
+#define DP_ADDRQ_L2C_PROCESSED_ADD(packet) DP( do { if (DP_GATE_WW(current_core_cycle[packet->cpu],packet->cpu,packet->address,packet->instr_id)) { \
+        cout << " > add_rq(): L2C PROCESSED_ADD iid:" << packet->instr_id << " addr:" << hex << packet->address << dec << endl; \
+    } } while(0) )
+
+#define DP_ADDRQ_BYP_MISMATCH(packet, index) DP( do { if (DP_GATE_WW(current_core_cycle[packet->cpu],packet->cpu,packet->address,packet->instr_id) && index != -1 \
+              && RQ.entry[index].l1_bypassed == 1 && packet->l1_bypassed == 0) { \
+        DP_RQ_MERGE(packet,RQ.entry[index],"BYP_MISMATCH"); \
+    } } while(0) )
+
+#define DP_RETDATA_LLC_IN(packet) DP( if (DP_GATE_WW(current_core_cycle[packet->cpu], packet->cpu, packet->address, packet->instr_id) && cache_type == IS_LLC) { \
+        cout << "[LLC_return_data_IN] addr: 0x" << hex << packet->address << dec \
+             << " full_addr: 0x" << hex << packet->full_addr << dec \
+             << " type: " << (int)packet->type \
+             << " fill_level: " << (int)packet->fill_level \
+             << " cpu: " << (int)packet->cpu \
+             << " cy: " << current_core_cycle[packet->cpu] << endl; \
+    })
+
+#define DP_RETDATA_LLC_CHECK_MSHR(packet, mshr_index) DP( if (DP_GATE_WW(current_core_cycle[packet->cpu], packet->cpu, packet->address, packet->instr_id) && cache_type == IS_LLC) { \
+        cout << "[LLC_return_data_IN] CHECK_MSHR mshr_idx: " << mshr_index \
+             << " addr: 0x" << hex << packet->address << dec \
+             << " type: " << (int)packet->type \
+             << " cy: " << current_core_cycle[packet->cpu] << endl; \
+    })
+
+#define DP_UFC_SCHED_ENTRY() DP( do { if (warmup_complete[cpu]) { std::cout << "[" << NAME << "_" << __func__ << "][SCHED] ENTRY num_ret=" << MSHR.num_returned << " occu=" << MSHR.occupancy << " curr_cy=" << current_core_cycle[cpu] << std::endl; } } while(0) )
+
+#define DP_UFC_DUMP() DP( do { if (warmup_complete[cpu]) { \
+        for (uint16_t _i=0; _i<MSHR.SIZE; _i++) { \
+            const PACKET& _e = MSHR.entry[_i]; \
+            if (_e.address == 0 && _e.instr_id == 0 && _e.returned == 0 && _e.event_cycle == 0) continue; /* skip empty slot */ \
+            std::cout << "[" << NAME << "_" << __func__ << "][DUMP] idx=" << _i \
+                      << " iid=" << _e.instr_id \
+                      << " addr=0x" << std::hex << _e.address << std::dec \
+                      << " fill=" << (int)_e.fill_level \
+                      << " ret=" << (int)_e.returned \
+                      << " ev_cy=" << _e.event_cycle \
+                      << " type=" << (int)_e.type \
+                      << " cpu=" << (int)_e.cpu \
+                      << " l1ByP=" << (int)_e.l1_bypassed \
+                      << " l2ByP=" << (int)_e.l2_bypassed \
+                      << " llcByP=" << (int)_e.llc_bypassed \
+                      << " rob=" << _e.rob_index \
+                      << " lq=" << _e.lq_index \
+                      << std::endl; \
+        } \
+    } } while(0) )
+
+#define DP_UFC_SCHED_EMPTY() DP( do { if (warmup_complete[cpu]) { std::cout << "[" << NAME << "_" << __func__ << "][SCHED] EMPTY -> nxtfi=SIZE nxtfc=MAX" << std::endl; } } while(0) )
+
+#define DP_UFC_CAND(i, min_cycle) DP( do { if (warmup_complete[cpu]) { std::cout << "[" << NAME << "_" << __func__ << "][CAND] idx=" << i \
+                      << " iid=" << MSHR.entry[i].instr_id \
+                      << " addr=0x" << std::hex << MSHR.entry[i].address << std::dec \
+                      << " ev_cy=" << MSHR.entry[i].event_cycle \
+                      << " min_so_far=" << min_cycle \
+                      << " fill=" << (int)MSHR.entry[i].fill_level \
+                      << std::endl; } } while(0) )
+
+#define DP_UFC_WINNER(min_index, min_cycle) DP( do { if (warmup_complete[cpu]) { std::cout << "[" << NAME << "_" << __func__ << "][WINNER] idx=" << min_index \
+                  << " iid=" << MSHR.entry[min_index].instr_id \
+                  << " addr=0x" << std::hex << MSHR.entry[min_index].address << std::dec \
+                  << " nxtfc=" << min_cycle \
+                  << " fill=" << (int)MSHR.entry[min_index].fill_level \
+                  << " curr_cy=" << current_core_cycle[cpu] \
+                  << std::endl; } } while(0) )
+
+#define DP_MSHR_NOT_RESOLVED_BYP(index, packet) DP( do { if (PCYCLE_LT(PACK_CYCLE(MSHR.entry[index].event_cycle+10000), PACK_CYCLE(current_core_cycle[packet->cpu])) && MSHR.entry[index].l1_bypassed == 1 \
+                && DP_GATE_WW(current_core_cycle[packet->cpu],packet->cpu,MSHR.entry[index].address,MSHR.entry[index].instr_id)) { \
+            cout << " MSHR NOT RESOLVED FOR BYPASS lvl:" << NAME << " addr:" << hex << MSHR.entry[index].address << dec << " iid:" << MSHR.entry[index].instr_id << endl; \
+        } } while(0) )
+
+#define DP_FILL_EVICT_DOFILL0(fill_cpu, mshr_index, set, way) DP( if (DP_GATE_WW(current_core_cycle[fill_cpu], fill_cpu, MSHR.entry[mshr_index].address, MSHR.entry[mshr_index].instr_id) && cache_type == IS_LLC) { \
+                    cout << "[LLC_handle_fill_ENTRY] do_fill=0 WQ_FULL mshr_idx: " << mshr_index \
+                         << " addr: 0x" << hex << MSHR.entry[mshr_index].address << dec \
+                         << " evict_addr: 0x" << hex << block[set][way].address << dec \
+                         << " type: " << (int)MSHR.entry[mshr_index].type \
+                         << " cpu: " << (int)MSHR.entry[mshr_index].cpu \
+                         << " cy: " << current_core_cycle[fill_cpu] << endl; \
+                })
+
+#define DP_FILL_RETURN(mshr_index, fire) DP( if (DP_GATE_WW(current_core_cycle[MSHR.entry[mshr_index].cpu], MSHR.entry[mshr_index].cpu, MSHR.entry[mshr_index].address, MSHR.entry[mshr_index].instr_id)) { \
+            cout << "[FILL_RETURN] " << NAME \
+                 << " mshr.fill_level: " << (int)MSHR.entry[mshr_index].fill_level \
+                 << " vs cache.fill_level: " << (int)fill_level \
+                 << " return_to_upper: " << (fire ? "YES" : "NO") \
+                 << " addr: 0x" << hex << MSHR.entry[mshr_index].address << dec \
+                 << " type: " << (int)MSHR.entry[mshr_index].type \
+                 << " cpu: " << (int)MSHR.entry[mshr_index].cpu \
+                 << " cy: " << current_core_cycle[MSHR.entry[mshr_index].cpu] << endl; \
+        })
+// ==== END inline DP-block macros lifted from cache.cc ====
+
 // ============================================================
 // dump_req_min_* — compact one-line dumps per call-site context.
 // No trailing newline (caller macro appends endl).
