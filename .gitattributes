@@ -1,0 +1,24 @@
+# Guarantee correct line endings regardless of each machine's core.autocrlf.
+# Repo stores LF for text. Scripts MUST be LF or they break on Linux.
+
+*.sh            text eol=lf
+*.py            text eol=lf
+*.mjs           text eol=lf
+*.bash          text eol=lf
+
+# C/C++ sources: normalize to LF in the repo (compilers accept either anyway).
+*.cc            text eol=lf
+*.h             text eol=lf
+*.hpp           text eol=lf
+*.c             text eol=lf
+
+# Never touch binaries.
+*.exe           binary
+*.dll           binary
+*.a             binary
+*.o             binary
+*.xz            binary
+*.champsimtrace binary
+*.pdf           binary
+*.xlsx          binary
+*.db            binary

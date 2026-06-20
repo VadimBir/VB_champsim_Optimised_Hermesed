@@ -73,3 +73,10 @@ graphify-out/cache/
 *.OPT_A_BK
 *.OPT_B_BK
 wget-log
+
+# gate scratch logs
+champsim_refactor/_ct_*.log
+champsim_refactor/_ct*.txt
+champsim_refactor/_statscoll_*
+champsim_refactor/_clangstd_*.log
+champsim_refactor/_clangtime_*.log
