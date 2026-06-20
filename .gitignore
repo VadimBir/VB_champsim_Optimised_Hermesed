@@ -45,6 +45,7 @@ outputs/output.log
 **/obj/
 **/obj_win/
 **/obj_win_clang/
+**/obj_win_clangstd/
 **/.lto_cache/
 *.o
 *.so

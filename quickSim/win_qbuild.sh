@@ -61,7 +61,7 @@ case "$NUM_CORES" in ''|*[!0-9]*) echo "[ERROR] cores is NOT a number <${NUM_COR
 [ "$NUM_CORES" -lt 1 ] && { echo "[ERROR] cores must be >= 1"; exit 1; }
 
 cd "./$champsimDirName"
-[ -f Makefile.win ] || { echo "[ERROR] $champsimDirName/Makefile.win missing (run on a Windows-ported tree)"; exit 1; }
+[ -f Makefile.win.clang ] || { echo "[ERROR] $champsimDirName/Makefile.win.clang missing"; exit 1; }
 CORE_UARCH="${arch}_${NUM_CORES}c"
 
 # --- source-file existence checks (mirror build_champsim_parallel.sh) ---
@@ -98,9 +98,9 @@ case "$HERMES" in
 esac
 
 # --- clean rebuild via Makefile.win (no header-dep tracking => must clean) ---
-rm -rf obj_win bin
-echo "=== BUILD: make -f Makefile.win -j${JOBS} EXTRA_CFLAGS='$EXTRA_DEFS' ==="
-make -f Makefile.win -j"$JOBS" EXTRA_CFLAGS="$EXTRA_DEFS"
+rm -rf obj_win_clang bin
+echo "=== BUILD (CLANG hardcoded): make -f Makefile.win.clang -j${JOBS} EXTRA_CFLAGS='$EXTRA_DEFS -Iwin_deps/emhash' ==="
+make -f Makefile.win.clang -j"$JOBS" EXTRA_CFLAGS="$EXTRA_DEFS -Iwin_deps/emhash"
 
 [ -f bin/champsim.exe ] || { echo "ChampSim build FAILED! (bin/champsim.exe missing)"; exit 1; }
 

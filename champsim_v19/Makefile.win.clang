@@ -22,7 +22,7 @@ LDFLAGS  := -static -pthread   # static libc++/libunwind/winpthread → self-con
 LZMA_DLL := $(DEPS)/liblzma.dll
 
 OBJDIR := obj_win_clang
-BIN    := bin/champsim_clang.exe
+BIN    := bin/champsim.exe
 
 SRCS := $(wildcard src/*.cc) $(wildcard src/hermes/*.cc) \
         $(wildcard branch/*.cc) $(wildcard replacement/*.cc) \

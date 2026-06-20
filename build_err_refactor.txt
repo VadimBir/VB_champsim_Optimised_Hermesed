@@ -1,0 +1,3 @@
+src/cache.cc:3:36: note: '#pragma message: HERMES IS ENABLED'
+    3 | #pragma message("HERMES IS ENABLED")
+      |                                    ^

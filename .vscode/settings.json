@@ -1,0 +1,23 @@
+{
+    "C_Cpp.default.compilerPath": "",
+    "cSpell.ignorePaths": [
+        "**/*.l1_bypass",
+        "**/*.l2_bypass",
+        "**/*.llc_bypass",
+        "**/*.l2c_pref",
+        "**/*.bypass",
+        "**/*.l2c_bypass",
+        "**/*.profraw",
+        "**/*.o",
+        "**/*.l1d_pref",
+        "**/*.llc_repl",
+        "**/*.llc_pref",
+        "**/*.bpred",
+        "**/*.pre",
+        "**/*.patch",
+        "**/*.log",
+        "**/.git/**",
+        "**/node_modules/**"
+    ],
+    "cSpell.checkLimit": 200
+}
