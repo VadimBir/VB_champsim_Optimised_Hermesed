@@ -26,8 +26,7 @@ class XXHash32
 public:
   /// create new XXHash (32 bit)
   /** @param seed your seed value, even zero is a valid seed and e.g. used by LZ4 **/
-  explicit XXHash32(uint32_t seed)
-  {
+  explicit XXHash32(uint32_t seed) {
     state[0] = seed + Prime1 + Prime2;
     state[1] = seed + Prime2;
     state[2] = seed;
@@ -40,8 +39,7 @@ public:
   /** @param  input  pointer to a continuous block of data
       @param  length number of bytes
       @return false if parameters are invalid / zero **/
-  bool add(const void* input, uint64_t length)
-  {
+  bool add(const void* input, uint64_t length) {
     // no data ?
     if (!input || length == 0)
       return false;
@@ -51,8 +49,7 @@ public:
     const unsigned char* data = (const unsigned char*)input;
 
     // unprocessed old data plus new data still fit in temporary buffer ?
-    if (bufferSize + length < MaxBufferSize)
-    {
+    if (bufferSize + length < MaxBufferSize) {
       // just add new data
       while (length-- > 0)
         buffer[bufferSize++] = *data++;
@@ -64,8 +61,7 @@ public:
     const unsigned char* stopBlock = stop - MaxBufferSize;
 
     // some data left from previous update ?
-    if (bufferSize > 0)
-    {
+    if (bufferSize > 0) {
       // make sure temporary buffer is full (16 bytes)
       while (bufferSize < MaxBufferSize)
         buffer[bufferSize++] = *data++;
@@ -77,8 +73,7 @@ public:
     // copying state to local variables helps optimizer A LOT
     uint32_t s0 = state[0], s1 = state[1], s2 = state[2], s3 = state[3];
     // 16 bytes at once
-    while (data <= stopBlock)
-    {
+    while (data <= stopBlock) {
       // local variables s0..s3 instead of state[0]..state[3] are much faster
       process(data, s0, s1, s2, s3);
       data += 16;
@@ -138,8 +133,7 @@ public:
       @param  length number of bytes
       @param  seed your seed value, e.g. zero is a valid seed and used by LZ4
       @return 32 bit XXHash **/
-  static uint32_t hash(const void* input, uint64_t length, uint32_t seed)
-  {
+  static uint32_t hash(const void* input, uint64_t length, uint32_t seed) {
     XXHash32 hasher(seed);
     hasher.add(input, length);
     return hasher.hash();
@@ -163,14 +157,12 @@ private:
   uint64_t      totalLength;
 
   /// rotate bits, should compile to a single CPU instruction (ROL)
-  static inline uint32_t rotateLeft(uint32_t x, unsigned char bits)
-  {
+  static inline uint32_t rotateLeft(uint32_t x, unsigned char bits) {
     return (x << bits) | (x >> (32 - bits));
   }
 
   /// process a block of 4x4 bytes, this is the main part of the XXHash32 algorithm
-  static inline void process(const void* data, uint32_t& state0, uint32_t& state1, uint32_t& state2, uint32_t& state3)
-  {
+  static inline void process(const void* data, uint32_t& state0, uint32_t& state1, uint32_t& state2, uint32_t& state3) {
     const uint32_t* block = (const uint32_t*) data;
     state0 = rotateLeft(state0 + block[0] * Prime2, 13) * Prime1;
     state1 = rotateLeft(state1 + block[1] * Prime2, 13) * Prime1;

@@ -6,44 +6,38 @@
 
 using namespace perc;
 
-uint32_t process_PC(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t process_PC(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     uint32_t folded_pc = folded_xor(state->pc, 2);
     uint32_t hashed_val = HashZoo::getHash((uint32_t)hash_type, folded_pc);
     return (hashed_val % weight_array_size);
 }
 
-uint32_t process_Offset(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t process_Offset(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     uint32_t raw = state->voffset;
     raw = HashZoo::getHash(hash_type, raw);
     return (raw % weight_array_size);
 }
 
-uint32_t process_Page(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t process_Page(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     uint64_t raw = state->vpage;
     uint32_t val = folded_xor(raw, 2);
     val = HashZoo::getHash(hash_type, val);
     return (val % weight_array_size);
 }
 
-uint32_t process_Addr(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t process_Addr(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     uint64_t raw = state->vaddr;
     uint32_t val = folded_xor(raw, 2);
     val = HashZoo::getHash(hash_type, val);
     return (val % weight_array_size);
 }
 
-uint32_t process_FirstAccess(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t process_FirstAccess(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     uint32_t raw = state->first_access ? 1 : 0;
     return (raw % weight_array_size);
 }
 
-uint32_t process_PC_Offset(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t process_PC_Offset(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     uint64_t raw = state->pc;
     uint32_t val = folded_xor(raw, 2);
     val = val << 6;
@@ -52,8 +46,7 @@ uint32_t process_PC_Offset(state_info_t *state, uint64_t metadata, int32_t hash_
     return (val % weight_array_size);
 }
 
-uint32_t process_PC_Page(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t process_PC_Page(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     uint64_t raw = state->pc;
     raw = raw << 12;
     raw = raw ^ state->vpage;
@@ -62,8 +55,7 @@ uint32_t process_PC_Page(state_info_t *state, uint64_t metadata, int32_t hash_ty
     return (val % weight_array_size);
 }
 
-uint32_t process_PC_Addr(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t process_PC_Addr(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     uint64_t raw = state->pc;
     raw = raw << 15;
     raw = raw ^ state->vaddr;
@@ -72,8 +64,7 @@ uint32_t process_PC_Addr(state_info_t *state, uint64_t metadata, int32_t hash_ty
     return (val % weight_array_size);
 }
 
-uint32_t process_PC_FirstAccess(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t process_PC_FirstAccess(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     uint64_t raw = state->pc;
     uint32_t val = folded_xor(raw, 2);
     val = val & ((1u << 31) - 1); // zero-out MSB
@@ -83,8 +74,7 @@ uint32_t process_PC_FirstAccess(state_info_t *state, uint64_t metadata, int32_t 
     return (val % weight_array_size);
 }
 
-uint32_t process_Offset_FirstAccess(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t process_Offset_FirstAccess(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     uint32_t val = state->voffset;
     val = val & ((1u << 6) - 1);
     if(state->first_access)
@@ -93,14 +83,12 @@ uint32_t process_Offset_FirstAccess(state_info_t *state, uint64_t metadata, int3
     return (val % weight_array_size);
 }
 
-uint32_t process_CLOffset(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t process_CLOffset(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     uint32_t raw = state->v_cl_offset;
     return (raw % weight_array_size);
 }
 
-uint32_t process_PC_CLOffset(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t process_PC_CLOffset(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     uint64_t raw = state->pc;
     uint32_t val = folded_xor(raw, 2);
     val = val << 6;
@@ -109,14 +97,12 @@ uint32_t process_PC_CLOffset(state_info_t *state, uint64_t metadata, int32_t has
     return (val % weight_array_size);
 }
 
-uint32_t process_CLWordOffset(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t process_CLWordOffset(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     uint32_t raw = state->v_cl_word_offset;
     return (raw % weight_array_size);
 }
 
-uint32_t process_PC_CLWordOffset(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t process_PC_CLWordOffset(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     uint64_t raw = state->pc;
     uint32_t val = folded_xor(raw, 2);
     val = val << 4;
@@ -125,14 +111,12 @@ uint32_t process_PC_CLWordOffset(state_info_t *state, uint64_t metadata, int32_t
     return (val % weight_array_size);
 }
 
-uint32_t process_CLDWordOffset(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t process_CLDWordOffset(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     uint32_t raw = state->v_cl_dword_offset;
     return (raw % weight_array_size);
 }
 
-uint32_t process_PC_CLDWordOffset(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t process_PC_CLDWordOffset(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     uint64_t raw = state->pc;
     uint32_t val = folded_xor(raw, 2);
     val = val << 3;
@@ -141,26 +125,22 @@ uint32_t process_PC_CLDWordOffset(state_info_t *state, uint64_t metadata, int32_
     return (val % weight_array_size);
 }
 
-uint32_t process_LastNLoadPCs(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t process_LastNLoadPCs(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     uint32_t folded_pc = folded_xor(state->last_n_load_pc_sig, 2);
     uint32_t hashed_val = HashZoo::getHash((uint32_t)hash_type, folded_pc);
     return (hashed_val % weight_array_size);
 }
 
-uint32_t process_LastNPCs(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t process_LastNPCs(state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     uint32_t folded_pc = folded_xor(state->last_n_pc_sig, 2);
     uint32_t hashed_val = HashZoo::getHash((uint32_t)hash_type, folded_pc);
     return (hashed_val % weight_array_size);
 }
 
-uint32_t perceptron_pred_t::generate_index_from_feature(feature_type_t feature, state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size)
-{
+uint32_t perceptron_pred_t::generate_index_from_feature(feature_type_t feature, state_info_t *state, uint64_t metadata, int32_t hash_type, uint32_t weight_array_size) {
     if(state == NULL) return 0;
     
-    switch(feature)
-    {
+    switch(feature) {
         case feature_type_t::PC:                    return process_PC(state, metadata, hash_type, weight_array_size);
         case feature_type_t::Offset:                return process_Offset(state, metadata, hash_type, weight_array_size);
         case feature_type_t::Page:                  return process_Page(state, metadata, hash_type, weight_array_size);

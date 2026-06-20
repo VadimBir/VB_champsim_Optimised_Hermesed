@@ -26,16 +26,14 @@ namespace knob
     extern uint32_t ocp_hmp_local_lhr_index_hash_type;
 }
 
-void OffchipPredHMPLocal::print_config()
-{
+void OffchipPredHMPLocal::print_config() {
     cout << "ocp_hmp_local_history_length " << knob::ocp_hmp_local_history_length << endl
          << "ocp_hmp_local_lhr_size " << knob::ocp_hmp_local_lhr_size << endl
          << "ocp_hmp_local_lhr_index_hash_type " << knob::ocp_hmp_local_lhr_index_hash_type << endl
          << endl;
 }
 
-void OffchipPredHMPLocal::dump_stats()
-{
+void OffchipPredHMPLocal::dump_stats() {
     cout << "ocp_hmp_local_predict_called " << stats.predict.called << endl
          << endl
          << "ocp_hmp_local_train_called " << stats.train.called << endl
@@ -50,24 +48,20 @@ void OffchipPredHMPLocal::dump_stats()
          << endl;
 }
 
-void OffchipPredHMPLocal::reset_stats()
-{
+void OffchipPredHMPLocal::reset_stats() {
     bzero(&stats, sizeof(stats));
 }
 
-OffchipPredHMPLocal::OffchipPredHMPLocal(uint32_t _cpu, string _type, uint64_t _seed) : OffchipPredBase(_cpu, _type, _seed)
-{
+OffchipPredHMPLocal::OffchipPredHMPLocal(uint32_t _cpu, string _type, uint64_t _seed) : OffchipPredBase(_cpu, _type, _seed) {
     LHR.resize(knob::ocp_hmp_local_lhr_size, 0);
     PHT.resize((1u << knob::ocp_hmp_local_history_length), WEAK_T);
 }
 
-OffchipPredHMPLocal::~OffchipPredHMPLocal()
-{
+OffchipPredHMPLocal::~OffchipPredHMPLocal() {
 
 }
 
-bool OffchipPredHMPLocal::predict(ooo_model_instr *arch_instr, uint32_t data_index, LSQ_ENTRY *lq_entry)
-{
+bool OffchipPredHMPLocal::predict(ooo_model_instr *arch_instr, uint32_t data_index, LSQ_ENTRY *lq_entry) {
     stats.predict.called++;
     bool prediction = false;
     uint64_t pc = arch_instr->ip;
@@ -88,8 +82,7 @@ bool OffchipPredHMPLocal::predict(ooo_model_instr *arch_instr, uint32_t data_ind
     return prediction;
 }
 
-void OffchipPredHMPLocal::train(ooo_model_instr *arch_instr, uint32_t data_index, LSQ_ENTRY *lq_entry)
-{
+void OffchipPredHMPLocal::train(ooo_model_instr *arch_instr, uint32_t data_index, LSQ_ENTRY *lq_entry) {
     stats.train.called++;
 
     uint64_t pc = arch_instr->ip;
@@ -100,23 +93,19 @@ void OffchipPredHMPLocal::train(ooo_model_instr *arch_instr, uint32_t data_index
 
     /* First, update the confidence counter in PHT */
     confidence_state_t new_conf = WEAK_NT;
-    if(old_conf == STRONG_NT)
-    {
+    if(old_conf == STRONG_NT) {
         new_conf = went_offchip ? WEAK_NT : STRONG_NT;
         if(new_conf == WEAK_NT) stats.train.strong_nt_to_weak_nt++; else stats.train.strong_nt_to_strong_nt++;
     }
-    else if(old_conf == WEAK_NT)
-    {
+    else if(old_conf == WEAK_NT) {
         new_conf = went_offchip ? WEAK_T : STRONG_NT;
         if(new_conf == WEAK_T) stats.train.weak_nt_to_weak_t++; else stats.train.weak_nt_to_strong_nt++;
     }
-    else if(old_conf == WEAK_T)
-    {
+    else if(old_conf == WEAK_T) {
         new_conf = went_offchip ? STRONG_T : WEAK_NT;
         if(new_conf == STRONG_T) stats.train.weak_t_to_strong_t++; else stats.train.weak_t_to_weak_nt++;
     }
-    else if(old_conf == STRONG_T)
-    {
+    else if(old_conf == STRONG_T) {
         new_conf = went_offchip ? STRONG_T : WEAK_T;
         if(new_conf == STRONG_T) stats.train.strong_t_to_strong_t++; else stats.train.strong_t_to_weak_t++;
     }
@@ -137,8 +126,7 @@ void OffchipPredHMPLocal::train(ooo_model_instr *arch_instr, uint32_t data_index
     MYLOG(warmup_complete[cpu], "pc %lx lhr_index %d went_offchip %d old_conf %d new_conf %d old_local_history %x new_local_history %x", pc, lhr_index, +went_offchip, old_conf, new_conf, old_local_history, new_local_history);
 }
 
-uint32_t OffchipPredHMPLocal::get_index(uint64_t pc)
-{
+uint32_t OffchipPredHMPLocal::get_index(uint64_t pc) {
     uint32_t pc_folded_xor = folded_xor(pc, 2);
     uint32_t hash = HashZoo::getHash(knob::ocp_hmp_local_lhr_index_hash_type, pc_folded_xor);
     return (hash % knob::ocp_hmp_local_lhr_size);

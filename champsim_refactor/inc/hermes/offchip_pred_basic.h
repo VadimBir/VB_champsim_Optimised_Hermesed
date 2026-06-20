@@ -28,8 +28,7 @@ class ocp_basic_feature_t : public ocp_base_feature_t
         uint32_t pc_count;
         bool     first_access;
 
-        ocp_basic_feature_t()
-        {
+        ocp_basic_feature_t() {
             pc_count = 0;
             first_access = false;
         }
@@ -40,8 +39,7 @@ class ocp_basic_entry_t
 {
     public:
         Counter total, miss;
-        ocp_basic_entry_t()
-        {
+        ocp_basic_entry_t() {
 
         }
         ~ocp_basic_entry_t() {}
@@ -53,8 +51,7 @@ class ocp_basic_pc_buf_entry_t
         uint64_t pc;
         uint32_t count;
     public:
-        ocp_basic_pc_buf_entry_t()
-        {
+        ocp_basic_pc_buf_entry_t() {
             pc = 0;
             count = 0;
         }
@@ -68,8 +65,7 @@ class ocp_basic_page_buf_entry_t
         Bitmap bmp_access;
         uint32_t age;
     public:
-        ocp_basic_page_buf_entry_t()
-        {
+        ocp_basic_page_buf_entry_t() {
             page = 0;
             bmp_access.reset();
             age = 0;

@@ -49,8 +49,7 @@ public:
     uint32_t lru;
     uint32_t pmc;
 
-    BLOCK()
-    {
+    BLOCK() {
         valid = 0;
         prefetch = 0;
         dirty = 0;
@@ -85,8 +84,7 @@ class DRAM_ARRAY
 public:
     BLOCK **block;
 
-    DRAM_ARRAY()
-    {
+    DRAM_ARRAY() {
         block = NULL;
     };
 };
@@ -134,8 +132,7 @@ public:
         AddressProxy(ankerl::svector<uint64_t, SMALL_VECTOR_SIZE> *ptr, uint32_t idx) : vec_ptr(ptr), index(idx), fallback_value(0) {}
 
         // Safe access with null checks
-        operator uint64_t &()
-        {
+        operator uint64_t &() {
             if (!vec_ptr || index >= vec_ptr->size())
                 return fallback_value;
             return (*vec_ptr)[index];
@@ -147,8 +144,7 @@ public:
             return (*vec_ptr)[index];
         }
 
-        AddressProxy &operator=(uint64_t val)
-        {
+        AddressProxy &operator=(uint64_t val) {
             if (vec_ptr && index < vec_ptr->size())
                 (*vec_ptr)[index] = val;
             else
@@ -156,15 +152,12 @@ public:
             tmpAddrProxy = val;
             return *this;
         }
-        AddressProxy &operator=(const AddressProxy &other)
-        {
+        AddressProxy &operator=(const AddressProxy &other) {
 
-            if (vec_ptr && index < vec_ptr->size() && other.vec_ptr && other.index < other.vec_ptr->size())
-            {
+            if (vec_ptr && index < vec_ptr->size() && other.vec_ptr && other.index < other.vec_ptr->size()) {
                 (*vec_ptr)[index] = (*other.vec_ptr)[other.index];
             }
-            else if (other.vec_ptr && other.index < other.vec_ptr->size())
-            {
+            else if (other.vec_ptr && other.index < other.vec_ptr->size()) {
                 fallback_value = (*other.vec_ptr)[other.index];
             }
             else
@@ -259,14 +252,12 @@ public:
     // full_addr was previously paired with address; moved to cold region.
     AddressProxy full_addr;
 
-    void set_queue_vectors(ankerl::svector<uint64_t, SMALL_VECTOR_SIZE> *addr_vec, ankerl::svector<uint64_t, SMALL_VECTOR_SIZE> *full_addr_vec, uint32_t idx)
-    {
+    void set_queue_vectors(ankerl::svector<uint64_t, SMALL_VECTOR_SIZE> *addr_vec, ankerl::svector<uint64_t, SMALL_VECTOR_SIZE> *full_addr_vec, uint32_t idx) {
         address = AddressProxy(addr_vec, idx);
         full_addr = AddressProxy(full_addr_vec, idx);
     }
 
-    inline void fast_copy_packet(PACKET &dest, const PACKET &src)
-    {
+    inline void fast_copy_packet(PACKET &dest, const PACKET &src) {
         // Save dest's AddressProxy queue bindings — bulk memcpy below
         // would otherwise clobber `vec_ptr`/`index` to point at src's
         // queue storage, corrupting subsequent address writes.
@@ -299,15 +290,13 @@ public:
         dest.fill_level = src.fill_level;
     }
     template <typename T>
-    inline void fast_copy_fastset(T &dest, const T &src)
-    {
+    inline void fast_copy_fastset(T &dest, const T &src) {
         // inline void fast_copy_fastset(fastset& dest, const fastset& src) {
         if (src.card == 0)
             return;
         dest.card = src.card;
         // LQ_SMALL_SIZE=8 is the bitset transition threshold; SMALL_SIZE=13 is wrong here
-        if (src.card < LQ_SMALL_SIZE)
-        {
+        if (src.card < LQ_SMALL_SIZE) {
             memcpy(dest.data.values, src.data.values, sizeof(TYPE) * src.card);
         }
         else
@@ -316,8 +305,7 @@ public:
         }
     }
 
-    void quickReset()
-    {
+    void quickReset() {
         instruction = tlb_access = scheduled = translated = fetched = prefetched = drc_tag_read = returned = 0; // DEAD-2026-05-25 drc_tag_read kept for layout-stable init
         asid[0] = asid[1] = UINT8_MAX;
         type = 0;
@@ -342,8 +330,7 @@ public:
 
     }
 
-    PACKET() : address(), full_addr()
-    {
+    PACKET() : address(), full_addr() {
         instruction = tlb_access = scheduled = translated = fetched = prefetched = drc_tag_read = returned = 0; // DEAD-2026-05-25 drc_tag_read kept for layout-stable init
         asid[0] = asid[1] = UINT8_MAX;
         type = 0;
@@ -470,8 +457,7 @@ public:
 
 
 };
-inline std::ostream& operator<<(std::ostream& os, const PACKET& p)
-{
+inline std::ostream& operator<<(std::ostream& os, const PACKET& p) {
     os
         << " InstrID " << (uint64_t)p.instr_id
         << " cy "      << (uint64_t)p.event_cycle
@@ -588,12 +574,10 @@ PACKET_QUEUE() :
     //     entry = nullptr;
     // };
 
-    ~PACKET_QUEUE()
-    {
+    ~PACKET_QUEUE() {
         delete[] entry;
     };
-    void quick_reset()
-    {
+    void quick_reset() {
         // Reset ALL queue state
         head = tail = occupancy = 0;
         num_returned = 0;
@@ -617,8 +601,7 @@ PACKET_QUEUE() :
         //     entry[i].quickReset();
         //     entry[i].set_queue_vectors(&address_vector, &full_addr_vector, i);
         // }
-        for (uint32_t i = 0; i < SIZE; i++)
-        {
+        for (uint32_t i = 0; i < SIZE; i++) {
             entry[i].quickReset();
 
             // DIRECT member access - no function call
@@ -675,8 +658,7 @@ public:
     ooo_model_instr *entry;
 
     // constructor
-    CORE_BUFFER(string v1, uint32_t v2) : NAME(v1), SIZE(v2)
-    {
+    CORE_BUFFER(string v1, uint32_t v2) : NAME(v1), SIZE(v2) {
         head = 0;
         tail = 0;
         occupancy = 0;
@@ -696,8 +678,7 @@ public:
     };
 
     // destructor
-    ~CORE_BUFFER()
-    {
+    ~CORE_BUFFER() {
         delete[] entry;
     };
 };
@@ -726,8 +707,7 @@ public:
     ocp_base_feature_t *ocp_feature;
 #endif
 
-    void quickReset()
-    {
+    void quickReset() {
         instr_id = 0;
         producer_id = UINT64_MAX;
         virtual_address = 0;
@@ -754,8 +734,7 @@ public:
     }
 
     // constructor
-    LSQ_ENTRY()
-    {
+    LSQ_ENTRY() {
         instr_id = 0;
         producer_id = UINT64_MAX;
         virtual_address = 0;
@@ -798,8 +777,7 @@ public:
     LSQ_ENTRY *entry;
 
     // constructor
-    LOAD_STORE_QUEUE(string v1, uint32_t v2) : NAME(v1), SIZE(v2)
-    {
+    LOAD_STORE_QUEUE(string v1, uint32_t v2) : NAME(v1), SIZE(v2) {
         occupancy = 0;
         head = 0;
         tail = 0;
@@ -808,8 +786,7 @@ public:
     };
 
     // destructor
-    ~LOAD_STORE_QUEUE()
-    {
+    ~LOAD_STORE_QUEUE() {
         delete[] entry;
     };
 };

@@ -24,8 +24,7 @@ namespace knob
     extern bool   dram_cntlr_enable_ddrp_buffer;
 }
 
-void O3_CPU::initialize_offchip_predictor(uint64_t seed)
-{
+void O3_CPU::initialize_offchip_predictor(uint64_t seed) {
     if(!knob::offchip_pred_type.compare("none"))
         offchip_pred = new OffchipPredBase(cpu, knob::offchip_pred_type, seed);
     else if(!knob::offchip_pred_type.compare("basic"))
@@ -47,15 +46,13 @@ void O3_CPU::initialize_offchip_predictor(uint64_t seed)
     std::cout << "[Hermes] CPU " << cpu << " offchip_pred = " << knob::offchip_pred_type << std::endl;
 }
 
-void O3_CPU::print_config_offchip_predictor()
-{
+void O3_CPU::print_config_offchip_predictor() {
     std::cout << "offchip_pred_type " << knob::offchip_pred_type << std::endl
               << "offchip_pred_mark_merged_load " << knob::offchip_pred_mark_merged_load << std::endl;
     if (offchip_pred) offchip_pred->print_config();
 }
 
-void O3_CPU::dump_stats_offchip_predictor()
-{
+void O3_CPU::dump_stats_offchip_predictor() {
     float precision = (float)stats.offchip_pred.true_pos /
                       (stats.offchip_pred.true_pos + stats.offchip_pred.false_pos + 1e-9);
     float recall    = (float)stats.offchip_pred.true_pos /
@@ -73,13 +70,11 @@ void O3_CPU::dump_stats_offchip_predictor()
     if (offchip_pred) offchip_pred->dump_stats();
 }
 
-void O3_CPU::offchip_predictor_update_dram_bw(uint8_t dram_bw)
-{
+void O3_CPU::offchip_predictor_update_dram_bw(uint8_t dram_bw) {
     if (offchip_pred) offchip_pred->update_dram_bw(dram_bw);
 }
 
-void O3_CPU::offchip_predictor_track_llc_eviction(uint32_t set, uint32_t way, uint64_t address)
-{
+void O3_CPU::offchip_predictor_track_llc_eviction(uint32_t set, uint32_t way, uint64_t address) {
     (void)set; (void)way;
     if (offchip_pred && !knob::offchip_pred_type.compare("ttp")) {
         OffchipPredTTP *p = (OffchipPredTTP*) offchip_pred;
@@ -88,8 +83,7 @@ void O3_CPU::offchip_predictor_track_llc_eviction(uint32_t set, uint32_t way, ui
 }
 
 // ---- Training + DDRP issue stub (simplified vs Hermes; training/issue wiring happens in hook sites) ----
-void O3_CPU::offchip_pred_stats_and_train(uint32_t lq_index)
-{
+void O3_CPU::offchip_pred_stats_and_train(uint32_t lq_index) {
     if (!offchip_pred) return;
     LSQ_ENTRY &lq = LQ.entry[lq_index];
 
@@ -104,8 +98,7 @@ void O3_CPU::offchip_pred_stats_and_train(uint32_t lq_index)
     if (arch_instr) offchip_pred->train(arch_instr, lq.data_index, &lq);
 }
 
-void O3_CPU::issue_ddrp_request(uint32_t lq_index, uint32_t call_type)
-{
+void O3_CPU::issue_ddrp_request(uint32_t lq_index, uint32_t call_type) {
     stats.ddrp.total++;
     assert(LQ.entry[lq_index].translated == COMPLETED);
     assert(LQ.entry[lq_index].physical_address != 0);
@@ -115,8 +108,7 @@ void O3_CPU::issue_ddrp_request(uint32_t lq_index, uint32_t call_type)
         return;
 
     if (uncore.DRAM.get_occupancy(1, LQ.entry[lq_index].physical_address >> LOG2_BLOCK_SIZE)
-        == uncore.DRAM.get_size(1, LQ.entry[lq_index].physical_address >> LOG2_BLOCK_SIZE))
-    {
+        == uncore.DRAM.get_size(1, LQ.entry[lq_index].physical_address >> LOG2_BLOCK_SIZE)) {
         stats.ddrp.dram_rq_full++;
         return;
     }
@@ -141,13 +133,11 @@ void O3_CPU::issue_ddrp_request(uint32_t lq_index, uint32_t call_type)
     stats.ddrp.issued[call_type]++;
 }
 
-void O3_CPU::initialize_ddrp_monitor()
-{
+void O3_CPU::initialize_ddrp_monitor() {
     ddrp_monitor = nullptr; // opt-in — not wired by default
 }
 
-void O3_CPU::print_config_ddrp_monitor()
-{
+void O3_CPU::print_config_ddrp_monitor() {
     std::cout << "ddrp_monitor disabled (stub)" << std::endl;
 }
 

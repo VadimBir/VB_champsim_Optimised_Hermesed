@@ -155,8 +155,7 @@ static inline void champsim_db_store(
     const ChampsimDBConfig& cfg,
     double avg_ipc,
     const uint64_t* p_major_fault,
-    const uint64_t* p_minor_fault)
-{
+    const uint64_t* p_minor_fault) {
     if (cfg.db_path[0] == '\0') return;
 
     sqlite3* db = nullptr;

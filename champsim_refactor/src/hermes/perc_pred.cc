@@ -45,8 +45,7 @@ string feature_names[] = {
     "LastNPCs"
 };
 
-string state_info_t::to_string()
-{
+string state_info_t::to_string() {
     stringstream ss;
     
     ss  << "PC: " << setw(8) << hex << pc << dec
@@ -70,15 +69,13 @@ perceptron_pred_t::perceptron_pred_t(vector<int32_t> _activated_features, vector
       pos_weight_delta(pos_delta),
       neg_weight_delta(neg_delta),
       pos_train_thresh(pos_thresh),
-      neg_train_thresh(neg_thresh)
-{
+      neg_train_thresh(neg_thresh) {
     assert(_activated_features.size() == weight_array_sizes.size());
     assert(_activated_features.size() == hash_types.size());
 
     num_features = _activated_features.size();
     activated_features = _activated_features;
-    for(uint32_t index = 0; index < weight_array_sizes.size(); ++index)
-    {
+    for(uint32_t index = 0; index < weight_array_sizes.size(); ++index) {
         weights.push_back(weight_array_t(weight_array_sizes[index]));
     }
     feature_hash_types = hash_types;
@@ -86,13 +83,11 @@ perceptron_pred_t::perceptron_pred_t(vector<int32_t> _activated_features, vector
     cpu = 0;
 }
 
-perceptron_pred_t::~perceptron_pred_t()
-{
+perceptron_pred_t::~perceptron_pred_t() {
 
 }
 
-void perceptron_pred_t::dump_stats()
-{
+void perceptron_pred_t::dump_stats() {
     cout << "perc_predict_called " << stats.predict.called << endl
          << "perc_predict_pred_true " << stats.predict.pred_true << endl
          << "perc_predict_pred_false " << stats.predict.pred_false << endl
@@ -103,8 +98,7 @@ void perceptron_pred_t::dump_stats()
          << "perc_train_decr_weight_mismatch " << stats.train.decr_weight_mismatch << endl
          << endl;
 
-    for(uint32_t feature = 0; feature < num_features; ++feature)
-    {
+    for(uint32_t feature = 0; feature < num_features; ++feature) {
         cout << "perc_feature_" << feature_names[activated_features[feature]] << "_incr_done " << stats.weight.incr_done[activated_features[feature]] << endl
              << "perc_feature_" << feature_names[activated_features[feature]] << "_incr_satu " << stats.weight.incr_satu[activated_features[feature]] << endl
              << "perc_feature_" << feature_names[activated_features[feature]] << "_decr_done " << stats.weight.decr_done[activated_features[feature]] << endl
@@ -113,20 +107,17 @@ void perceptron_pred_t::dump_stats()
     }
 }
 
-void perceptron_pred_t::reset_stats()
-{
+void perceptron_pred_t::reset_stats() {
     bzero(&stats, sizeof(stats));
 }
 
-void perceptron_pred_t::predict(state_info_t *state, bool &prediction, float &perc_weight_sum)
-{
+void perceptron_pred_t::predict(state_info_t *state, bool &prediction, float &perc_weight_sum) {
     stats.predict.called++;
     vector<uint32_t> weight_indices = generate_indices_from_state(state);
     assert(weight_indices.size() == num_features);
 
     float cummulative_weight = 0.0;
-    for(uint32_t feature = 0; feature < num_features; ++feature)
-    {
+    for(uint32_t feature = 0; feature < num_features; ++feature) {
         assert(weight_indices[feature] < weights[feature].size);
         cummulative_weight += weights[feature].array[weight_indices[feature]]; // sum up all feature weights
     }
@@ -141,8 +132,7 @@ void perceptron_pred_t::predict(state_info_t *state, bool &prediction, float &pe
         stats.predict.pred_false++;
 }
 
-void perceptron_pred_t::train(state_info_t *state, float perc_weight_sum, bool pred_output, bool true_output)
-{
+void perceptron_pred_t::train(state_info_t *state, float perc_weight_sum, bool pred_output, bool true_output) {
     stats.train.called++;
     MYLOG(warmup_complete[cpu], "==========================");
     MYLOG(warmup_complete[cpu], "perc_train %s perc_weight_sum: %f offchip_real: %d offchip_pred: %d", state->to_string().c_str(), perc_weight_sum, true_output, pred_output);
@@ -150,13 +140,10 @@ void perceptron_pred_t::train(state_info_t *state, float perc_weight_sum, bool p
     vector<uint32_t> weight_indices = generate_indices_from_state(state);
     assert(weight_indices.size() == num_features);
 
-    if(true_output == true)
-    {
-        if(pred_output == true_output)
-        {
+    if(true_output == true) {
+        if(pred_output == true_output) {
             // correctly predicted true
-            if(perc_weight_sum >= neg_train_thresh && perc_weight_sum <= pos_train_thresh)
-            {
+            if(perc_weight_sum >= neg_train_thresh && perc_weight_sum <= pos_train_thresh) {
                 MYLOG(warmup_complete[cpu], "correct_pred::true increasing weights ...");
                 incr_weights(weight_indices);
                 stats.train.incr_weight_match++;
@@ -176,11 +163,9 @@ void perceptron_pred_t::train(state_info_t *state, float perc_weight_sum, bool p
     }
     else
     {
-        if(pred_output == true_output)
-        {
+        if(pred_output == true_output) {
             // correctly predicted false
-            if(perc_weight_sum >= neg_train_thresh && perc_weight_sum <= pos_train_thresh)
-            {
+            if(perc_weight_sum >= neg_train_thresh && perc_weight_sum <= pos_train_thresh) {
                 MYLOG(warmup_complete[cpu], "correct_pred::false decreasing weights ...");
                 decr_weights(weight_indices);
                 stats.train.decr_weight_match++;
@@ -202,12 +187,9 @@ void perceptron_pred_t::train(state_info_t *state, float perc_weight_sum, bool p
     MYLOG(warmup_complete[cpu], "==========================");
 }
 
-void perceptron_pred_t::incr_weights(vector<uint32_t> weight_indices)
-{
-    for(uint32_t feature = 0; feature < num_features; ++feature)
-    {
-        if((weights[feature].array[weight_indices[feature]] + pos_weight_delta) <= max_weight)
-        {
+void perceptron_pred_t::incr_weights(vector<uint32_t> weight_indices) {
+    for(uint32_t feature = 0; feature < num_features; ++feature) {
+        if((weights[feature].array[weight_indices[feature]] + pos_weight_delta) <= max_weight) {
             MYLOG(warmup_complete[cpu], "feature %s index %d old_weight %f", feature_names[activated_features[feature]].c_str(), weight_indices[feature], weights[feature].array[weight_indices[feature]]);
             weights[feature].array[weight_indices[feature]] += pos_weight_delta;
             MYLOG(warmup_complete[cpu], "feature %s index %d new_weight %f", feature_names[activated_features[feature]].c_str(), weight_indices[feature], weights[feature].array[weight_indices[feature]]);
@@ -221,12 +203,9 @@ void perceptron_pred_t::incr_weights(vector<uint32_t> weight_indices)
     }
 }
 
-void perceptron_pred_t::decr_weights(vector<uint32_t> weight_indices)
-{
-    for(uint32_t feature = 0; feature < num_features; ++feature)
-    {
-        if((weights[feature].array[weight_indices[feature]] - neg_weight_delta) >= min_weight)
-        {
+void perceptron_pred_t::decr_weights(vector<uint32_t> weight_indices) {
+    for(uint32_t feature = 0; feature < num_features; ++feature) {
+        if((weights[feature].array[weight_indices[feature]] - neg_weight_delta) >= min_weight) {
             MYLOG(warmup_complete[cpu], "feature %s index %d old_weight %f", feature_names[activated_features[feature]].c_str(), weight_indices[feature], weights[feature].array[weight_indices[feature]]);
             weights[feature].array[weight_indices[feature]] -= neg_weight_delta;
             MYLOG(warmup_complete[cpu], "feature %s index %d new_weight %f", feature_names[activated_features[feature]].c_str(), weight_indices[feature], weights[feature].array[weight_indices[feature]]);
@@ -240,11 +219,9 @@ void perceptron_pred_t::decr_weights(vector<uint32_t> weight_indices)
     }
 }
 
-vector<uint32_t> perceptron_pred_t::generate_indices_from_state(state_info_t *state)
-{
+vector<uint32_t> perceptron_pred_t::generate_indices_from_state(state_info_t *state) {
     vector<uint32_t> indices;
-    for(uint32_t index = 0; index < num_features; ++index)
-    {
+    for(uint32_t index = 0; index < num_features; ++index) {
         indices.push_back(generate_index_from_feature((feature_type_t)activated_features[index], state, 0xdeadbeef, feature_hash_types[index], weights[index].size));
     }
     return indices;

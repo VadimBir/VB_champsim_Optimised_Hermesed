@@ -17,8 +17,7 @@ public:
     state_info_t *info;
     float perc_weight_sum;
 
-    ocp_perc_feature_t()
-    {
+    ocp_perc_feature_t() {
         info = NULL;
         perc_weight_sum = 0.0;
     }
@@ -36,8 +35,7 @@ public:
     uint32_t age;
 
 public:
-    ocp_perc_page_buf_entry_t()
-    {
+    ocp_perc_page_buf_entry_t() {
         page = 0;
         bmp_access.reset();
         age = 0;

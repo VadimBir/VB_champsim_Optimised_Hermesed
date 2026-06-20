@@ -35,14 +35,12 @@ namespace knob
 
 const char* map_ocp_basic_feature_type_string[] = {"PC", "PC_count", "PC_data_index", "PC_offset", "PC_Page", "PC_Addr", "CL_first_access"};
 
-string ocp_basic_get_feature_string(uint32_t feature)
-{
+string ocp_basic_get_feature_string(uint32_t feature) {
     assert(feature < num_ocp_basic_feature_types);
     return map_ocp_basic_feature_type_string[feature];
 }
 
-void OffchipPredBasic::print_config()
-{
+void OffchipPredBasic::print_config() {
     cout << "ocp_basic_table_size " << knob::ocp_basic_table_size << endl
          << "ocp_basic_counter_width " << knob::ocp_basic_counter_width << endl
          << "ocp_basic_conf_thresh " << knob::ocp_basic_conf_thresh << endl
@@ -55,8 +53,7 @@ void OffchipPredBasic::print_config()
          << endl;
 }
 
-void OffchipPredBasic::dump_stats()
-{
+void OffchipPredBasic::dump_stats() {
     cout << "ocp_basic_train_called " << stats.train.called << endl
          << "ocp_basic_train_went_offchip " << stats.train.went_offchip << endl
          << "ocp_basic_predict_called " << stats.predict.called << endl
@@ -76,17 +73,14 @@ void OffchipPredBasic::dump_stats()
          << endl;
 }
 
-void OffchipPredBasic::reset_stats()
-{
+void OffchipPredBasic::reset_stats() {
     bzero(&stats, sizeof(stats));
 }
 
-OffchipPredBasic::OffchipPredBasic(uint32_t _cpu, string _type, uint64_t _seed) : OffchipPredBase(_cpu, _type, _seed)
-{
+OffchipPredBasic::OffchipPredBasic(uint32_t _cpu, string _type, uint64_t _seed) : OffchipPredBase(_cpu, _type, _seed) {
     bzero(&stats, sizeof(stats));
 
-    for(uint32_t index = 0; index < knob::ocp_basic_table_size; ++index)
-    { 
+    for(uint32_t index = 0; index < knob::ocp_basic_table_size; ++index) {
         ocp_basic_entry_t entry;
         entry.total.init(knob::ocp_basic_counter_width);
         entry.miss.init(knob::ocp_basic_counter_width);
@@ -95,13 +89,11 @@ OffchipPredBasic::OffchipPredBasic(uint32_t _cpu, string _type, uint64_t _seed) 
 
 }
 
-OffchipPredBasic::~OffchipPredBasic()
-{
+OffchipPredBasic::~OffchipPredBasic() {
 
 }
 
-bool OffchipPredBasic::predict(ooo_model_instr *arch_instr, uint32_t data_index, LSQ_ENTRY *lq_entry)
-{
+bool OffchipPredBasic::predict(ooo_model_instr *arch_instr, uint32_t data_index, LSQ_ENTRY *lq_entry) {
     uint64_t load_pc = arch_instr->ip;
     uint64_t vaddr = lq_entry->virtual_address;
     uint64_t vpage = vaddr >> LOG2_PAGE_SIZE;
@@ -128,11 +120,9 @@ bool OffchipPredBasic::predict(ooo_model_instr *arch_instr, uint32_t data_index,
     assert(index < knob::ocp_basic_table_size);
 
     stats.predict.called++;
-    if (m_table[index].total.val() > 0)
-    {
+    if (m_table[index].total.val() > 0) {
         float ratio = (float)m_table[index].miss.val() / m_table[index].total.val();
-        if (ratio >= knob::ocp_basic_conf_thresh)
-        {
+        if (ratio >= knob::ocp_basic_conf_thresh) {
             stats.predict.offchip_miss++;
             MYLOG(warmup_complete[cpu], "load_pc: %x count: %d data_idx: %d ratio: %f predicted: MISS", load_pc, count, data_index, ratio);
             return true;
@@ -151,8 +141,7 @@ bool OffchipPredBasic::predict(ooo_model_instr *arch_instr, uint32_t data_index,
     }
 }
 
-void OffchipPredBasic::train(ooo_model_instr *arch_instr, uint32_t data_index, LSQ_ENTRY *lq_entry)
-{
+void OffchipPredBasic::train(ooo_model_instr *arch_instr, uint32_t data_index, LSQ_ENTRY *lq_entry) {
     uint64_t load_pc = arch_instr->ip;
     uint64_t vaddr = lq_entry->virtual_address;
     uint64_t vpage = vaddr >> LOG2_PAGE_SIZE;
@@ -170,8 +159,7 @@ void OffchipPredBasic::train(ooo_model_instr *arch_instr, uint32_t data_index, L
     // simple table-based training
     stats.train.called++;
     m_table[index].total.incr();
-    if(lq_entry->went_offchip)
-    {
+    if(lq_entry->went_offchip) {
         stats.train.went_offchip++;
         m_table[index].miss.incr();
     }
@@ -181,10 +169,8 @@ void OffchipPredBasic::train(ooo_model_instr *arch_instr, uint32_t data_index, L
           load_pc, count, data_index, vaddr, vpage, vofffset, (uint32_t)lq_entry->went_offchip, (uint32_t)lq_entry->went_offchip_pred, index, m_table[index].total.val(), m_table[index].miss.val());
 }
 
-uint32_t OffchipPredBasic::get_hash(uint64_t load_pc, uint32_t count, uint32_t data_index, uint64_t vaddr, uint64_t vpage, uint32_t voffset, bool first_access)
-{
-    switch(knob::ocp_basic_feature_type)
-    {
+uint32_t OffchipPredBasic::get_hash(uint64_t load_pc, uint32_t count, uint32_t data_index, uint64_t vaddr, uint64_t vpage, uint32_t voffset, bool first_access) {
+    switch(knob::ocp_basic_feature_type) {
         case ocp_basic_pc:              return get_hash_pc(load_pc);
         case ocp_basic_pc_count:        return get_hash_pc_count(load_pc, count);
         case ocp_basic_pc_data_index:   return get_hash_pc_data_index(load_pc, data_index);
@@ -196,29 +182,25 @@ uint32_t OffchipPredBasic::get_hash(uint64_t load_pc, uint32_t count, uint32_t d
     }
 }
 
-uint32_t OffchipPredBasic::get_hash_pc(uint64_t load_pc)
-{
+uint32_t OffchipPredBasic::get_hash_pc(uint64_t load_pc) {
     uint32_t folded_pc = folded_xor(load_pc, 2);
     uint32_t hashed_val = HashZoo::getHash(knob::ocp_basic_hash_type, folded_pc);
     
     return (hashed_val % knob::ocp_basic_table_size);
 }
 
-uint32_t OffchipPredBasic::get_hash_pc_count(uint64_t load_pc, uint32_t count)
-{
+uint32_t OffchipPredBasic::get_hash_pc_count(uint64_t load_pc, uint32_t count) {
     uint64_t raw_data = load_pc;
     uint32_t count_processed = count % knob::ocp_basic_count_modulo;
     raw_data = (raw_data << 4) + count_processed;
     return (HashZoo::getHash(knob::ocp_basic_hash_type, folded_xor(raw_data, 2)) % knob::ocp_basic_table_size);
 }
 
-uint32_t OffchipPredBasic::get_hash_pc_data_index(uint64_t load_pc, uint32_t data_index)
-{
+uint32_t OffchipPredBasic::get_hash_pc_data_index(uint64_t load_pc, uint32_t data_index) {
     uint32_t folded_pc = folded_xor(load_pc, 2);
     uint32_t hashed_val = 0;
     
-    switch(knob::ocp_basic_include_data_index_type)
-    {
+    switch(knob::ocp_basic_include_data_index_type) {
         case 0:
             folded_pc = (folded_pc << 2) + data_index;
             hashed_val = HashZoo::getHash(knob::ocp_basic_hash_type, folded_pc);
@@ -234,39 +216,34 @@ uint32_t OffchipPredBasic::get_hash_pc_data_index(uint64_t load_pc, uint32_t dat
     return (hashed_val % knob::ocp_basic_table_size);
 }
 
-uint32_t OffchipPredBasic::get_hash_pc_offset(uint64_t load_pc, uint32_t voffset)
-{
+uint32_t OffchipPredBasic::get_hash_pc_offset(uint64_t load_pc, uint32_t voffset) {
     uint64_t raw_data = load_pc;
     raw_data = raw_data << 6;
     raw_data += voffset;
     return (HashZoo::getHash(knob::ocp_basic_hash_type, folded_xor(raw_data, 2)) % knob::ocp_basic_table_size);
 }
 
-uint32_t OffchipPredBasic::get_hash_pc_page(uint64_t load_pc, uint64_t vpage)
-{
+uint32_t OffchipPredBasic::get_hash_pc_page(uint64_t load_pc, uint64_t vpage) {
     uint64_t raw_data = load_pc;
     raw_data = raw_data << 12;
     raw_data ^= vpage;
     return (HashZoo::getHash(knob::ocp_basic_hash_type, folded_xor(raw_data, 2)) % knob::ocp_basic_table_size);
 }
 
-uint32_t OffchipPredBasic::get_hash_pc_addr(uint64_t load_pc, uint64_t vaddr)
-{
+uint32_t OffchipPredBasic::get_hash_pc_addr(uint64_t load_pc, uint64_t vaddr) {
     uint64_t raw_data = load_pc;
     raw_data = raw_data << 12;
     raw_data ^= vaddr;
     return (HashZoo::getHash(knob::ocp_basic_hash_type, folded_xor(raw_data, 2)) % knob::ocp_basic_table_size);
 }
 
-uint32_t OffchipPredBasic::get_hash_cl_first_access(bool first_access)
-{
+uint32_t OffchipPredBasic::get_hash_cl_first_access(bool first_access) {
     uint32_t raw_data =  first_access ? 1 : 0;
     return (raw_data % knob::ocp_basic_table_size);
 }
 
 
-void OffchipPredBasic::lookup_pc(uint64_t load_pc, uint32_t &count)
-{
+void OffchipPredBasic::lookup_pc(uint64_t load_pc, uint32_t &count) {
     stats.pc_buf.called++;
     unique_pcs.insert(load_pc);
 
@@ -298,8 +275,7 @@ void OffchipPredBasic::lookup_pc(uint64_t load_pc, uint32_t &count)
     }
 }
 
-void OffchipPredBasic::lookup_address(uint64_t vaddr, uint64_t vpage, uint32_t voffset, bool &first_access)
-{
+void OffchipPredBasic::lookup_address(uint64_t vaddr, uint64_t vpage, uint32_t voffset, bool &first_access) {
     stats.page_buf.called++;
     unique_pages.insert(vpage);
 
@@ -318,8 +294,7 @@ void OffchipPredBasic::lookup_address(uint64_t vaddr, uint64_t vpage, uint32_t v
     }
     else
     {
-        if (m_page_buffer.size() >= knob::ocp_basic_page_buf_size)
-        {
+        if (m_page_buffer.size() >= knob::ocp_basic_page_buf_size) {
             m_page_buffer.pop_front();
             stats.page_buf.eviction++;
         }

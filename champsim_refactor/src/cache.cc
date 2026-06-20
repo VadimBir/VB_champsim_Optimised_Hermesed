@@ -107,8 +107,7 @@ void CACHE::handle_fill() {
             DP_FILL_M(("STAGE_FILL_RETURN_LLCBYP idx=" + std::to_string(mshr_index) + " mshr.fill=" + std::to_string(MSHR.entry[mshr_index].fill_level) + " self.fill=" + std::to_string(fill_level)).c_str(), &MSHR.entry[mshr_index]);
             handle_fill_return(mshr_index);
 
-	    if(warmup_complete[fill_cpu])
-	      {
+	    if(warmup_complete[fill_cpu]) {
 		uint64_t current_miss_latency = PCYCLE_DIFF(PACK_CYCLE(current_core_cycle[fill_cpu]), MSHR.entry[mshr_index].cycle_enqueued);
 		total_miss_latency += current_miss_latency;
 	      }
@@ -856,8 +855,7 @@ void CACHE::fill_cache(const uint32_t set, const uint32_t way, PACKET *packet) {
     // cout << " data: " << block[set][way].data << dec << endl; });
 }
 
-int CACHE::check_hit(PACKET *packet)
-{
+int CACHE::check_hit(PACKET *packet) {
 
     uint32_t set = get_set(packet->address);
     int match_way = -1;
@@ -1728,13 +1726,11 @@ uint32_t CACHE::get_size(uint8_t queue_type, uint64_t address) const
     }
 }
 
-void CACHE::increment_WQ_FULL(uint64_t address)
-{
+void CACHE::increment_WQ_FULL(uint64_t address) {
     WQ.FULL++;
 }
 
-void CACHE::prefetcher_feedback(uint64_t &pref_gen, uint64_t &pref_fill, uint64_t &pref_used, uint64_t &pref_late)
-{
+void CACHE::prefetcher_feedback(uint64_t &pref_gen, uint64_t &pref_fill, uint64_t &pref_used, uint64_t &pref_late) {
     pref_gen = pf_issued;
     pref_fill = pf_fill;
     pref_used = pf_useful;

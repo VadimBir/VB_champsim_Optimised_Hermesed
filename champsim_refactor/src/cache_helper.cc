@@ -218,8 +218,7 @@
          << " RQ="    << setw(3) << RQ.occupancy  << "/" << setw(3) << RQ.SIZE \
          << " WQ="    << setw(3) << WQ.occupancy  << "/" << setw(3) << WQ.SIZE \
          << " PQ="    << setw(3) << PQ.occupancy  << "/" << setw(3) << PQ.SIZE
-void CACHE::dump_req(PACKET& o)
-{
+void CACHE::dump_req(PACKET& o) {
     cout << std::hex << " Addr: "  << o.address;
     //<< " FAddr: " << o.full_addr
     cout << std::dec
@@ -253,8 +252,7 @@ void CACHE::dump_req(PACKET& o)
     cout << "} ";
     cout << "ByP " << int(o.l1_bypassed) << " " << int(o.l2_bypassed) << int(o.llc_bypassed);
 }
-void CACHE::dump_req(PACKET* o)
-{
+void CACHE::dump_req(PACKET* o) {
     cout << std::hex << " Addr " << o->address;
     //<< " FAddr " << o->full_addr
     cout << std::dec

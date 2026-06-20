@@ -47,8 +47,7 @@ namespace knob
     extern float ocp_perc_max_activation_threshold;
 }
 
-void OffchipPredPerc::print_config()
-{
+void OffchipPredPerc::print_config() {
     cout << "ocp_perc_activated_features " << print_activated_features(knob::ocp_perc_activated_features) << endl
          << "ocp_perc_weight_array_sizes " << array_to_string(knob::ocp_perc_weight_array_sizes) << endl
          << "ocp_perc_feature_hash_types " << array_to_string(knob::ocp_perc_feature_hash_types) << endl
@@ -74,8 +73,7 @@ void OffchipPredPerc::print_config()
          << endl;
 }
 
-void OffchipPredPerc::dump_stats()
-{
+void OffchipPredPerc::dump_stats() {
     cout << "ocp_perc_train_called " << stats.train.called << endl
          << "ocp_perc_predict_called " << stats.predict.called << endl
          << "ocp_perc_predict_offchip " << stats.predict.outcome[1] << endl
@@ -97,16 +95,14 @@ void OffchipPredPerc::dump_stats()
     perc_pred->dump_stats();
 }
 
-void OffchipPredPerc::reset_stats()
-{
+void OffchipPredPerc::reset_stats() {
     bzero(&stats, sizeof(stats));
     stats.act_thresh_update.max_observed_thresh = -999999999;
     stats.act_thresh_update.min_observed_thresh = 999999999;
     perc_pred->reset_stats();
 }
 
-OffchipPredPerc::OffchipPredPerc(uint32_t _cpu, string _type, uint64_t _seed) : OffchipPredBase(_cpu, _type, _seed)
-{
+OffchipPredPerc::OffchipPredPerc(uint32_t _cpu, string _type, uint64_t _seed) : OffchipPredBase(_cpu, _type, _seed) {
     perc_pred = new perceptron_pred_t(knob::ocp_perc_activated_features, 
                                       knob::ocp_perc_weight_array_sizes,
                                       knob::ocp_perc_feature_hash_types, 
@@ -121,8 +117,7 @@ OffchipPredPerc::OffchipPredPerc(uint32_t _cpu, string _type, uint64_t _seed) : 
     perc_pred->set_cpu(cpu);
 
     // init page buffer
-    for(uint32_t index = 0; index < knob::ocp_perc_page_buf_sets; ++index)
-    {
+    for(uint32_t index = 0; index < knob::ocp_perc_page_buf_sets; ++index) {
         deque<ocp_perc_page_buf_entry_t*> d;
         d.clear();
         m_page_buffer.push_back(d);
@@ -136,13 +131,11 @@ OffchipPredPerc::OffchipPredPerc(uint32_t _cpu, string _type, uint64_t _seed) : 
     reset_stats();
 }
 
-OffchipPredPerc::~OffchipPredPerc()
-{
+OffchipPredPerc::~OffchipPredPerc() {
 
 }
 
-bool OffchipPredPerc::predict(ooo_model_instr *arch_instr, uint32_t data_index, LSQ_ENTRY *lq_entry)
-{
+bool OffchipPredPerc::predict(ooo_model_instr *arch_instr, uint32_t data_index, LSQ_ENTRY *lq_entry) {
     state_info_t *info = get_state(arch_instr, data_index, lq_entry);
     float perc_weight_sum = 0.0;
     bool prediction = false;
@@ -163,8 +156,7 @@ bool OffchipPredPerc::predict(ooo_model_instr *arch_instr, uint32_t data_index, 
     return prediction;
 }
 
-void OffchipPredPerc::train(ooo_model_instr *arch_instr, uint32_t data_index, LSQ_ENTRY *lq_entry)
-{
+void OffchipPredPerc::train(ooo_model_instr *arch_instr, uint32_t data_index, LSQ_ENTRY *lq_entry) {
     train_count++;
 
     // keep track of true/false positives/negatives
@@ -174,8 +166,7 @@ void OffchipPredPerc::train(ooo_model_instr *arch_instr, uint32_t data_index, LS
     else if(!lq_entry->went_offchip_pred && !lq_entry->went_offchip)    true_neg++;
 
     // check if an update to activation threshold is needed
-    if(knob::ocp_perc_enable_dynamic_act_thresh && train_count % knob::ocp_perc_update_act_thresh_epoch == 0)
-    {
+    if(knob::ocp_perc_enable_dynamic_act_thresh && train_count % knob::ocp_perc_update_act_thresh_epoch == 0) {
         check_and_update_act_thresh();
     }
 
@@ -191,8 +182,7 @@ void OffchipPredPerc::train(ooo_model_instr *arch_instr, uint32_t data_index, LS
     stats.train.called++;
 }
 
-state_info_t* OffchipPredPerc::get_state(ooo_model_instr *arch_instr, uint32_t data_index, LSQ_ENTRY *lq_entry)
-{
+state_info_t* OffchipPredPerc::get_state(ooo_model_instr *arch_instr, uint32_t data_index, LSQ_ENTRY *lq_entry) {
     uint64_t load_pc = arch_instr->ip;
     uint64_t vaddr = lq_entry->virtual_address;
     uint64_t vpage = vaddr >> LOG2_PAGE_SIZE;
@@ -228,8 +218,7 @@ state_info_t* OffchipPredPerc::get_state(ooo_model_instr *arch_instr, uint32_t d
     // return NULL;
 }
 
-void OffchipPredPerc::lookup_address(uint64_t vaddr, uint64_t vpage, uint32_t voffset, bool &first_access)
-{
+void OffchipPredPerc::lookup_address(uint64_t vaddr, uint64_t vpage, uint32_t voffset, bool &first_access) {
     stats.page_buf.called++;
     unique_pages.insert(vpage);
 
@@ -250,8 +239,7 @@ void OffchipPredPerc::lookup_address(uint64_t vaddr, uint64_t vpage, uint32_t vo
     }
     else
     {
-        if (m_page_buffer[set].size() >= knob::ocp_perc_page_buf_assoc)
-        {
+        if (m_page_buffer[set].size() >= knob::ocp_perc_page_buf_assoc) {
             entry = m_page_buffer[set].front();
             m_page_buffer[set].pop_front();
             stats.page_buf.eviction++;
@@ -268,25 +256,21 @@ void OffchipPredPerc::lookup_address(uint64_t vaddr, uint64_t vpage, uint32_t vo
     }
 }
 
-uint32_t OffchipPredPerc::get_set(uint64_t page)
-{
+uint32_t OffchipPredPerc::get_set(uint64_t page) {
     uint32_t hash = HashZoo::fnv1a64(page);
     return hash % knob::ocp_perc_page_buf_sets;
 }
 
-void OffchipPredPerc::get_control_flow_signatures(LSQ_ENTRY *lq_entry, uint64_t &last_n_load_pc_sig, uint64_t &last_n_pc_sig)
-{
+void OffchipPredPerc::get_control_flow_signatures(LSQ_ENTRY *lq_entry, uint64_t &last_n_load_pc_sig, uint64_t &last_n_pc_sig) {
     // signature from last N load PCs
     uint64_t curr_pc = lq_entry->ip;
-    if(last_n_load_pcs.size() >= knob::ocp_perc_last_n_load_pcs)
-    {
+    if(last_n_load_pcs.size() >= knob::ocp_perc_last_n_load_pcs) {
         last_n_load_pcs.pop_front();
     }
     last_n_load_pcs.push_back(curr_pc);
 
     last_n_load_pc_sig = 0;
-    for(uint32_t index = 0; index < last_n_load_pcs.size(); ++index)
-    {
+    for(uint32_t index = 0; index < last_n_load_pcs.size(); ++index) {
         last_n_load_pc_sig <<= 1;
         last_n_load_pc_sig ^= last_n_load_pcs[index];
     }
@@ -294,8 +278,7 @@ void OffchipPredPerc::get_control_flow_signatures(LSQ_ENTRY *lq_entry, uint64_t 
     // signature from last N instruction PCs
     deque<uint64_t> last_n_pcs;
     int prior = lq_entry->rob_index;
-    for(int i = 0; i < (int)knob::ocp_perc_last_n_pcs-1; ++i)
-    {
+    for(int i = 0; i < (int)knob::ocp_perc_last_n_pcs-1; ++i) {
         last_n_pcs.push_front(ooo_cpu[cpu].ROB.entry[prior].ip);
         prior--;
         if(prior < 0)
@@ -303,18 +286,15 @@ void OffchipPredPerc::get_control_flow_signatures(LSQ_ENTRY *lq_entry, uint64_t 
     }
 
     last_n_pc_sig = 0;
-    for(uint32_t index = 0; index < last_n_pcs.size(); ++index)
-    {
+    for(uint32_t index = 0; index < last_n_pcs.size(); ++index) {
         last_n_pc_sig <<= 1;
         last_n_pc_sig ^= last_n_pcs[index];
     }
 }
 
-string OffchipPredPerc::print_activated_features(vector<int32_t> activated_features)
-{
+string OffchipPredPerc::print_activated_features(vector<int32_t> activated_features) {
     std::stringstream ss;
-    for (uint32_t feature = 0; feature < activated_features.size(); ++feature)
-    {
+    for (uint32_t feature = 0; feature < activated_features.size(); ++feature) {
         if (feature)
             ss << ",";
         ss << perc::feature_names[activated_features[feature]];
@@ -322,15 +302,13 @@ string OffchipPredPerc::print_activated_features(vector<int32_t> activated_featu
     return ss.str();
 }
 
-void OffchipPredPerc::check_and_update_act_thresh()
-{
+void OffchipPredPerc::check_and_update_act_thresh() {
     stats.act_thresh_update.called++;
     float precision = (float)true_pos/(true_pos+false_pos);
     
     // if the DRAM bandwidth consumption is high AND the precision of the predictor is low,
     // then try to improve the precision by increasing activation threshold
-    if(dram_bw >= knob::ocp_perc_high_critical_dram_bw_level && precision <= knob::ocp_perc_poor_precision_thresh)
-    {
+    if(dram_bw >= knob::ocp_perc_high_critical_dram_bw_level && precision <= knob::ocp_perc_poor_precision_thresh) {
         stats.act_thresh_update.increment++;
         float old_thresh = perc_pred->get_activation_threshold();
         float new_thresh = min((old_thresh + knob::ocp_perc_act_thresh_update_gradient), knob::ocp_perc_max_activation_threshold);
@@ -342,8 +320,7 @@ void OffchipPredPerc::check_and_update_act_thresh()
         if(new_thresh < stats.act_thresh_update.min_observed_thresh) stats.act_thresh_update.min_observed_thresh = new_thresh;
         if(new_thresh > stats.act_thresh_update.max_observed_thresh) stats.act_thresh_update.max_observed_thresh = new_thresh;
     }
-    else if(dram_bw <= knob::ocp_perc_low_critical_dram_bw_level)
-    {
+    else if(dram_bw <= knob::ocp_perc_low_critical_dram_bw_level) {
         stats.act_thresh_update.decrement++;
         float old_thresh = perc_pred->get_activation_threshold();
         float new_thresh = max((old_thresh - knob::ocp_perc_act_thresh_update_gradient), knob::ocp_perc_min_activation_threshold);

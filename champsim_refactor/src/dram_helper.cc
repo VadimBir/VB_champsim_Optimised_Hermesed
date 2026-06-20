@@ -63,8 +63,7 @@
 #endif
 // ==== END COMPREHENSIVE DRAM DP MACROS ====
 
-void print_dram_config()
-{
+void print_dram_config() {
     cout << std::right << setw(16) << "dram_chnl_width;" << std::left << setw(5) << DRAM_CHANNEL_WIDTH << ";" <<
         std::right << setw(38) << "dram_rq_sz ;" << std::left << setw(3) << DRAM_RQ_SIZE << ";" <<
         std::right << setw(12) << "dram_wq_sz ;" << std::left << setw(5) << DRAM_WQ_SIZE << ";" << endl <<

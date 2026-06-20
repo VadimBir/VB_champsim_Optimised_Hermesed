@@ -65,8 +65,7 @@ namespace internal {
      *
      * The input cannot be zero.
      */
-    template <typename T> Size fls(T x)
-    {
+    template <typename T> Size fls(T x) {
         assert(x != 0);
         return std::numeric_limits<T>::digits - clz(x) - 1;
     }
@@ -75,8 +74,7 @@ namespace internal {
      */
     inline Size popcount(unsigned int x) { return __builtin_popcount(x); }
     inline Size popcount(unsigned long x) { return __builtin_popcountl(x); }
-    inline Size popcount(unsigned long long x)
-    {
+    inline Size popcount(unsigned long long x) {
         return __builtin_popcountll(x);
     }
 }
@@ -131,8 +129,7 @@ public:
     /** The basic constructor.
      */
     Fbitset_base(Size size)
-        : size_(size)
-    {
+        : size_(size) {
         if constexpr (NO_EXT) {
             assert(size <= MAX_BITS);
             limbs_.int_.fill(0);
@@ -167,30 +164,26 @@ public:
     /** Default constructor.
      */
     Fbitset_base()
-        : Fbitset_base(0)
-    {
+        : Fbitset_base(0) {
     }
 
     /** Copy constructor.
      */
     Fbitset_base(const Fbitset_base& o)
-        : size_(o.size())
-    {
+        : size_(o.size()) {
         init(o);
     }
 
     /** Move constructor.
      */
     Fbitset_base(Fbitset_base&& o)
-        : size_(o.size())
-    {
+        : size_(o.size()) {
         init(std::move(o));
     }
 
     /** Destructor.
      */
-    ~Fbitset_base()
-    {
+    ~Fbitset_base() {
         if constexpr (NO_EXT)
             return;
         if (!is_inplace()) {
@@ -200,8 +193,7 @@ public:
 
     /** Copy assignment.
      */
-    Fbitset_base& operator=(const Fbitset_base& o)
-    {
+    Fbitset_base& operator=(const Fbitset_base& o) {
         if (this == &o)
             return *this;
 
@@ -212,8 +204,7 @@ public:
 
     /** Move assignment.
      */
-    Fbitset_base& operator=(Fbitset_base&& o)
-    {
+    Fbitset_base& operator=(Fbitset_base&& o) {
         if (this == &o)
             return *this;
 
@@ -243,8 +234,7 @@ protected:
      * the loop for in-place storage.  This function is more for random access
      * patterns.
      */
-    template <typename B> static auto limbs(B* o)
-    {
+    template <typename B> static auto limbs(B* o) {
         static_assert(std::is_base_of_v<Fbitset_base, std::decay_t<B>>);
         auto& first_int = o->limbs_.int_[0];
         if constexpr (NO_EXT) {
@@ -321,8 +311,7 @@ protected:
      * limb dynamically may not be worthy of the effort.
      */
     template <typename B, typename U>
-    static decltype(auto) exec_limbs(B* o, U act)
-    {
+    static decltype(auto) exec_limbs(B* o, U act) {
         static_assert(std::is_base_of_v<Fbitset_base, std::decay_t<B>>);
 
         if constexpr (NO_EXT) {
@@ -341,8 +330,7 @@ protected:
      * The two bit sets need to be of the same type and have the same size.
      */
     template <typename B, typename C, typename U>
-    static decltype(auto) exec_limbs(B* o1, C* o2, U act)
-    {
+    static decltype(auto) exec_limbs(B* o1, C* o2, U act) {
         static_assert(std::is_base_of_v<Fbitset_base, std::decay_t<B>>);
         static_assert(std::is_base_of_v<Fbitset_base, std::decay_t<C>>);
         assert(o1->size() == o2->size());
@@ -362,8 +350,7 @@ protected:
 
     /** Apply the given callable to matching pairs of limbs.
      */
-    template <typename T> void zip_limbs(const Fbitset_base& o, T act)
-    {
+    template <typename T> void zip_limbs(const Fbitset_base& o, T act) {
         exec_limbs(
             this, &o, [&act, this](auto& self, const auto& other) -> void {
                 for (Size i = 0; i < self.size(); ++i) {
@@ -399,8 +386,7 @@ private:
      * for in-place storage.  For external storage, the content will be copied
      * or moved according to the value category of `o`.
      */
-    template <typename T> void init(T&& o)
-    {
+    template <typename T> void init(T&& o) {
         static_assert(std::is_same_v<Fbitset_base, std::decay_t<T>>,
             "The same Fbitset type is expected");
 
@@ -569,8 +555,7 @@ public:
      * @param size The number of bits that need to be held.
      */
     Fbitset(Size size, bool set_true = false)
-        : Base(size)
-    {
+        : Base(size) {
         if (set_true) {
             set_all(size);
         }
@@ -582,8 +567,7 @@ public:
      */
     template <typename It>
     Fbitset(Size size, It first_idx, It last_idx)
-        : Fbitset(size)
-    {
+        : Fbitset(size) {
         for (; first_idx != last_idx; ++first_idx) {
             set(*first_idx);
         }
@@ -595,8 +579,7 @@ public:
      * literal.
      */
     Fbitset(Size size, std::initializer_list<Size> idxes)
-        : Fbitset(size, idxes.begin(), idxes.end())
-    {
+        : Fbitset(size, idxes.begin(), idxes.end()) {
     }
 
     // All Special functions are from the base class.  The default gang-of-zero

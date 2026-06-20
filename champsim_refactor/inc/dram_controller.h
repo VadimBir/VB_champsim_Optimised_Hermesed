@@ -97,8 +97,7 @@ class MEMORY_CONTROLLER : public MEMORY {
     // }
 
     // constructor
-    MEMORY_CONTROLLER(const std::string &v1) : NAME(v1.c_str())
-    {
+    MEMORY_CONTROLLER(const std::string &v1) : NAME(v1.c_str()) {
         for (uint32_t i = 0; i < NUM_TYPES + 1; i++)
             for (uint32_t j = 0; j < NUM_TYPES + 1; j++)
                 dbus_congested[i][j] = 0;

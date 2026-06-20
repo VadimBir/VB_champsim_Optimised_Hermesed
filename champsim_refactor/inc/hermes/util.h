@@ -9,14 +9,11 @@
 void gen_random(char *s, const int len);
 uint32_t folded_xor(uint64_t value, uint32_t num_folds);
 
-template <class T> std::string array_to_string(std::vector<T> array, bool hex = false, uint32_t size = 0)
-{
+template <class T> std::string array_to_string(std::vector<T> array, bool hex = false, uint32_t size = 0) {
     std::stringstream ss;
     if (size == 0) size = array.size();
-    for(uint32_t index = 0; index < size; ++index)
-    {
-    	if(hex)
-    	{
+    for(uint32_t index = 0; index < size; ++index) {
+    	if(hex) {
     		ss << std::hex << array[index] << std::dec;
     	}
     	else
@@ -91,8 +88,7 @@ class Counter
 
     public:
         Counter() : width(0), value(0), max_value(0) {}
-        Counter(uint32_t w, uint64_t init_val = 0)
-        {
+        Counter(uint32_t w, uint64_t init_val = 0) {
             init(w, init_val);
         }
         ~Counter(){}

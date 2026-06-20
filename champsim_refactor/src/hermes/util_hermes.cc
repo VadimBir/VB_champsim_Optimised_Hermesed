@@ -9,29 +9,25 @@
 #include "hermes/fnv.h"        // third-party library from https://create.stephan-brumme.com/fnv-hash/
 
 /* helper function */
-void gen_random(char *s, const int len) 
-{
+void gen_random(char *s, const int len) {
     static const char alphanum[] =
         "0123456789"
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         "abcdefghijklmnopqrstuvwxyz";
 
-    for (int i = 0; i < len; ++i) 
-    {
+    for (int i = 0; i < len; ++i) {
         s[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
     }
     
     s[len] = 0;
 }
 
-uint32_t folded_xor(uint64_t value, uint32_t num_folds)
-{
+uint32_t folded_xor(uint64_t value, uint32_t num_folds) {
 	assert(num_folds > 1);
 	assert((num_folds & (num_folds-1)) == 0); /* has to be power of 2 */
 	uint32_t mask = 0;
 	uint32_t bits_in_fold = 64/num_folds;
-	if(num_folds == 2)
-	{
+	if(num_folds == 2) {
 		mask = 0xffffffff;
 	}
 	else
@@ -39,8 +35,7 @@ uint32_t folded_xor(uint64_t value, uint32_t num_folds)
 		mask = (1ul << bits_in_fold) - 1;
 	}
 	uint32_t folded_value = 0;
-	for(uint32_t fold = 0; fold < num_folds; ++fold)
-	{
+	for(uint32_t fold = 0; fold < num_folds; ++fold) {
 		folded_value = folded_value ^ ((value >> (fold * bits_in_fold)) & mask);
 	}
 	return folded_value;
@@ -49,8 +44,7 @@ uint32_t folded_xor(uint64_t value, uint32_t num_folds)
 /**********************************************
  *********** 32-bit hash functions ************
  **********************************************/
-uint32_t HashZoo::jenkins(uint32_t key)
-{
+uint32_t HashZoo::jenkins(uint32_t key) {
     // Robert Jenkins' 32 bit mix function
     key += (key << 12);
     key ^= (key >> 22);
@@ -63,22 +57,19 @@ uint32_t HashZoo::jenkins(uint32_t key)
     return key;
 }
 
-uint32_t HashZoo::knuth(uint32_t key)
-{
+uint32_t HashZoo::knuth(uint32_t key) {
     // Knuth's multiplicative method
     key = (key >> 3) * 2654435761;
     return key;
 }
 
-uint32_t HashZoo::murmur3(uint32_t key)
-{
+uint32_t HashZoo::murmur3(uint32_t key) {
 	/* TODO: define it using murmur3's finilization steps */
 	assert(false);
 }
 
 /* originally ment for 32b key */
-uint32_t HashZoo::jenkins32(uint32_t key)
-{
+uint32_t HashZoo::jenkins32(uint32_t key) {
    key = (key+0x7ed55d16) + (key<<12);
    key = (key^0xc761c23c) ^ (key>>19);
    key = (key+0x165667b1) + (key<<5);
@@ -89,8 +80,7 @@ uint32_t HashZoo::jenkins32(uint32_t key)
 }
 
 /* originally ment for 32b key */
-uint32_t HashZoo::hash32shift(uint32_t key)
-{
+uint32_t HashZoo::hash32shift(uint32_t key) {
 	key = ~key + (key << 15); // key = (key << 15) - key - 1;
 	key = key ^ (key >> 12);
 	key = key + (key << 2);
@@ -101,8 +91,7 @@ uint32_t HashZoo::hash32shift(uint32_t key)
 }
 
 /* originally ment for 32b key */
-uint32_t HashZoo::hash32shiftmult(uint32_t key)
-{
+uint32_t HashZoo::hash32shiftmult(uint32_t key) {
 	int c2=0x27d4eb2d; // a prime or an odd constant
 	key = (key ^ 61) ^ (key >> 16);
 	key = key + (key << 3);
@@ -112,8 +101,7 @@ uint32_t HashZoo::hash32shiftmult(uint32_t key)
 	return key;
 }
 
-uint32_t HashZoo::hash64shift(uint32_t key)
-{
+uint32_t HashZoo::hash64shift(uint32_t key) {
 	key = (~key) + (key << 21); // key = (key << 21) - key - 1;
 	key = key ^ (key >> 24);
 	key = (key + (key << 3)) + (key << 8); // key * 265
@@ -124,8 +112,7 @@ uint32_t HashZoo::hash64shift(uint32_t key)
 	return key;
 }
 
-uint32_t HashZoo::hash5shift(uint32_t key)
-{
+uint32_t HashZoo::hash5shift(uint32_t key) {
 	key = (key ^ 61) ^ (key >> 16);
     key = key + (key << 3);
     key = key ^ (key >> 4);
@@ -136,8 +123,7 @@ uint32_t HashZoo::hash5shift(uint32_t key)
 
 /* hash6shift is jenkin32 */
 
-uint32_t HashZoo::hash7shift(uint32_t key)
-{
+uint32_t HashZoo::hash7shift(uint32_t key) {
     key -= (key << 6);
     key ^= (key >> 17);
     key -= (key << 9);
@@ -149,8 +135,7 @@ uint32_t HashZoo::hash7shift(uint32_t key)
 }
 
 /* use low bit values */
-uint32_t HashZoo::Wang6shift(uint32_t key)
-{
+uint32_t HashZoo::Wang6shift(uint32_t key) {
     key += ~(key << 15);
     key ^=  (key >> 10);
     key +=  (key << 3);
@@ -160,8 +145,7 @@ uint32_t HashZoo::Wang6shift(uint32_t key)
     return key;
 }
 
-uint32_t HashZoo::Wang5shift(uint32_t key)
-{
+uint32_t HashZoo::Wang5shift(uint32_t key) {
     key = (key + 0x479ab41d) + (key << 8);
     key = (key ^ 0xe4aa10ce) ^ (key >> 5);
     key = (key + 0x9942f0a6) - (key << 14);
@@ -170,8 +154,7 @@ uint32_t HashZoo::Wang5shift(uint32_t key)
     return key;
 }
 
-uint32_t HashZoo::Wang4shift( uint32_t key)
-{
+uint32_t HashZoo::Wang4shift( uint32_t key) {
     key = (key ^ 0xdeadbeef) + (key << 4);
     key = key ^ (key >> 10);
     key = key + (key << 7);
@@ -179,21 +162,18 @@ uint32_t HashZoo::Wang4shift( uint32_t key)
     return key;
 }
 
-uint32_t HashZoo::Wang3shift( uint32_t key)
-{
+uint32_t HashZoo::Wang3shift( uint32_t key) {
     key = key ^ (key >> 4);
     key = (key ^ 0xdeadbeef) + (key << 5);
     key = key ^ (key >> 11);
     return key;
 }
 
-uint32_t HashZoo::xxhash32(uint32_t key)
-{
+uint32_t HashZoo::xxhash32(uint32_t key) {
     return XXHash32::hash((void*)&key, sizeof(key), 0);
 }
 
-uint32_t HashZoo::fnv1a32(uint32_t key)
-{
+uint32_t HashZoo::fnv1a32(uint32_t key) {
     return FNV::fnv1a(key);
 }
 
@@ -227,8 +207,7 @@ uint32_t HashZoo::four_hybrid12(uint32_t key) { return Wang4shift(Wang3shift(jen
  *********** 64-bit hash functions ************
  **********************************************/
 
-uint64_t HashZoo::crc64(uint64_t key)
-{
+uint64_t HashZoo::crc64(uint64_t key) {
     static const unsigned long long crcPolynomial = 3988292384ULL;
     unsigned long long val = key;
     for( unsigned int i = 0; i < 32; i++ )
@@ -236,20 +215,16 @@ uint64_t HashZoo::crc64(uint64_t key)
     return val;
 }
 
-uint64_t HashZoo::xxhash64(uint64_t key)
-{
+uint64_t HashZoo::xxhash64(uint64_t key) {
     return XXHash64::hash((void*)&key, sizeof(key), 0);
 }
 
-uint64_t HashZoo::fnv1a64(uint64_t key)
-{
+uint64_t HashZoo::fnv1a64(uint64_t key) {
     return FNV::fnv1a((void*)&key, sizeof(key));
 }
 
-uint32_t HashZoo::getHash(uint32_t selector, uint32_t key)
-{
-    switch(selector)
-    {
+uint32_t HashZoo::getHash(uint32_t selector, uint32_t key) {
+    switch(selector) {
         case 1:     return key;
         case 2:     return jenkins(key);
         case 3:     return knuth(key);

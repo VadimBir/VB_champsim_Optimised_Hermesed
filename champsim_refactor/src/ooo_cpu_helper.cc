@@ -106,8 +106,7 @@
 #endif
 // ==== END TRUE_SANITY_CHECK macros (ooo_cpu.cc local) ====
 
-void print_core_config()
-{
+void print_core_config() {
     cout << "fetch_width ;" << FETCH_WIDTH << "; "
          << "decode_width ;" << DECODE_WIDTH << "; "
          << "exec_width ;" << EXEC_WIDTH << "; "

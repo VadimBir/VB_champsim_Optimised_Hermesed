@@ -49,8 +49,7 @@ struct state_info_t
     uint32_t v_cl_word_offset;
     uint32_t v_cl_dword_offset;
 
-    state_info_t()
-    {
+    state_info_t() {
         pc = 0;
         last_n_load_pc_sig = 0;
         last_n_pc_sig = 0;
@@ -74,8 +73,7 @@ class weight_array_t
         vector<float> array;
 
     public:
-        weight_array_t(uint32_t _size)
-        {
+        weight_array_t(uint32_t _size) {
             size = _size;
             array.resize(size, 0.0);
         }

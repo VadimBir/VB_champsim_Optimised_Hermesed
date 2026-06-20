@@ -13,8 +13,7 @@ public:
     uint64_t seed;
     uint8_t dram_bw; // current DRAM bandwidth bucket
 
-    OffchipPredBase(uint32_t _cpu, string _type, uint64_t _seed) : cpu(_cpu), type(_type), seed(_seed) 
-    {
+    OffchipPredBase(uint32_t _cpu, string _type, uint64_t _seed) : cpu(_cpu), type(_type), seed(_seed) {
         srand(seed);
         dram_bw = 0;
     }

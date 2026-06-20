@@ -14,8 +14,7 @@ namespace knob
     extern bool     ocp_ttp_enable_track_llc_eviction;
 }
 
-void OffchipPredTTP::print_config()
-{
+void OffchipPredTTP::print_config() {
     cout << "ocp_ttp_catalog_cache_sets " << knob::ocp_ttp_catalog_cache_sets << endl
          << "ocp_ttp_catalog_cache_assoc " << knob::ocp_ttp_catalog_cache_assoc << endl
          << "ocp_ttp_hash_type " << knob::ocp_ttp_hash_type << endl
@@ -24,8 +23,7 @@ void OffchipPredTTP::print_config()
          << endl;
 }
 
-void OffchipPredTTP::dump_stats()
-{
+void OffchipPredTTP::dump_stats() {
     cout << "ocp_ttp_train_called " << stats.train.called << endl
          << "ocp_ttp_train_not_offchip " << stats.train.not_offchip << endl
          << "ocp_ttp_train_not_offchip_and_in_catalog " << stats.train.not_offchip_and_in_catalog << endl
@@ -41,25 +39,21 @@ void OffchipPredTTP::dump_stats()
          << endl;
 }
 
-void OffchipPredTTP::reset_stats()
-{
+void OffchipPredTTP::reset_stats() {
     bzero(&stats, sizeof(stats));
 }
 
-OffchipPredTTP::OffchipPredTTP(uint32_t _cpu, string _type, uint64_t _seed) : OffchipPredBase(_cpu, _type, _seed)
-{
+OffchipPredTTP::OffchipPredTTP(uint32_t _cpu, string _type, uint64_t _seed) : OffchipPredBase(_cpu, _type, _seed) {
     // init catalog_cache
     deque<pair<uint32_t,uint32_t>> d;
     catalog_cache.resize(knob::ocp_ttp_catalog_cache_sets, d);
 }
 
-OffchipPredTTP::~OffchipPredTTP()
-{
+OffchipPredTTP::~OffchipPredTTP() {
 
 }
 
-void OffchipPredTTP::train(ooo_model_instr *arch_instr, uint32_t data_index, LSQ_ENTRY *lq_entry)
-{
+void OffchipPredTTP::train(ooo_model_instr *arch_instr, uint32_t data_index, LSQ_ENTRY *lq_entry) {
     stats.train.called++;
     uint64_t vcladdr = lq_entry->virtual_address >> LOG2_BLOCK_SIZE;
     uint64_t pcladdr = lq_entry->physical_address >> LOG2_BLOCK_SIZE;
@@ -67,8 +61,7 @@ void OffchipPredTTP::train(ooo_model_instr *arch_instr, uint32_t data_index, LSQ
     update_catalog_cache(vcladdr, pcladdr, lq_entry->went_offchip);
 }
 
-bool OffchipPredTTP::predict(ooo_model_instr *arch_instr, uint32_t data_index, LSQ_ENTRY *lq_entry)
-{
+bool OffchipPredTTP::predict(ooo_model_instr *arch_instr, uint32_t data_index, LSQ_ENTRY *lq_entry) {
     uint64_t vcladdr = lq_entry->virtual_address >> LOG2_BLOCK_SIZE;
 
     bool found = lookup_catalog_cache(vcladdr);
@@ -79,8 +72,7 @@ bool OffchipPredTTP::predict(ooo_model_instr *arch_instr, uint32_t data_index, L
     return found ? false : true;
 }
 
-void OffchipPredTTP::update_catalog_cache(uint64_t vaddr, uint64_t paddr, bool went_offchip)
-{
+void OffchipPredTTP::update_catalog_cache(uint64_t vaddr, uint64_t paddr, bool went_offchip) {
     /* Catalog cache stores the partial tags of cachelines that did not go off-chip. 
      * We can conceptually think this as a 1-bit information per cacheline, as mentioned in the paper.
      */
@@ -97,15 +89,13 @@ void OffchipPredTTP::update_catalog_cache(uint64_t vaddr, uint64_t paddr, bool w
          * or we need to insert it in catalog cache.
          */
         stats.train.not_offchip++;
-        if(it != catalog_cache[set].end())
-        {
+        if(it != catalog_cache[set].end()) {
             stats.train.not_offchip_and_in_catalog++;
             // do nothing
         }
         else
         {
-            if(catalog_cache[set].size() >= knob::ocp_ttp_catalog_cache_assoc)
-            {
+            if(catalog_cache[set].size() >= knob::ocp_ttp_catalog_cache_assoc) {
                 // evict the least-recently-used entry
                 auto victim = catalog_cache[set].begin();
 
@@ -131,8 +121,7 @@ void OffchipPredTTP::update_catalog_cache(uint64_t vaddr, uint64_t paddr, bool w
          * or we need to remove it from there.
          */
         stats.train.went_offchip++;
-        if(it == catalog_cache[set].end())
-        {
+        if(it == catalog_cache[set].end()) {
             // do nothing
             stats.train.went_offchip_and_not_in_catalog++;
         }
@@ -149,29 +138,25 @@ void OffchipPredTTP::update_catalog_cache(uint64_t vaddr, uint64_t paddr, bool w
     }
 }
 
-uint32_t OffchipPredTTP::get_partial_tag(uint64_t addr)
-{
+uint32_t OffchipPredTTP::get_partial_tag(uint64_t addr) {
     uint32_t fxor = folded_xor(addr, 2);
     uint32_t hash = HashZoo::getHash(knob::ocp_ttp_hash_type, fxor);
     return hash & ((1u << knob::ocp_ttp_partial_tag_size) - 1);
 }
 
-bool OffchipPredTTP::lookup_catalog_cache(uint64_t addr)
-{
+bool OffchipPredTTP::lookup_catalog_cache(uint64_t addr) {
     uint32_t partial_tag = get_partial_tag(addr);
     uint32_t set = partial_tag % knob::ocp_ttp_catalog_cache_sets;
     auto it = find_if(catalog_cache[set].begin(), catalog_cache[set].end(), [partial_tag](pair<uint32_t,uint32_t> p){return p.first == partial_tag;});
     return (it != catalog_cache[set].end()) ? true : false;
 }
 
-void OffchipPredTTP::add_to_catalog_cache_rev_index(uint32_t p_partial_tag, uint32_t set)
-{
+void OffchipPredTTP::add_to_catalog_cache_rev_index(uint32_t p_partial_tag, uint32_t set) {
     /* search reverse index catalog with physical address tag */
     auto it = catalog_cache_rev_index.find(p_partial_tag);
     
     /* if the physical tag is not present, add it */
-    if(it == catalog_cache_rev_index.end())
-    {
+    if(it == catalog_cache_rev_index.end()) {
         catalog_cache_rev_index.insert(pair<uint32_t, uint32_t>(p_partial_tag, set));
     }
     /* otherwise, update the location */
@@ -181,20 +166,16 @@ void OffchipPredTTP::add_to_catalog_cache_rev_index(uint32_t p_partial_tag, uint
     } 
 }
 
-void OffchipPredTTP::delete_from_catalog_cache_rev_index(uint32_t p_partial_tag)
-{
+void OffchipPredTTP::delete_from_catalog_cache_rev_index(uint32_t p_partial_tag) {
     /* search reverse index catalog with physical address tag */
     auto it = catalog_cache_rev_index.find(p_partial_tag);
-    if(it != catalog_cache_rev_index.end())
-    {
+    if(it != catalog_cache_rev_index.end()) {
         catalog_cache_rev_index.erase(it);
     }
 }
 
-void OffchipPredTTP::track_llc_eviction(uint64_t paddr)
-{
-    if(!knob::ocp_ttp_enable_track_llc_eviction)
-    {
+void OffchipPredTTP::track_llc_eviction(uint64_t paddr) {
+    if(!knob::ocp_ttp_enable_track_llc_eviction) {
         return;
     }
 
@@ -206,8 +187,7 @@ void OffchipPredTTP::track_llc_eviction(uint64_t paddr)
     /* search reverse index catalog with physical address tag */
     auto it = catalog_cache_rev_index.find(p_partial_tag);
 
-    if(it == catalog_cache_rev_index.end())
-    {
+    if(it == catalog_cache_rev_index.end()) {
         stats.llc_eviction.physical_tag_not_found++;
         return;
     }
@@ -220,8 +200,7 @@ void OffchipPredTTP::track_llc_eviction(uint64_t paddr)
     auto it2 = find_if(catalog_cache[set].begin(), catalog_cache[set].end(), [p_partial_tag](pair<uint32_t, uint32_t> p){return p.second == p_partial_tag;});
     
     /* if a matching entry is found in catalog cache, evict it */
-    if(it2 != catalog_cache[set].end())
-    {
+    if(it2 != catalog_cache[set].end()) {
         // First, evict from reverse index cache
         delete_from_catalog_cache_rev_index(p_partial_tag);
 

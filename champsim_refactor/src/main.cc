@@ -112,8 +112,7 @@ uint64_t previous_ppage, num_adjacent_page, num_cl[NUM_CPUS], allocated_pages, n
 
 #include "main_helper.cc"
 
-void signal_handler(int signal)
-{
+void signal_handler(int signal) {
 	cout << "Caught signal: " << signal << endl;
 	IF_TRACE_HELPER(
 	trace_helper.stop();
@@ -128,8 +127,7 @@ RANDOM champsim_rand(champsim_seed);
 #include "main_loop.cc"
 #define ROB_MASK (ROB_SIZE - 1)
 // static char zero_arena[1024*1024*1024] = {0};
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     
     ChampsimDBConfig db_cfg = {};
 

@@ -12,8 +12,7 @@ IF_HERMES( namespace knob { extern bool enable_ddrp; extern bool dram_cntlr_enab
 uint32_t DRAM_MTPS, DRAM_DBUS_RETURN_TIME,
          tRP, tRCD, tCAS;
 
-void MEMORY_CONTROLLER::reset_remain_requests(PACKET_QUEUE *queue, uint32_t channel)
-{
+void MEMORY_CONTROLLER::reset_remain_requests(PACKET_QUEUE *queue, uint32_t channel) {
     for (uint32_t i=0; i<queue->SIZE; i++) {
         if (queue->entry[i].scheduled) {
 
@@ -75,8 +74,7 @@ void MEMORY_CONTROLLER::reset_remain_requests(PACKET_QUEUE *queue, uint32_t chan
     )
 }
 
-void MEMORY_CONTROLLER::operate()
-{ //TIME_it("      MM Op");
+void MEMORY_CONTROLLER::operate() {
 
     /* LPM tick for DRAM — one tick per CPU per cycle */
     // A1: once all_warmup_complete latches, skip per-cpu warmup check (kills 1 branch/cpu/cycle)
@@ -267,8 +265,7 @@ void MEMORY_CONTROLLER::operate()
     }
 }
 
-void MEMORY_CONTROLLER::schedule(PACKET_QUEUE *queue, uint32_t channel)
-{
+void MEMORY_CONTROLLER::schedule(PACKET_QUEUE *queue, uint32_t channel) {
     // P2: num_unsched early-out. occupancy counts non-empty entries; the
     // per-channel scheduled_{reads,writes} count the scheduled subset. When all
     // non-empty entries are already scheduled there is no unscheduled candidate,
@@ -441,8 +438,7 @@ void MEMORY_CONTROLLER::schedule(PACKET_QUEUE *queue, uint32_t channel)
     }
 }
 
-void MEMORY_CONTROLLER::process(PACKET_QUEUE *queue)
-{
+void MEMORY_CONTROLLER::process(PACKET_QUEUE *queue) {
     uint32_t request_index = queue->next_process_index;
 
     SANITY_DRAM_REQUEST_IDX_BOUND(queue, request_index);
@@ -729,8 +725,7 @@ void MEMORY_CONTROLLER::process(PACKET_QUEUE *queue)
     }
 }
 
-int MEMORY_CONTROLLER::add_rq(PACKET *packet)
-{
+int MEMORY_CONTROLLER::add_rq(PACKET *packet) {
 // #ifdef BYPASS_DEBUG
 //     if (packet->instr_id >= 23230000 || (uint64_t) packet->cycle_enqueued > (uint16_t)12090000)
 //         cout << " DRAM PROBLEM PACKET RETURNED!!!!";
@@ -790,8 +785,7 @@ int MEMORY_CONTROLLER::add_rq(PACKET *packet)
                         llc->fill_cache(df_set, df_way, &df_pkt);
                         llc->llc_update_replacement_state(packet->cpu, df_set, df_way, df_pkt.full_addr, df_pkt.ip, llc->block[df_set][df_way].full_addr, df_pkt.type, 0);
                     }
-#elif defined(BYP_DERFILL_SEQUENTIAL)
-                    {
+#elif defined(BYP_DERFILL_SEQUENTIAL) {
                         df_pkt.returned = COMPLETED;
                         df_pkt.event_cycle = PACK_CYCLE(current_core_cycle[packet->cpu] + llc->LATENCY);
                         df_pkt.fill_level = FILL_LLC;
@@ -869,8 +863,7 @@ int MEMORY_CONTROLLER::add_rq(PACKET *packet)
                             llc->fill_cache(df_set, df_way, &df_pkt);
                             llc->llc_update_replacement_state(packet->cpu, df_set, df_way, df_pkt.full_addr, df_pkt.ip, llc->block[df_set][df_way].full_addr, df_pkt.type, 0);
                         } 
-#elif defined(BYP_DERFILL_SEQUENTIAL)
-                        {
+#elif defined(BYP_DERFILL_SEQUENTIAL) {
                             df_pkt.returned = COMPLETED;
                             df_pkt.event_cycle = PACK_CYCLE(current_core_cycle[packet->cpu] + llc->LATENCY);
                             df_pkt.fill_level = FILL_LLC;
@@ -1097,8 +1090,7 @@ int MEMORY_CONTROLLER::add_rq(PACKET *packet)
     return -2;
 }
 
-int MEMORY_CONTROLLER::add_wq(PACKET *packet)
-{
+int MEMORY_CONTROLLER::add_wq(PACKET *packet) {
     {
         uint32_t _ch = dram_get_channel(packet->address);
         uint32_t _rk = dram_get_rank(packet->address);
@@ -1190,18 +1182,15 @@ int MEMORY_CONTROLLER::add_wq(PACKET *packet)
     return -2;
 }
 
-int MEMORY_CONTROLLER::add_pq(PACKET *packet)
-{
+int MEMORY_CONTROLLER::add_pq(PACKET *packet) {
     return -1;
 }
 
-void MEMORY_CONTROLLER::return_data(PACKET *packet)
-{
+void MEMORY_CONTROLLER::return_data(PACKET *packet) {
 
 }
 
-void MEMORY_CONTROLLER::update_schedule_cycle(PACKET_QUEUE *queue)
-{
+void MEMORY_CONTROLLER::update_schedule_cycle(PACKET_QUEUE *queue) {
     // update next_schedule_cycle
     uint64_t min_cycle = CYC_PACKED_MAX;
     uint32_t min_index = queue->SIZE;
@@ -1227,8 +1216,7 @@ void MEMORY_CONTROLLER::update_schedule_cycle(PACKET_QUEUE *queue)
     }
 }
 
-void MEMORY_CONTROLLER::update_process_cycle(PACKET_QUEUE *queue)
-{
+void MEMORY_CONTROLLER::update_process_cycle(PACKET_QUEUE *queue) {
     // update next_process_cycle
     uint64_t min_cycle = CYC_PACKED_MAX;
     uint32_t min_index = queue->SIZE;
@@ -1254,8 +1242,7 @@ void MEMORY_CONTROLLER::update_process_cycle(PACKET_QUEUE *queue)
     }
 }
 
-int MEMORY_CONTROLLER::check_dram_queue(PACKET_QUEUE *queue, PACKET *packet)
-{
+int MEMORY_CONTROLLER::check_dram_queue(PACKET_QUEUE *queue, PACKET *packet) {
     // search write queue
     for (uint32_t index=0; index<queue->SIZE; index++) {
 #ifdef BYPASS_LOGIC_EQUIVALENCY_ON_ADDR_AND_BYPASS
@@ -1360,8 +1347,7 @@ uint32_t MEMORY_CONTROLLER::get_size(uint8_t queue_type, uint64_t address) const
     return 0;
 }
 
-void MEMORY_CONTROLLER::increment_WQ_FULL(uint64_t address)
-{
+void MEMORY_CONTROLLER::increment_WQ_FULL(uint64_t address) {
     uint32_t channel = dram_get_channel(address);
     WQ[channel].FULL++;
 }

@@ -13,21 +13,18 @@ namespace knob
     extern bool     dram_cntlr_enable_ddrp_buffer;
 }
 
-void MEMORY_CONTROLLER::init_ddrp_buffer()
-{
+void MEMORY_CONTROLLER::init_ddrp_buffer() {
     ddrp_buffer.clear();
     ddrp_buffer.resize(knob::dram_cntlr_ddrp_buffer_sets);
 }
 
-uint32_t MEMORY_CONTROLLER::get_ddrp_buffer_set_index(uint64_t address)
-{
+uint32_t MEMORY_CONTROLLER::get_ddrp_buffer_set_index(uint64_t address) {
     uint64_t line = address >> LOG2_BLOCK_SIZE;
     if (knob::dram_cntlr_ddrp_buffer_sets == 0) return 0;
     return (uint32_t)(line % knob::dram_cntlr_ddrp_buffer_sets);
 }
 
-void MEMORY_CONTROLLER::insert_ddrp_buffer(uint64_t address)
-{
+void MEMORY_CONTROLLER::insert_ddrp_buffer(uint64_t address) {
     if (!knob::dram_cntlr_enable_ddrp_buffer) return;
     if (ddrp_buffer.empty()) init_ddrp_buffer();
     uint32_t idx = get_ddrp_buffer_set_index(address);
@@ -43,8 +40,7 @@ void MEMORY_CONTROLLER::insert_ddrp_buffer(uint64_t address)
     ddrp_buffer_stats.insert++;
 }
 
-bool MEMORY_CONTROLLER::lookup_ddrp_buffer(uint64_t address)
-{
+bool MEMORY_CONTROLLER::lookup_ddrp_buffer(uint64_t address) {
     if (!knob::dram_cntlr_enable_ddrp_buffer) return false;
     if (ddrp_buffer.empty()) return false;
     uint32_t idx = get_ddrp_buffer_set_index(address);

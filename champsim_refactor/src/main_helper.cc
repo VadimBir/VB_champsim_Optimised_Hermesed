@@ -18,8 +18,7 @@ public:
                          uint64_t writebacks, uint64_t writeback_hit, uint64_t writeback_miss,
                          uint64_t pf_requested, uint64_t pf_issued,
                          uint64_t pf_useful, uint64_t pf_useless, uint64_t pf_late,
-                         double average_miss_latency)
-    {
+                         double average_miss_latency) {
         // Use the same printed keys:  "Core_{cpu}_{cache->NAME}_total_access", etc.
         std::string coreCachePrefix = "Core_" + std::to_string(cpu) + "_" + cache->NAME + "_";
         data[coreCachePrefix + "total_access"]        = (double)TOTAL_ACCESS;
@@ -52,8 +51,7 @@ public:
                          uint64_t loads, uint64_t load_hit, uint64_t load_miss,
                          uint64_t RFOs, uint64_t RFO_hit, uint64_t RFO_miss,
                          uint64_t prefetches, uint64_t prefetch_hit, uint64_t prefetch_miss,
-                         uint64_t writebacks, uint64_t writeback_hit, uint64_t writeback_miss)
-    {
+                         uint64_t writebacks, uint64_t writeback_hit, uint64_t writeback_miss) {
         std::string coreCachePrefix = "Core_" + std::to_string(cpu) + "_" + cache->NAME + "_";
         data[coreCachePrefix + "total_access"]   = (double)TOTAL_ACCESS;
         data[coreCachePrefix + "total_hit"]      = (double)TOTAL_HIT;
@@ -74,8 +72,7 @@ public:
 
     // Collect branch stats (from print_branch_stats)
     void collectBranchStats(uint16_t cpu, double prediction_accuracy,
-                            double branch_MPKI, double avg_ROB_occ_mispredict)
-    {
+                            double branch_MPKI, double avg_ROB_occ_mispredict) {
         std::string corePrefix = "Core_" + std::to_string(cpu) + "_";
         data[corePrefix + "branch_prediction_accuracy"]          = prediction_accuracy;
         data[corePrefix + "branch_MPKI"]                         = branch_MPKI;
@@ -90,8 +87,7 @@ public:
                           uint64_t WQ_row_buffer_hit,
                           uint64_t WQ_row_buffer_miss,
                           uint64_t WQ_full,
-                          uint64_t dbus_congested)
-    {
+                          uint64_t dbus_congested) {
         std::string chPrefix = "Channel_" + std::to_string(channel) + "_";
         data[chPrefix + "RQ_row_buffer_hit"]   = (double)RQ_row_buffer_hit;
         data[chPrefix + "RQ_row_buffer_miss"]  = (double)RQ_row_buffer_miss;
@@ -114,8 +110,7 @@ public:
     void collectCoreROIStats(uint16_t cpu,
                              uint64_t finish_sim_instr,
                              uint64_t finish_sim_cycle,
-                             double finalIPC)
-    {
+                             double finalIPC) {
         std::string corePrefix = "Core_" + std::to_string(cpu) + "_";
         data[corePrefix + "instructions"] = (double)finish_sim_instr;
         data[corePrefix + "cycles"]       = (double)finish_sim_cycle;
@@ -336,8 +331,7 @@ void print_branch_stats(uint16_t cpu) {
 void print_dram_stats() {
     // cout << endl;
     // cout << "DRAM Statistics" << endl;
-    for (uint32_t i=0; i<DRAM_CHANNELS; i++) 
-    {
+    for (uint32_t i=0; i<DRAM_CHANNELS; i++) {
         cout << "Channel_;" << i << ";_;RQ_row_buffer_hit\t;" << uncore.DRAM.RQ[i].ROW_BUFFER_HIT <<";"
             << "Channel_;" << i << ";_;RQ_row_buffer_miss\t;" << uncore.DRAM.RQ[i].ROW_BUFFER_MISS <<";"
             << "Channel_;" << i << ";_;WQ_row_buffer_hit\t;" << uncore.DRAM.WQ[i].ROW_BUFFER_HIT <<";"
@@ -375,8 +369,7 @@ void print_dram_stats() {
 
 }
 
-void reset_cache_stats(uint16_t cpu, CACHE *cache)
-{
+void reset_cache_stats(uint16_t cpu, CACHE *cache) {
     for (uint32_t i=0; i<NUM_TYPES; i++) {
         cache->ACCESS[i] = 0;
         cache->HIT[i] = 0;
@@ -412,8 +405,7 @@ void reset_cache_stats(uint16_t cpu, CACHE *cache)
     cache->WQ.FORWARD = 0;
     cache->WQ.FULL = 0;
 }
-void print_knobs()
-{
+void print_knobs() {
     cout << "warmup_instructions " << warmup_instructions << endl
         << "simulation_instructions " << simulation_instructions << endl
         << "champsim_seed " << champsim_seed << endl
@@ -443,8 +435,7 @@ void print_knobs()
     cout << endl;
 }
 
-void finish_warmup()
-{
+void finish_warmup() {
     uint64_t elapsed_second = (uint64_t)(time(NULL) - start_time),
              elapsed_minute = elapsed_second / 60,
              elapsed_hour = elapsed_minute / 60;
@@ -498,8 +489,7 @@ void finish_warmup()
     uncore.LLC.LATENCY = LLC_LATENCY;
 }
 
-void print_deadlock(uint32_t i)
-{
+void print_deadlock(uint32_t i) {
 
     // float l1d_mshr = (float)ooo_cpu[i].L1D.MSHR.occupancy / ooo_cpu[i].L1D.MSHR.SIZE * 100.0;
     // float l1d_rq = (float)ooo_cpu[i].L1D.RQ.occupancy / ooo_cpu[i].L1D.RQ.SIZE * 100.0;
@@ -796,8 +786,7 @@ void print_deadlock(uint32_t i)
 
 inline void print_end_of_sim_report() {
     cout << endl << "[ROI Statistics]" << endl;
-    for (uint32_t i=0; i<NUM_CPUS; i++)
-    {
+    for (uint32_t i=0; i<NUM_CPUS; i++) {
         cout << "Core_" << i << "_instructions " << ooo_cpu[i].finish_sim_instr << endl
             << "Core_" << i << "_cycles " << ooo_cpu[i].finish_sim_cycle << endl
             << "Core_" << i << "_IPC " << ((float) ooo_cpu[i].finish_sim_instr / ooo_cpu[i].finish_sim_cycle) << endl
