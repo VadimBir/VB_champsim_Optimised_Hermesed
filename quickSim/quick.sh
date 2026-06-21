@@ -434,8 +434,7 @@ for buf in "${BUF_SZ[@]}"; do
         echo -e "${greenColour}Build successful${resetColour}"
       fi
     fi
-    
-    cp $ByP_NO_BASE $BYPASS_MODEL
+
     sync
 
     if [ "$isDebug" -eq 10 ]; then
