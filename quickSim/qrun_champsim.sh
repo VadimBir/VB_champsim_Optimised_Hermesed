@@ -44,17 +44,21 @@ while [ $# -gt 0 ]; do
     --l2byp)    L2_BYP_MODEL="$2"; shift 2 ;;
     --l3byp)    L3_BYP_MODEL="$2"; shift 2 ;;
     --profile)
-      if [ -n "$2" ] && echo "$2" | grep -qE '^[0-9]+$'; then
-        PERF_DELAY="$2"; shift 2
-      elif [ -n "$2" ] && ! echo "$2" | grep -qE '^-'; then
-        PERF_FNAME="$2"; shift 2
-        if [ -n "$2" ] && echo "$2" | grep -qE '^[0-9]+$'; then
-          PERF_DELAY="$2"; shift 2
-        fi
-      else
-        shift
-      fi
+      # --profile [name] START [END]   (times in seconds from binary start)
+      #   START=0      -> profile ALL (attach perf at start, run to end)
+      #   one number   -> START is the delay, then profile to the end
+      #   two numbers  -> profile the WINDOW START..END (perf stops at END; binary runs on)
       isProfile=1
+      shift
+      if [ -n "$1" ] && ! echo "$1" | grep -qE '^-' && ! echo "$1" | grep -qE '^[0-9]+$'; then
+        PERF_FNAME="$1"; shift
+      fi
+      if [ -n "$1" ] && echo "$1" | grep -qE '^[0-9]+$'; then
+        PERF_START="$1"; shift
+        if [ -n "$1" ] && echo "$1" | grep -qE '^[0-9]+$'; then
+          PERF_END="$1"; shift
+        fi
+      fi
       ;;
     *)          POSITIONAL="$POSITIONAL $1"; shift ;;
   esac
@@ -62,7 +66,12 @@ done
 set -- $POSITIONAL
 
 if [ $# -ne 1 ] && [ $# -ne 4 ] && [ $# -ne 5 ]; then
-  echo "Usage: $0 [--dir DIR] [--bp BP] [--repl REPL] [--win-mode MODE] [--hermes OCP] [--l1byp M] [--l2byp M] [--l3byp M] <trace_name_substring> [<L1> <L2> <L3>]"
+  echo "Usage: $0 [--dir DIR] [--bp BP] [--repl REPL] [--win-mode MODE] [--hermes OCP] [--l1byp M] [--l2byp M] [--l3byp M] [--profile [name] START [END]] <trace_name_substring> [<L1> <L2> <L3>]"
+  echo "  --profile [name] START [END]   profile (perf) timing in seconds from binary start:"
+  echo "                                   0        -> profile ALL (attach at start, run to end)"
+  echo "                                   START    -> delay START, then profile to the end"
+  echo "                                   START END-> profile the WINDOW START..END (binary runs on)"
+  echo "                                   name     -> optional perf output basename (<name>.data)"
   exit 1
 fi
 if [ $# -eq 4 ]; then
@@ -140,7 +149,8 @@ BIN="./${champsimDirName}/bin/${BP}-${prefetcher_L1}-${prefetcher_L2}-${prefetch
 PERF_DATA_FILE="${PERF_FNAME:-perf}.data"
 PERF_EVENT_SPEC="${PERF_EVENTS:-cycles:u}"
 # PERF="perf record -e ${PERF_EVENT_SPEC} --call-graph=fp -F 7489 --mmap-pages=65536 --buildid-all -o ./${PERF_DATA_FILE}"
-PERF="perf record -e ${PERF_EVENT_SPEC} --call-graph=fp -F 7489 --mmap-pages=65536 --buildid-all -o ./${PERF_DATA_FILE}"
+# --compression-level=4 : zstd-compress perf.data inline (1=fastest .. 22=smallest); perf report auto-decompresses
+PERF="perf record -e ${PERF_EVENT_SPEC} --call-graph=fp -F 7489 --mmap-pages=65536 --buildid-all --compression-level=4 -o ./${PERF_DATA_FILE}"
 echo "Perf config: events=${PERF_EVENT_SPEC} output=${PERF_DATA_FILE}"
 
 PERF_COLLECT_INTERVAL=200 # seconds (15 minutes)
@@ -228,21 +238,48 @@ if [ "$isProfile" -eq 1 ]; then
     time_start
     "$BIN" $BIN_ARGS &
     BIN_PID=$!
-    PERF_DELAY="${PERF_DELAY:-900}"
-    echo "Binary PID: $BIN_PID — waiting ${PERF_DELAY}s before attaching perf..."
-    sleep "$PERF_DELAY"
-    $PERF -p $BIN_PID &
-    PERF_PID=$!
-    wait $BIN_PID
-    time_end
-    kill -INT $PERF_PID 2>/dev/null
-    for i in $(seq 1 10); do
-        kill -0 $PERF_PID 2>/dev/null || break
-        sleep 1
-    done
-    kill -KILL $PERF_PID 2>/dev/null
-    wait $PERF_PID 2>/dev/null
-    chmod 644 "./${PERF_DATA_FILE}" 2>/dev/null
+    # START = attach delay (0 = profile all). Falls back to legacy PERF_DELAY, else 0.
+    PERF_START="${PERF_START:-${PERF_DELAY:-0}}"
+    stop_perf() {
+        kill -INT "$PERF_PID"
+        for _i in $(seq 1 10); do
+            if ! kill -0 "$PERF_PID"; then break; fi
+            sleep 1
+        done
+        kill -KILL "$PERF_PID"
+        wait "$PERF_PID"
+    }
+    if [ "$PERF_START" -gt 0 ]; then
+        echo "Binary PID: $BIN_PID — waiting ${PERF_START}s before attaching perf..."
+        sleep "$PERF_START"
+    else
+        echo "Binary PID: $BIN_PID — attaching perf at start (profile all)"
+    fi
+    if kill -0 "$BIN_PID"; then
+        $PERF -p $BIN_PID &
+        PERF_PID=$!
+        if [ -n "$PERF_END" ]; then
+            # WINDOW mode: profile START..END, then stop perf; binary keeps running to completion
+            PERF_DUR=$(( PERF_END - PERF_START ))
+            if [ "$PERF_DUR" -lt 0 ]; then PERF_DUR=0; fi
+            echo "Profiling window: start=${PERF_START}s end=${PERF_END}s (duration ${PERF_DUR}s)"
+            sleep "$PERF_DUR"
+            stop_perf
+            wait $BIN_PID
+            time_end
+        else
+            # TO-END mode: profile from START until the binary finishes
+            echo "Profiling from ${PERF_START}s to end"
+            wait $BIN_PID
+            time_end
+            stop_perf
+        fi
+    else
+        echo "WARN: binary finished before perf could attach (START=${PERF_START}s too long) — no profile captured"
+        wait $BIN_PID
+        time_end
+    fi
+    chmod 644 "./${PERF_DATA_FILE}"
     echo "Perf data: ./${PERF_DATA_FILE}"
     # gdb -ex "cd $(pwd)" \
     # -ex "set non-stop on" \

@@ -1,4 +1,8 @@
-l# USER PAYING FORTUNE TO CLAUDE
+# TMP-FILES RULE (HARD):
+- NEVER write scratch/temp/log/output files into the repo dir. ALL temp files go in `/tmp` (e.g. `/tmp/claude-<name>`). DO NOT POLLUTE THE REPO. UNLESS USER SAYS OTHERWISE.
+- Applies to logs, captures, redirects (`>`, `tee`), test artifacts, downloads-for-inspection — `/tmp` ALWAYS.
+
+# USER PAYING FORTUNE TO CLAUDE
 - AI MUST OBEY THE ORDERS AND DO EXACTLY WHAT IS BEING ASKED ONLY THAT WOULD BE USEFUL AND WILL SAVE LIFES
 
 # BAN: 

@@ -1,37 +1,42 @@
 #include "cache.h"
 #include "lpm_tracker.h"
 
+// USEFUL VARS:  usage example
+//  * Cached metrics available without sim_access:
+//  *   lpm[cpu][IS_L1D].gm.camat_activeMemCyDivAccesses   ← ω(L1D)/α(L1D)
+//  *   lpm[cpu][IS_L1D].gm.apc_accessesDivActiveMemCy      ← α(L1D)/ω(L1D)
+//  *   lpm[cpu][IS_L1D].gm.lpmr_activeMemCyDivIdealCy     ← ω(L1D)/(IC×CPIexe)
+//  *   lpm[cpu][IS_L2C].g.µ_missCyFracOfActiveCy()         ← miss-cycle fraction
+//  *   lpm[cpu][IS_L2C].g.κ_pureMissFracOfMissCy()      ← pure-miss fraction
+//  *
+//  * Also raw counters:
+//  *   lpm[cpu][IS_L1D].h, .m, .x, .e
+//  *   lpm[cpu][IS_L1D].g.ω_activeMemCy()
+
+// L1D->MSHR.occupancy      L1D->MSHR.SIZE
+// L1D->RQ.occupancy        L1D->RQ.SIZE
+// L1D->PQ.occupancy        L1D->PQ.SIZE
+// L2C->MSHR.occupancy      L2C->MSHR.SIZE
+// L2C->RQ.occupancy        L2C->RQ.SIZE
+// L2C->PQ.occupancy        L2C->PQ.SIZE
+
+// CACHE TYPEs
 #ifndef L1D_type
 #define L1D_type  4
 #define L2C_type  5
 #define LLC_type  6
 #endif
 
-// MODEL 4000fix — KappaPhiL1L2 at LLC
-// LLC Bypass [4000fix: unconditional + LATTRACK]
+inline bool llc_bypass_init[NUM_CPUS] = {};
 
-// #define DBG_4000fix 1
-
-inline bool llc_bypass_init_4000fix[NUM_CPUS] = {};
-inline uint64_t llc_dbg_counter_4000fix[NUM_CPUS] = {};
+inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (llc_bypass_init[cpu]) return;
+        cout << "[model: no.llc_bypass] Bypass: \nBASE" << endl;
+    llc_bypass_init[cpu] = true;
+}
 
 #define SHALL_LLC_BYPASS_DEFINED
-inline void llc_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
-    if (llc_bypass_init_4000fix[cpu]) return;
-    cout << "[model: 4000fix-KappaPhiL1L2.llc_bypass] LLC Bypass [4000fix-KappaPhiL1L2]: LLC Bypass [4000fix: unconditional + LATTRACK]" << endl;
-    llc_bypass_init_4000fix[cpu] = true;
-}
-
 inline bool llc_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
     llc_bypass_initialize(cpu, L1D, L2C, LLC);
-
-uint64_t addr = LLC->RQ.entry[LLC->RQ.head].address;
- uint64_t blk = addr >> LOG2_BLOCK_SIZE;
- g_llc_byplat[cpu].on_issue(blk, LLC->MSHR.occupancy);
- return true;
-}
-#define SHALL_LLC_BYPASS_FILL_DEFINED
-inline void llc_bypass_fill(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC, PACKET &pkt) {
- uint64_t blk = pkt.address >> LOG2_BLOCK_SIZE;
- g_llc_byplat[cpu].on_fill(blk);
+    return false;
 }

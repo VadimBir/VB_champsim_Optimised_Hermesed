@@ -16,7 +16,22 @@
         "hooks": [
           {
             "type": "command",
+            "command": "$HOME/.claude/hooks/champsim_make_guard.sh"
+          },
+          {
+            "type": "command",
             "command": "$HOME/.claude/hooks/rtk-rewrite.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Read|Grep|Glob|Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/post_path_strip.sh"
           }
         ]
       }

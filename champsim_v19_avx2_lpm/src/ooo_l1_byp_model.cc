@@ -1,44 +1,42 @@
 #include "cache.h"
 #include "lpm_tracker.h"
 
+// USEFUL VARS:  usage example
+//  * Cached metrics available without sim_access:
+//  *   lpm[cpu][IS_L1D].gm.camat_activeMemCyDivAccesses   ← ω(L1D)/α(L1D)
+//  *   lpm[cpu][IS_L1D].gm.apc_accessesDivActiveMemCy      ← α(L1D)/ω(L1D)
+//  *   lpm[cpu][IS_L1D].gm.lpmr_activeMemCyDivIdealCy     ← ω(L1D)/(IC×CPIexe)
+//  *   lpm[cpu][IS_L2C].g.µ_missCyFracOfActiveCy()         ← miss-cycle fraction
+//  *   lpm[cpu][IS_L2C].g.κ_pureMissFracOfMissCy()      ← pure-miss fraction
+//  *
+//  * Also raw counters:
+//  *   lpm[cpu][IS_L1D].h, .m, .x, .e
+//  *   lpm[cpu][IS_L1D].g.ω_activeMemCy()
+
+// L1D->MSHR.occupancy      L1D->MSHR.SIZE
+// L1D->RQ.occupancy        L1D->RQ.SIZE
+// L1D->PQ.occupancy        L1D->PQ.SIZE
+// L2C->MSHR.occupancy      L2C->MSHR.SIZE
+// L2C->RQ.occupancy        L2C->RQ.SIZE
+// L2C->PQ.occupancy        L2C->PQ.SIZE
+
+// CACHE TYPEs
 #ifndef L1D_type
 #define L1D_type  4
 #define L2C_type  5
 #define LLC_type  6
 #endif
 
-// MODEL 4000fix — KappaPhiL1L2 at L1
-// L1 Bypass [4000fix: F6 sign-deriv: kappa_rising AND phi_falling + LATTRACK]
+inline bool l1d_bypass_init[NUM_CPUS] = {};
 
-// #define DBG_4000fix 1
-
-inline bool l1_bypass_init_4000fix[NUM_CPUS] = {};
-inline uint64_t l1_dbg_counter_4000fix[NUM_CPUS] = {};
-
-#define SHALL_L1D_BYPASS_DEFINED
 inline void l1d_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
-    if (l1_bypass_init_4000fix[cpu]) return;
-    cout << "[model: 4000fix-KappaPhiL1L2.l1_bypass] L1 Bypass [4000fix-KappaPhiL1L2]: L1 Bypass [4000fix: F6 sign-deriv: kappa_rising AND phi_falling + LATTRACK]" << endl;
-    l1_bypass_init_4000fix[cpu] = true;
+    if (l1d_bypass_init[cpu]) return;
+        cout << "[model: no.l1_bypass] Bypass: \nBASE" << endl;
+    l1d_bypass_init[cpu] = true;
 }
 
+#define SHALL_l1d_BYPASS_DEFINED
 inline bool l1d_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
     l1d_bypass_initialize(cpu, L1D, L2C, LLC);
-
-double k_s = get_kappa_short(cpu, LPM_L1D);
- double k_l = get_kappa_long(cpu, LPM_L1D);
- double p_s = get_phi_short(cpu, LPM_L1D);
- double p_l = get_phi_long(cpu, LPM_L1D);
- // bool kp = ((k_s > k_l) && (p_s < p_l)) || L1D->MSHR.occupancy == L1D_MSHR_SIZE;
- bool kp = ((k_s > k_l) && (p_s < p_l));
- if (!kp) return false;
- uint64_t addr = L1D->RQ.entry[L1D->RQ.head].address;
- uint64_t blk = addr >> LOG2_BLOCK_SIZE;
- g_l1_byplat[cpu].on_issue(blk, L1D->MSHR.occupancy);
- return true;
-}
-#define SHALL_L1D_BYPASS_FILL_DEFINED
-inline void l1d_bypass_fill(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC, PACKET &pkt) {
- uint64_t blk = pkt.address >> LOG2_BLOCK_SIZE;
- g_l1_byplat[cpu].on_fill(blk);
+    return false;
 }

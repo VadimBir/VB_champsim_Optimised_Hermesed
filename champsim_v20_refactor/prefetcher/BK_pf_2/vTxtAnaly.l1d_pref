@@ -1,0 +1,220 @@
+#include "cache.h"
+
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+#include <implot.h>
+#include <thread>
+#include <atomic>
+#include <vector>
+#include <algorithm>
+#include <chrono>
+
+
+struct APCEntry {
+    uint64_t addrBlock;
+    uint64_t cycle;
+};
+
+class APCStruct {
+private:
+    APCEntry* entries;
+    int window_size;
+    int head;
+    int tail;
+    int count;
+
+public:
+    APCStruct(int size = 128) : window_size(size), head(0), tail(0), count(0) {
+        entries = new APCEntry[window_size];
+    }
+    
+    ~APCStruct() {
+        delete[] entries;
+    }
+    
+    void add(uint64_t addrBlock, uint64_t cycle) {
+        if (count == window_size) {
+            head = (head + 1) % window_size;
+        } else {
+            count++;
+        }
+        entries[tail].addrBlock = addrBlock;
+        entries[tail].cycle = cycle;
+        tail = (tail + 1) % window_size;
+    }
+    
+    double get() {
+        if (count < 2) return 0.0;
+        
+        // Find min/max cycles in current window
+        uint64_t min_cycle = UINT64_MAX, max_cycle = 0;
+        for (int i = 0; i < count; i++) {
+            int idx = (head + i) % window_size;
+            min_cycle = std::min(min_cycle, entries[idx].cycle);
+            max_cycle = std::max(max_cycle, entries[idx].cycle);
+        }
+        
+        if (max_cycle == min_cycle) return 0.0;
+        double apc = (double)count / (max_cycle - min_cycle + 1);
+        return std::round(apc * 1000.0) / 1000.0;
+    }
+};
+
+// Usage:
+APCStruct apc(256);  // Custom window size
+APCStruct apc7(128);  // Custom window size
+APCStruct apc6(64);  // Custom window size
+APCStruct apc5(32);  // Custom window size
+APCStruct apc4(16);  // Custom window size
+APCStruct apc3(8);  // Custom window size
+APCStruct apc2(4);  // Custom window size
+
+#define RESET "\033[0m"
+
+// RGB color function
+string rgb(int r, int g, int b) {
+    return "\033[38;2;" + to_string(r) + ";" + to_string(g) + ";" + to_string(b) + "m";
+}
+
+// Hash-based color mapping
+class ColorMapper {
+public:
+    std::unordered_map<uint64_t, string> color_cache;
+    string getColor(uint64_t value) {
+    if (color_cache.find(value) != color_cache.end()) {
+        return color_cache[value];
+    }
+    
+    // XOR shift for better bit mixing
+    value ^= value >> 33;
+    value *= 0xff51afd7ed558ccd;
+    value ^= value >> 33;
+    value *= 0xc4ceb9fe1a85ec53;
+    value ^= value >> 33;
+    
+    int r = 100 + ((value >> 16) % 156);
+    int g = 100 + ((value >> 8) % 156);
+    int b = 100 + (value % 156);
+    
+    string color = rgb(r, g, b);
+    color_cache[value] = color;
+    return color;
+}
+};
+
+ColorMapper page_colors, ip_colors;
+void CACHE::l1d_prefetcher_initialize() 
+{
+    // cout << "CPU " << cpu << " L1D next line prefetcher" << endl;
+}
+uint64_t pre_cycle;
+
+uint64_t pre_page = 0;
+int64_t pageDelta = 0;
+int64_t pre_block2pg = 0;
+int64_t pre_ip = 0;
+
+struct PrintEntry {
+    stringstream content;
+    uint64_t entry_id;
+};
+
+vector<PrintEntry> print_buffer;
+uint64_t entry_counter = 0;
+uint64_t post_mshr16_counter = 0;
+bool tracking_mshr16 = false;
+
+void flush_buffer() {
+    for (auto& entry : print_buffer) {
+        cout << setw(5) << left << entry.entry_id << " " << entry.content.str();
+    }
+    print_buffer.clear();
+    tracking_mshr16 = false;
+    post_mshr16_counter = 1;
+}
+#define NUM_POST_ENTRIES 64
+PrintEntry entry;
+int64_t delta_ip = 0;
+int64_t pre_delta_ip = 0;
+int64_t pre_pre_ip = 0;
+int64_t pre_block_addr = 0;
+uint64_t pf_addr = 0;
+uint64_t block_addr = 0;
+uint64_t page_startBlock = 0;
+int64_t relative2page_delta = 0;
+uint64_t current_page = 0;
+void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type) {
+    if (entry.entry_id%20000==0){
+        flush_buffer();
+    }
+    pf_addr = ((addr>>LOG2_BLOCK_SIZE)+1) << LOG2_BLOCK_SIZE;
+    block_addr = addr >> LOG2_BLOCK_SIZE;
+    page_startBlock = ((addr >> LOG2_PAGE_SIZE) << LOG2_PAGE_SIZE) >> LOG2_BLOCK_SIZE;
+    relative2page_delta = block_addr - page_startBlock;
+    current_page = (addr >> LOG2_PAGE_SIZE);
+    
+    apc.add(block_addr, current_core_cycle[0]);
+    apc7.add(block_addr, current_core_cycle[0]);
+    apc6.add(block_addr, current_core_cycle[0]);
+    apc5.add(block_addr, current_core_cycle[0]);
+    apc4.add(block_addr, current_core_cycle[0]);
+    apc3.add(block_addr, current_core_cycle[0]);
+    apc2.add(block_addr, current_core_cycle[0]);
+
+    
+    entry = PrintEntry();
+    entry.entry_id = entry_counter++;
+
+    
+    // entry.content << "^8 " << setprecision(3) << setw(5) << apc.get() 
+    entry.content << " ^7 " << setprecision(3) << setw(5) << apc7.get() 
+                  << " ^6 " << setprecision(3) << setw(5) << apc6.get() 
+                  << " ^5 " << setprecision(3) << setw(5) << apc5.get() 
+                  << " ^4 " << setprecision(3) << setw(5) << apc4.get() 
+                  << " ^3 " << setprecision(3) << setw(5) << apc3.get() 
+                  << " ^2 " << setprecision(3) << setw(5) << apc2.get() 
+                  << " H " << (cache_hit ? 1 : 0)
+                  << " Cy " << setw(4) << (current_core_cycle[0] - pre_cycle)
+                  << " MSHR " << setw(2) << MSHR.occupancy 
+                  << page_colors.getColor((current_page << 16) | relative2page_delta)
+                  << " Blk " << setw(3) << (relative2page_delta)
+                  << " PgBlkΔ " << setw(3) << ((int64_t) relative2page_delta - (int64_t)pre_block2pg) 
+                //   << " BlockΔ " << setw(3) << (pre_block_addr - block_addr)
+                  << ip_colors.getColor(ip)
+                  << " pre_IPΔ " << setw(3) << (pre_delta_ip)
+                  << RESET
+                  << " PgΔ " << setw(4) << ((int64_t)pre_page - (int64_t)current_page)
+                  << " Pg " << setw(11) << current_page 
+                  << RESET
+                  << ip_colors.getColor(ip)
+                  << "  IP  " << setw(13) << ip // << " Type " << setw(3) << (int)type
+                  << RESET << endl;
+        print_buffer.push_back(move(entry));
+        // store previous delta ip 
+        pre_delta_ip = delta_ip;
+    
+    // Flush when counter reaches NUM_POST_ENTRIES
+        
+    // prefetch_line(ip, addr, addr >> LOG2_BLOCK_SIZE << LOG2_BLOCK_SIZE, FILL_L1, 0);
+    
+    pre_page = current_page;
+    pre_block2pg = relative2page_delta;
+    pre_block_addr = block_addr;
+
+    pre_cycle = current_core_cycle[0];
+    pre_pre_ip = pre_ip;
+    pre_delta_ip = delta_ip;
+    delta_ip = ip - pre_ip;
+    pre_ip = ip;
+    // post_mshr16_counter++;
+}
+
+void CACHE::l1d_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in) {
+}
+
+void CACHE::l1d_prefetcher_final_stats() {
+    flush_buffer();
+}
