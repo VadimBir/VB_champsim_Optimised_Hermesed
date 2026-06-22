@@ -1,0 +1,77 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+
+
+// USEFUL VARS:  usage example
+//  * Cached metrics available without sim_access:
+//  *   lpm[cpu][IS_L1D].gm.camat_activeMemCyDivAccesses   ← ω(L1D)/α(L1D)
+//  *   lpm[cpu][IS_L1D].gm.apc_accessesDivActiveMemCy      ← α(L1D)/ω(L1D)
+//  *   lpm[cpu][IS_L1D].gm.lpmr_activeMemCyDivIdealCy     ← ω(L1D)/(IC×CPIexe)
+//  *   lpm[cpu][IS_L2C].g.µ_missCyFracOfActiveCy()         ← miss-cycle fraction
+//  *   lpm[cpu][IS_L2C].g.κ_pureMissFracOfMissCy()      ← pure-miss fraction
+//  *
+//  * Also raw counters:
+//  *   lpm[cpu][IS_L1D].h, .m, .x, .e
+//  *   lpm[cpu][IS_L1D].g.ω_activeMemCy()
+
+// L2C->MSHR.occupancy      L2C->MSHR.SIZE
+// L2C->RQ.occupancy        L2C->RQ.SIZE
+// L2C->PQ.occupancy        L2C->PQ.SIZE
+// L2C->MSHR.occupancy      L2C->MSHR.SIZE
+// L2C->RQ.occupancy        L2C->RQ.SIZE
+// L2C->PQ.occupancy        L2C->PQ.SIZE
+
+// CACHE TYPEs
+
+
+
+
+static bool l2_bypass_init = false;
+
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init[cpu]) return;
+    cout << "Bypass on WINDOW: " << endl;
+    l2_bypass_init = true;
+}
+
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+    // L1 cannot handle
+    double camat_l1d = lpm[cpu][L1D_type].gm.camat_activeMemCyDivAccesses;
+    double camat_l2c = lpm[cpu][L2C_type].gm.camat_activeMemCyDivAccesses;
+
+    uint32_t free_l1 = L2C->MSHR.SIZE - L2C->MSHR.occupancy;
+    uint32_t free_llc = L2C->MSHR.SIZE - L2C->MSHR.occupancy;
+
+    if (free_llc == 0) return false;  // hard gate L2
+
+    double l1_available = (double)free_l1 * camat_l1d;
+    double l1_entry     = camat_l1d;
+    double l1_immediate = (double)L2C->MSHR.occupancy * camat_l1d;
+
+    bool l1_saturated = l1_available < (l1_immediate + l1_entry);
+
+    // L2 can handle
+    double lpmr_l1d = lpm[cpu][L1D_type].gm.lpmr_activeMemCyDivIdealCy;
+    double lpmr_l2c = lpm[cpu][L2C_type].gm.lpmr_activeMemCyDivIdealCy;
+    if (lpmr_l1d < 0.001) lpmr_l1d = 0.001;
+    if (lpmr_l2c < 0.001) lpmr_l2c = 0.001;
+
+    double l2_available = (double)free_llc * camat_l2c;
+    double l2_immediate = (double)(L2C->RQ.occupancy + L2C->PQ.occupancy) * camat_l2c;
+    double l2_future    = (lpmr_l2c / lpmr_l1d) * camat_l2c;
+    double l2_entry     = camat_l2c;
+
+    bool l2_can_handle = l2_available > (l2_immediate + l2_future + l2_entry);
+
+    return l1_saturated && l2_can_handle;
+}

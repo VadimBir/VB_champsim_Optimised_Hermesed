@@ -15,16 +15,64 @@ Single source of truth, refreshed each session. Categories at `#`; each opt `## 
 - Chain: champsim_v21 (=dup champsim_v20_refactor) → v22 (-7.18% earlier / -4.5% this fresh session, single-run) → **v23 (-10.76%)**.
 - PENDING grade: `v22_OPT_REGBIT`, `v22_OPT_LQBIT` (dense-key bitset ADTs, in the v23 sweep tail).
 - **Cumulative across all campaigns (compounded Linux wall):** v18→v22 ≈ -12.2% (v19 -4.33% × P3 +1.09% × v22 -7.18%); + v23 → v18→v23 ≈ **~-17%**. Windows-clang +15.8% is a separate platform (non-compounding). P1 % + v17→v18 unknown (excluded). See PRIOR-VERSION HISTORY.
+- **(2026-06-22 update) BEST is now `champsim_v24`** = v23 + **PKTSLIM + RTEBRK** (same-session min-of-3: PKTSLIM -2.17%, RTEBRK -1.88%, PKTRTE stack **-3.96% vs v23**, IPC bit-exact 0.62461) → ≈ **-14.3% cumulative vs v21**. ⚠ the v24-vs-v21 same-session confirm was LOST in an OS-lock /tmp wipe; -14.3% is derived from the v23-relative confirm, not re-measured direct.
+- **`champsim_v25`** = v24 + **cycle packing re-enabled, correctly** (gated `DO_CYCLE_PACKING`, narrowed `rob_events.event_cycle` uint64→uint32). IPC bit-exact 0.62461 ✓. **NOT a host-speed win — a REGRESSION, and form-sensitive:** hand-rolled inline serial macro ≈ **+1.4%**; vendored WebRTC `AheadOrAt` template **call ≈ +31.5%** (clean min-of-4: v24 67.978s → v25 89.410s, uniform 89-91s every run) — the per-compare template call does NOT inline on the every-cycle `update_rob` hot path. Correctness identical either way. **Verdict: keep v25 as parked correctness/safety milestone (4B deadlock fixed+proven); if kept, revert the compare to the force-inlined macro (panel-proven == lib in-window) to avoid the -31%; do NOT put packing on the perf path.**
+- **`v24_OPT_CCPHOIST`** = v24 + hoist redundant `current_core_cycle[cpu]` reloads (update_rob/do_execution/fetch/add_rq/wq). Built, IPC bit-exact ✓. Clean min-of-4: 67.505s vs v24 67.978s = -0.70% BUT `all` runs overlap v24 → **sub-noise / NEUTRAL, not a confirmed win.**
 
 ## ☐ TODO / NEXT
 1. Grade REGBIT/LQBIT (sweep tail); merge any B/E onto v23.
 2. Opt-A **CoreHot grouping** — fold 5 padded per-core globals into `O3_CPU` front, drop single-thread-pointless alignas (~12-16→7-9 hot lines/cycle). Iteration-heavy.
-3. Opt-B **gated `#ifdef DO_CYCLE_PACKING`** — 64-bit master + bounded packed deltas + portable wrap-compare. BLOCKED on the exhaustive unit-tester (failed/lost in OS-lock — re-run).
-4. **PACKET/AddressProxy shrink** — mem profile: ~67% load traffic = stack PACKET/instr temporaries → top data-movement lever (UNTESTED).
-5. Re-run both perf profiles on-model `-o /tmp` (lost in OS-lock). Optionally regenerate the original 16-core perf.data (overwritten to 11.3M corrupt — incident logged).
+3. Opt-B **gated `#ifdef DO_CYCLE_PACKING`** — ✅ RESOLVED 2026-06-22 in `champsim_v25`: correct UB-free serial compare via vendored WebRTC `AheadOrAt`, proven safe at infinite run length (gap-bound + wrap test past 2^33). See TIMING/CYCLE OPT entry. Remaining: not a speedup; non-ROB-head gap-bound enumerated-not-formally-proven.
+4. **PACKET/AddressProxy shrink** — PKTSLIM done (-2.17%, in v24). PACKET/queue `event_cycle` NOT yet narrowed (left wide in v25, layout-sensitive); mem profile still says ~67% load traffic = stack PACKET/instr temporaries → top remaining data-movement lever (UNTESTED).
+5. ✅ DONE 2026-06-22: re-ran cy + mem + branch-miss/cache-miss perf profiles on-model `-o /tmp` (`/tmp/claude-afk-perf/{cy,mem,br}.data.zst`). Original 16-core perf.data still LOST.
 6. Pick remaining UNTESTED catalog items by profile.
 
 ⚠ INCIDENT: original repo `perf.data` (276MB, your 16-core capture) overwritten to 11.3M corrupt partial by epoch-4 reprofile's compressed-capture bug; not in git, no backup → LOST. All perf now `-o /tmp` only.
+
+## ▼ v23 UNTESTED-BATCH SWEEP (2026-06-22) — all 12 graded vs champsim_v23 (control 70.179s, single-run ~±1% noise, IPC gate 0.62461)
+Dirs deleted after grading (no-garbage rule); grades retained here so none is retried.
+| candidate | min | Δ vs v23 | IPC | GRADE |
+|-----------|-----|----------|-----|-------|
+| RTEBRK — execute_instruction head-not-ready break | 69.318 | **-1.23%** | ✓ | BENEFIT 3 (CONFIRMING min-of-3) |
+| PKTSLIM — AddressProxy 32→24B (drop write-only tmp mirror) | 69.398 | **-1.11%** | ✓ | BENEFIT 3 (CONFIRMING min-of-3) |
+| COREHOT — co-locate 5 per-core scalars, drop alignas | 70.099 | -0.11% | ✓ | NEUTRAL 3 (layout fold sub-noise here) |
+| BRGUARD — handle_branch dead-guard + loop fuse | 70.496 | +0.45% | ✓ | NEUTRAL 3 |
+| SKIPNONREG — skip remove_producer for non-reg writers | 70.621 | +0.63% | ✓ | NEUTRAL 3 |
+| BANKSPLIT — hoist open_row to flat array | 70.656 | +0.68% | ✓ | NEUTRAL 3 |
+| LQBIT — LQ pending HashSet→bitset (on v23) | 70.798 | +0.88% | ✓ | WORSEN 1 |
+| STHOIST — execute_store hoist ccp | 70.817 | +0.91% | ✓ | WORSEN 1 |
+| FIBHASH — Fibonacci hash LLC MSHR | 70.830 | +0.93% | ✓ | WORSEN 1 |
+| FILLBYTE — fill_cache 4-bitfield→1-byte store | 71.257 | +1.54% | ✓ | WORSEN 1 |
+| REGBIT — AddrDep dirty_regs→256-bit bitset (on v23) | 72.760 | +3.68% | ✓ | WORSEN 2 |
+| BACKCURSOR — get_latest_producer back-cursor | 7.077 | n/a | **✗ no ROI** | **WORSEN 5 — CRASHED (sim aborted ~7s); back-cursor logic broke the run; debug-only** |
+| LSQBITMASK — check_and_add_lsq bitmask | — | — | — | N/A — not built: num_mem_ops total-vs-remaining ambiguity = IPC-unsafe |
+LESSON reinforced: structural/ADT/codegen micro-changes mostly N or W at these queue/ROB sizes; the only gains are RTEBRK (control-flow early-exit) + PKTSLIM (struct shrink) — both marginal, confirming. REGBIT/LQBIT bitsets SLOWER on v23 (opposite of S8 RobDepSet — bitset only wins where the set is hot+large).
+
+## ▼ v24 ON-MODEL PERF RE-PROFILE (2026-06-22) — replaces the OS-lock-lost profiles; all IPC bit-exact 0.62461, repo perf.data untouched, output `-o /tmp`
+- **cy** (`/tmp/claude-afk-perf/cy.data.zst`): self-time top — update_rob **10.5%** (now #1, was complete_execution pre-PKTSLIM/RTEBRK), schedule_memory_instruction λ 10.0%, schedule_instruction λ 8.4%, CACHE::operate 8.0%, handle_read 6.7%, reg_dependency 4.2%, add_rq 3.6%, check_queue 2.8%, OffchipPredTTP::predict 1.6%.
+- **mem** (`/tmp/claude-afk-perf/mem.data.zst`): 67% load traffic = stack PACKET/ooo_model_instr temporaries; 22% = CACHE RQ/WQ/MSHR queue arrays (~589KB heap); __memmove_avx 3.95% (add_to_rob self-copy). Loads: 49% LFB/MAB, 28% L3, 14% L1.
+- **br** (`/tmp/claude-afk-perf/br.data.zst`): branch-misses top = update_rob **15.9%**, then CACHE::operate/handle_read, AddrDependencyTracker::remove_producer 6.2%. cache-misses top = add_to_rob 13.9%, handle_branch 13.7%, handle_read 8.6%.
+
+## ▼ v24 OPPORTUNITY CATALOG (2026-06-22) — UNTESTED proposals from 2 sweeps (static-source `wbskfemjy` + perf-mine `whre2jrw9`); all checked vs DO-NOT-RETRY ledger; full JSON in task outputs. None measured except CCPHOIST (see CURRENT STATE).
+| ID | file:function | what | source | state |
+|----|---------------|------|--------|-------|
+| CCPHOIST (=UPDROB-CCPHOIST/CYCHOIST + wider) | ooo_cpu update_rob/do_execution/fetch + cache add_rq/wq | hoist redundant `current_core_cycle[cpu]` reloads on #1 hotspot | both | **BUILT v24_OPT_CCPHOIST, IPC ✓, clean timing pending** |
+| ADDTOROB-SELFCOPY-GUARD | ooo_cpu add_to_rob:533 | guard the 3.95% `__memmove` self-copy (`if(arch_instr!=&entry)`) | perf-mem | UNTESTED (Tier-1) |
+| BRANCH-MISPRED-BITSET | flat_branch_mispredicted | uint8[NUM_CPUS][ROB_SIZE] → bitset (128B); update_rob top branch-miss | static | UNTESTED (Tier-1, only H-rated) |
+| TTPLAMBDA-REF | hermes lookup_catalog_cache:147 | find_if lambda by-value→const-ref, kills per-elem pair copy | perf-cy | UNTESTED (Tier-1) |
+| CACHE-SETONCE | cache handle_read/wb/pf + check_hit | pass already-computed `set`, drop repeat get_set() | static | UNTESTED (Tier-1) |
+| GLPWINDOW-HOIST | ooo_cpu get_latest_producer:108 | hoist wrap-selector; remove_producer 6.2% branch-miss | perf-br | UNTESTED (Tier-1) |
+| REGDEPHOIST | ooo_cpu reg_dependency:827 | hoist ROB.entry ref, kill ~12 index recomputes/instr | static | UNTESTED (Tier-1) |
+| DOEXECCSE | ooo_cpu do_execution:934 | CSE event_cycle + PACK_CYCLE double-read | static | UNTESTED |
+| MISPREDINLINE | ooo_cpu complete_execution:1623 | move mispredict flag onto hot rob_events line | static | UNTESTED |
+| PRODLISTSPLIT / ADDPRODUNROLL / CAALSQHOIST | ooo_cpu AddrDepTracker / check_and_add_lsq | ProducerList reorder; unroll fixed-2 loop; ref-hoist | static | UNTESTED (L) |
+| CACHE-LOWQHOIST / CACHE-PROXYRAW / CACHE-PQ-COLDFIELDS / CACHE-OPERATE-LPMHOIST / CACHE-UFC-INCRMIN | cache.cc | compute lower occ/size once; raw addr-array scan; PQ hot-field-front; hoist LPM hit_active; O(1) fill-cycle min | static | UNTESTED |
+| DRAMSOA / UPDMIN-EARLYOUT / SCHEDADDR-SAVE / BANK-WORKING-BITMAP / BANKREQ-PACK / PKTQ-HOTFIELD-FRONT / ADDRPROXY-FLAT-DRAM | dram_controller + block.h | raw addr-array DRAM scans; occupancy==0 early-out; bank bitmap; struct packs | static | UNTESTED (some ⚠ adjacent BANKSPLIT neutral) |
+| MEMDEP-SVEC / MEMDEP-FLATARR / REGDEP-BOOL-ARRAY / ADDR-DEP-COMPACT-THRESH | ooo_cpu trackers | vector→svector; map→flat array; bool[]→bitset; raise compact threshold | static | UNTESTED |
+| BUILTIN-EXPECT-RETIRE / -COMPLETE-EXEC / POLLY-RESTRICT / CLANG-FNO-EXCEPT | codegen | likely/unlikely hints; de-alias stack copies; `-fno-exceptions` (0 try/catch) | static | UNTESTED |
+| ADDQ-RAWSLOT / FETCH-ENTRYREF / SMEMSCHED-RANGEBUILD / ADDRQ-CYCLOCAL / ADDRQ-WQSKIP-EXPECT / ADDQ-HOLESKIP-BRANCHLESS / CHECKQ-WQ-DISPATCH-LIFT | cache/ooo hot loops | raw-slot scans, ref/cycle hoists, branchless hole-skip, de-lambda check_queue | perf | UNTESTED |
+| HBRANCH-DESTLOCAL / HBRANCH-MEMOP-GUARD-DROP | ooo_cpu handle_branch:456/463 | local dest test; drop dead num_mem_ops guard | perf | ⚠ HOLD — overlap tried-neutral BRGUARD |
+| SMEMSCHED-RANGEBUILD | ooo_cpu schedule_memory_instr:1011 | lazy ready[] build | perf | ⚠ HOLD — abuts the 3×-failed cr-mask loop |
 
 ---
 # MEMORY OPT
@@ -261,6 +309,12 @@ Single source of truth, refreshed each session. Categories at `#`; each opt `## 
 
 ## DO_CYCLE_PACKING (Gated)                                 — 64-bit master + bounded packed deltas; no shift-UB
 ### NEUTRAL 3 — UNTESTED investigation; design referenced gem5/ZSim 64-bit Tick; pending standalone unit-tester proof of width safety (1–37 cycle gaps vs 64-bit oracle); RFC1982 wrap-compare planned; DO NOT MERGE until unit-tester passes
+### ✅ RESOLVED 2026-06-22 (champsim_v25) — NEUTRAL 5 (correct + safe, no host-speed gain)
+- **Root cause of old 4B deadlock**: old `PCYCLE_LE(a,b)=(int32_t)((a-b)<<(32-W))<=0` — (1) left-shift-into-sign signed-overflow UB pre-C++20; (2) inverts once true gap ≥ 2^(W-1); (3) 32-bit container truncation of the 64-bit master mixed operands once cycles crossed 2^32. PACK_BITS=27 (the `_clog2` `r+17` typo that gave 36 also FIXED → `r+1`).
+- **Fix shipped in v25**: gated `#define DO_CYCLE_PACKING 1`; operands masked cleanly to 27 bits; compare delegated to **vendored WebRTC `rtc_base/numerics/sequence_number_util.h` `AheadOrAt<uint32_t,2^27>`** (BSD-3, byte-verified verbatim, `champsim_v25/inc/webrtc_seqnum.h`) — no shift, no UB, defined midpoint. `#else` = 64-bit pass-through fallback.
+- **Proof (3 legs)**: (1) compare-correct — 4-Opus adversarial panel SHIP, all severity none; 8.59B in-window compares 0 divergences. (2) applicable — every ~45 packed-compare site bounded; max live gap = 20M (deadlock detector) < half-window 2^26=67.1M, 3.35× margin, no unbounded site; standalone wrap test swept master past 2^33 (~64 wraps), 70.5M compares, 0 in-window mismatches. (3) results-identical — sim IPC bit-exact 0.62461.
+- **Why WORSEN not BENEFIT (clean min-of-4, 2026-06-22)**: only `rob_events.event_cycle` narrowed (uint64→uint32). Hand-rolled inline serial macro ≈+1.4% slower (compare overhead > 1-array footprint saving). **Vendored WebRTC `AheadOrAt` template call ≈+31.5%** (v24 67.978s → v25 89.410s, uniform) — the function-template call does NOT inline on the every-cycle `update_rob` path. → WORSEN 2 as shipped (vendored); WORSEN 1 if reverted to inline macro. PACKET/queue `event_cycle` left wide = remaining footprint lever. Correct + safe, but not a speedup in any form.
+- **Residual risk**: non-ROB-head operand gap-bounds (DRAM/MSHR/queue) enumerated + argued, NOT machine-proven for all sites; no counterexample found. Ultimate empirical check available: `-i 2.6e9` forces a real >2^32-cycle run (trace loops on EOF), ~124× a normal sim — NOT run.
 
 ---
 

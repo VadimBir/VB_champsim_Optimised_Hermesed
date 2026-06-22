@@ -1,0 +1,49 @@
+# Makefile.win.clang.libstdcxx — clang BUT using w64devkit's GCC libstdc++ headers+lib
+# (instead of llvm-mingw's default libc++), to test IPC equivalence with the GCC build.
+CLANG  := C:/Users/vasum/llvm-mingw/bin
+CXX    := $(CLANG)/clang++.exe
+CC     := $(CLANG)/clang.exe
+SHELL  := C:/Users/vasum/w64devkit/bin/sh.exe
+
+DEPS   := win_deps
+INC    := -Iinc -I$(DEPS)/sqlite -I$(DEPS)/lzma/include -I$(DEPS)/emhash
+
+GXX    := C:/Users/vasum/w64devkit/lib/gcc/x86_64-w64-mingw32/16.1.0/include/c++
+GXXLIB := C:/Users/vasum/w64devkit/lib/gcc/x86_64-w64-mingw32/16.1.0
+STDCXX := -nostdinc++ -isystem $(GXX) -isystem $(GXX)/x86_64-w64-mingw32 -isystem $(GXX)/backward
+
+CXXFLAGS := -O3 -g -std=c++17 -D_DEFAULT_SOURCE -fno-omit-frame-pointer $(STDCXX) $(EXTRA_CFLAGS) $(INC)
+CFLAGS   := -O2 $(INC)
+LDFLAGS  := -static -pthread -nostdlib++ -L$(GXXLIB) -lstdc++
+LZMA_DLL := $(DEPS)/liblzma.dll
+
+OBJDIR := obj_win_clangstd
+BIN    := bin/champsim_clangstd.exe
+
+SRCS := $(wildcard src/*.cc) $(wildcard src/hermes/*.cc) \
+        $(wildcard branch/*.cc) $(wildcard replacement/*.cc) \
+        $(wildcard prefetcher/*.cc)
+SRCS := $(filter-out replacement/hawkeye.cc replacement/hawkeye_crc2.cc,$(SRCS))
+SRCS := $(filter-out src/main_helper.cc src/cache_helper.cc src/ooo_cpu_helper.cc src/dram_helper.cc src/main_loop.cc src/main_paging.cc,$(SRCS))
+OBJS := $(patsubst %.cc,$(OBJDIR)/%.o,$(SRCS)) $(OBJDIR)/sqlite3.o
+
+.PHONY: all clean
+all: $(BIN)
+
+$(BIN): $(OBJS)
+	@mkdir -p bin
+	@echo "Linking $@ (clang+libstdc++) ..."
+	$(CXX) $(OBJS) $(LZMA_DLL) $(LDFLAGS) -o $@
+	@cp $(LZMA_DLL) bin/liblzma-5.dll
+	@echo "Built $@ (clang/libstdc++)"
+
+$(OBJDIR)/%.o: %.cc
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJDIR)/sqlite3.o: $(DEPS)/sqlite/sqlite3.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -rf $(OBJDIR) $(BIN)

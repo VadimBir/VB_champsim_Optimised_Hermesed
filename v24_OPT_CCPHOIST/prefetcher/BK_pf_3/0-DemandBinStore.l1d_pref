@@ -1,0 +1,234 @@
+#include "cache.h"
+
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <cstring>
+#include <lzma.h>
+#include <thread>
+
+class BlockStorage {
+    public:
+        std::vector<uint64_t> blocks;
+        static constexpr size_t BASE_RESERVE = 8192;
+        
+        bool compress_lzma(const uint8_t* src, size_t src_size, uint8_t** dst, size_t* dst_size) {
+            size_t out_pos = 0;
+            *dst_size = lzma_stream_buffer_bound(src_size);
+            *dst = new uint8_t[*dst_size];
+            
+            lzma_ret ret = lzma_easy_buffer_encode(
+                LZMA_PRESET_EXTREME | 9,
+                LZMA_CHECK_CRC64,
+                nullptr,
+                src, src_size,
+                *dst, &out_pos, *dst_size
+            );
+            
+            if (ret != LZMA_OK) {
+                delete[] *dst;
+                return false;
+            }
+            
+            *dst_size = out_pos;
+            return true;
+        }
+        
+        bool decompress_lzma(const uint8_t* src, size_t src_size, uint8_t** dst, size_t* dst_size) {
+            size_t memlimit = UINT64_MAX;
+            size_t in_pos = 0;
+            size_t out_pos = 0;
+            
+            *dst_size = src_size * 20; // initial estimate
+            *dst = new uint8_t[*dst_size];
+            
+            while (true) {
+                in_pos = 0;
+                out_pos = 0;
+                
+                lzma_ret ret = lzma_stream_buffer_decode(
+                    &memlimit, 0, nullptr,
+                    src, &in_pos, src_size,
+                    *dst, &out_pos, *dst_size
+                );
+                
+                if (ret == LZMA_OK) {
+                    *dst_size = out_pos;
+                    return true;
+                }
+                
+                if (ret == LZMA_BUF_ERROR) {
+                    delete[] *dst;
+                    *dst_size *= 2;
+                    *dst = new uint8_t[*dst_size];
+                    continue;
+                }
+                
+                delete[] *dst;
+                return false;
+            }
+        }
+        BlockStorage() {
+            blocks.reserve(BASE_RESERVE);
+        }
+        
+        void append(uint64_t block) {
+            if (blocks.size() == blocks.capacity()) {
+                size_t new_cap = blocks.capacity() == 0 ? BASE_RESERVE : blocks.capacity() * 2;
+                blocks.reserve(new_cap);
+            }
+            blocks.push_back(block);
+        }
+        
+        bool store(const std::string& full_path_name) {
+            if (blocks.empty()) return false;
+            
+            const uint8_t* raw_data = reinterpret_cast<const uint8_t*>(blocks.data());
+            size_t raw_size = blocks.size() * sizeof(uint64_t);
+            
+            uint8_t* compressed = nullptr;
+            size_t compressed_size = 0;
+            
+            if (!compress_lzma(raw_data, raw_size, &compressed, &compressed_size)) {
+                return false;
+            }
+            
+            std::ofstream file(full_path_name, std::ios::binary);
+            if (!file) {
+                delete[] compressed;
+                return false;
+            }
+            
+            file.write(reinterpret_cast<const char*>(compressed), compressed_size);
+            file.close();
+            delete[] compressed;
+            
+            // VERIFICATION: reload and compare
+            std::ifstream verify_file(full_path_name, std::ios::binary);
+            if (!verify_file) return false;
+            
+            verify_file.seekg(0, std::ios::end);
+            size_t file_size = verify_file.tellg();
+            verify_file.seekg(0, std::ios::beg);
+            
+            uint8_t* file_data = new uint8_t[file_size];
+            verify_file.read(reinterpret_cast<char*>(file_data), file_size);
+            verify_file.close();
+            
+            uint8_t* decompressed = nullptr;
+            size_t decompressed_size = 0;
+            
+            if (!decompress_lzma(file_data, file_size, &decompressed, &decompressed_size)) {
+                delete[] file_data;
+                return false;
+            }
+            delete[] file_data;
+            
+            bool identical = (decompressed_size == raw_size) && 
+                            (memcmp(decompressed, raw_data, raw_size) == 0);
+            
+            delete[] decompressed;
+            return identical;
+        }
+        
+        bool load(const std::string& full_path_name) {
+            std::ifstream file(full_path_name, std::ios::binary);
+            if (!file) return false;
+            
+            file.seekg(0, std::ios::end);
+            size_t file_size = file.tellg();
+            file.seekg(0, std::ios::beg);
+            
+            uint8_t* compressed = new uint8_t[file_size];
+            file.read(reinterpret_cast<char*>(compressed), file_size);
+            file.close();
+            
+            uint8_t* decompressed = nullptr;
+            size_t decompressed_size = 0;
+            
+            if (!decompress_lzma(compressed, file_size, &decompressed, &decompressed_size)) {
+                delete[] compressed;
+                return false;
+            }
+            delete[] compressed;
+            
+            to_vector(decompressed, decompressed_size);
+            delete[] decompressed;
+            return true;
+        }
+        
+        void to_vector(const uint8_t* binData, size_t byte_size) {
+            if (byte_size % sizeof(uint64_t) != 0) {
+                throw std::invalid_argument("byte_size must be multiple of 8");
+            }
+            
+            blocks.clear();
+            blocks.resize(byte_size / sizeof(uint64_t));
+            memcpy(blocks.data(), binData, byte_size);
+        }
+        
+        void to_arr(const uint64_t** data, size_t* size) const {
+            *data = blocks.data();
+            *size = blocks.size();
+        }
+        
+        size_t size() const { return blocks.size(); }
+        size_t capacity() const { return blocks.capacity(); }
+        void print() const {
+            for (size_t i = 0; i < blocks.size(); ++i) {
+                std::cout << ":" << setw(4) << i << ": " << setw(14) << blocks[i]  << ":";
+            }
+        }
+};
+
+BlockStorage demand_bin_store;
+std::string store_path_file = "";
+void CACHE::l1d_prefetcher_initialize() 
+{
+    store_path_file = std::getenv("BIN_STORE_PATH_FILE") ? std::getenv("BIN_STORE_PATH_FILE") : "";
+    std::cout << "\033[1;32m \t *** BIN_STORE_PATH_FILE: " << store_path_file << " *** \033[0m" << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+}
+
+void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type)
+{
+    if (warmup_complete[cpu] == 0) {
+        return;
+    }
+    if (demand_bin_store.blocks.size() % 250000 == 0) {
+        std::cout << "\t Demand Bin Store Size: " << demand_bin_store.blocks.size() << std::endl;
+    }
+    demand_bin_store.append(addr >> LOG2_BLOCK_SIZE);
+}
+
+void CACHE::l1d_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in)
+{
+
+}
+
+void CACHE::l1d_prefetcher_final_stats()
+{
+    std::cout << "Stroring the bin to " << store_path_file << " ..." << std::endl;
+    demand_bin_store.store(store_path_file);
+    std::cout << "\r\t *** STORE COMPLETE *** " << std::endl;
+    
+    std::cout << "Verifying ..." << std::endl;
+    BlockStorage verify_store;
+    verify_store.load(store_path_file);
+    
+    bool identical = (verify_store.size() == demand_bin_store.size());
+    if (identical) {
+        for (size_t i = 0; i < demand_bin_store.size(); ++i) {
+            if (demand_bin_store.blocks[i] != verify_store.blocks[i]) {
+                identical = false;
+                break;
+            }
+        }
+    }
+    
+    if (identical) {
+        std::cout << "\r Size: " << demand_bin_store.size() << "\t \033[1;32m *** VERIFIED *** \033[0m" << std::endl;
+    } else {
+        std::cout << "\r\t \033[1;31m *** VERIFICATION FAILED! *** \033[0m " << std::endl;
+    }
+}

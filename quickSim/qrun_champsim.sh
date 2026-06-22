@@ -150,7 +150,11 @@ PERF_DATA_FILE="${PERF_FNAME:-perf}.data"
 PERF_EVENT_SPEC="${PERF_EVENTS:-cycles:u}"
 # PERF="perf record -e ${PERF_EVENT_SPEC} --call-graph=fp -F 7489 --mmap-pages=65536 --buildid-all -o ./${PERF_DATA_FILE}"
 # --compression-level=4 : zstd-compress perf.data inline (1=fastest .. 22=smallest); perf report auto-decompresses
-PERF="perf record -e ${PERF_EVENT_SPEC} --call-graph=fp -F 7489 --mmap-pages=65536 --buildid-all --compression-level=4 -o ./${PERF_DATA_FILE}"
+# DO NOT add explicit --mmap-pages on kernel 6.17.0-35-generic: an explicit ring (e.g. 65536 or 512)
+# + inline zstd triggers "failed to write perf data, error: Bad address" -> truncated, unreadable type-83
+# records. perf's DEFAULT ring works fine with compression (verified 4/4 clean under load). Leave it off.
+# -F 99991 = largest PRIME <= kernel cap (perf_event_max_sample_rate=100000 Hz); prime freq avoids aliasing.
+PERF="perf record -e ${PERF_EVENT_SPEC} --call-graph=fp -F 99991 --buildid-all --compression-level=4 -o ./${PERF_DATA_FILE}"
 echo "Perf config: events=${PERF_EVENT_SPEC} output=${PERF_DATA_FILE}"
 
 PERF_COLLECT_INTERVAL=200 # seconds (15 minutes)

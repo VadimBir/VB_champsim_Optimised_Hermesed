@@ -1,0 +1,819 @@
+// #include "cache.h"
+
+// #include <GL/glew.h>
+// #include <GLFW/glfw3.h>
+// #include <imgui.h>
+// #include <imgui_impl_glfw.h>
+// #include <imgui_impl_opengl3.h>
+// #include <implot.h>
+// #include <thread>
+// #include <atomic>
+// #include <vector>
+// #include <algorithm>
+// #include <chrono>
+// #include <unordered_map>
+// #include <memory>
+
+// std::atomic<bool> gui_running{false};
+
+// constexpr size_t MAX_POINTS = 10000;
+// std::atomic<uint64_t> pf_addr_buffer[MAX_POINTS];
+// std::atomic<uint64_t> ip_buffer[MAX_POINTS];
+// std::atomic<uint64_t> cycle_buffer[MAX_POINTS];
+// std::atomic<uint8_t> hit_buffer[MAX_POINTS];
+// std::atomic<size_t> pf_write_idx{0};
+
+// struct Node {
+//     uint64_t addr;
+//     uint64_t ip;
+//     uint64_t sequence;
+//     std::vector<std::shared_ptr<Node>> children;
+//     Node* parent = nullptr;
+//     double x_pos = 0.0;
+//     double y_pos = 0.0;
+    
+//     Node(uint64_t a, uint64_t i, uint64_t s) : addr(a), ip(i), sequence(s) {}
+// };
+
+// std::shared_ptr<Node> root = std::make_shared<Node>(-1, -1, 0);
+// std::unordered_map<uint64_t, std::shared_ptr<Node>> first_seen;
+// Node* current = root.get();
+// std::vector<std::pair<double, double>> graph_nodes;
+// std::vector<std::pair<std::pair<double, double>, std::pair<double, double>>> graph_edges;
+// std::vector<Node*> node_lookup; // For tooltip lookups
+// std::atomic<uint64_t> sequence_counter{0};
+
+// vector<>  = {0}; // Placeholder for core cycle tracking
+// std::shared_ptr<Node> add_access(uint64_t addr, uint64_t ip) {
+//     Node* parent_node = (first_seen.find(addr) != first_seen.end()) ? 
+//                         first_seen[addr].get() : current;
+
+//     uint64_t seq = sequence_counter.fetch_add(1, std::memory_order_relaxed);
+//     auto new_node = std::make_shared<Node>(addr, ip, seq);
+//     new_node->parent = parent_node;
+//     parent_node->children.push_back(new_node);
+
+//     if (first_seen.find(addr) == first_seen.end()) {
+//         first_seen[addr] = new_node;
+//     }
+
+//     current = new_node.get();
+//     return new_node;
+// }
+
+// void build_graph_layout() {
+//     graph_nodes.clear();
+//     graph_edges.clear();
+//     node_lookup.clear();
+    
+//     std::function<void(Node*, double, double, double)> layout_node = 
+//         [&](Node* node, double x, double y, double x_spacing) {
+//             if (node->addr != (uint64_t)-1) {
+//                 node->x_pos = x;
+//                 node->y_pos = y;
+//                 graph_nodes.push_back({x, y});
+//                 node_lookup.push_back(node);
+                
+//                 if (node->parent && node->parent->addr != (uint64_t)-1) {
+//                     graph_edges.push_back({{node->parent->x_pos, node->parent->y_pos}, {x, y}});
+//                 }
+//             }
+            
+//             // Sort children by sequence number (older first)
+//             std::vector<std::shared_ptr<Node>> sorted_children = node->children;
+//             std::sort(sorted_children.begin(), sorted_children.end(), 
+//                 [](const std::shared_ptr<Node>& a, const std::shared_ptr<Node>& b) {
+//                     return a->sequence < b->sequence;
+//                 });
+            
+//             // Position children at different depths
+//             double child_x = x - (sorted_children.size() - 1) * x_spacing * 0.5;
+//             for (int i = 0; i < sorted_children.size(); ++i) {
+//                 auto& child = sorted_children[i];
+//                 double child_y = y - 1.0 - (i * 0.5); // Each subsequent branch goes deeper
+//                 layout_node(child.get(), child_x, child_y, x_spacing * 0.7);
+//                 child_x += x_spacing;
+//             }
+//         };
+    
+//     layout_node(root.get(), 0.0, 0.0, 2.0);
+// }
+
+// void gui_thread() {
+//     glfwInit();
+//     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+//     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    
+//     GLFWwindow* window = glfwCreateWindow(1920, 1080, "Prefetch Monitor", NULL, NULL);
+//     glfwMakeContextCurrent(window);
+//     glewInit();
+//     glfwSwapInterval(1);
+    
+//     IMGUI_CHECKVERSION();
+//     ImGui::CreateContext();
+//     ImPlot::CreateContext();
+//     ImGui_ImplGlfw_InitForOpenGL(window, true);
+//     ImGui_ImplOpenGL3_Init("#version 330");
+    
+//     gui_running = true;
+    
+//     while (!glfwWindowShouldClose(window)) {
+//         glfwPollEvents();
+        
+//         ImGui_ImplOpenGL3_NewFrame();
+//         ImGui_ImplGlfw_NewFrame();
+//         ImGui::NewFrame();
+        
+//         const size_t total_written = pf_write_idx.load(std::memory_order_acquire);
+//         const size_t num_points = std::min<size_t>(MAX_POINTS, total_written);
+//         const size_t start_idx = (total_written - num_points) % MAX_POINTS;
+        
+//         std::vector<double> x_data, y_data;
+//         std::vector<double> x_hit, y_hit, x_miss, y_miss;
+//         x_data.reserve(num_points);
+//         y_data.reserve(num_points);
+        
+//         if (start_idx + num_points <= MAX_POINTS) {
+//             for (size_t i = start_idx; i < start_idx + num_points; ++i) {
+//                 x_data.push_back(static_cast<double>(cycle_buffer[i].load(std::memory_order_relaxed)));
+//                 y_data.push_back(static_cast<double>(pf_addr_buffer[i].load(std::memory_order_relaxed)));
+//             }
+//         } else {
+//             const size_t first_segment = MAX_POINTS - start_idx;
+            
+//             for (size_t i = start_idx; i < MAX_POINTS; ++i) {
+//                 x_data.push_back(static_cast<double>(cycle_buffer[i].load(std::memory_order_relaxed)));
+//                 y_data.push_back(static_cast<double>(pf_addr_buffer[i].load(std::memory_order_relaxed)));
+//             }
+            
+//             const size_t second_segment = num_points - first_segment;
+//             for (size_t i = 0; i < second_segment; ++i) {
+//                 x_data.push_back(static_cast<double>(cycle_buffer[i].load(std::memory_order_relaxed)));
+//                 y_data.push_back(static_cast<double>(pf_addr_buffer[i].load(std::memory_order_relaxed)));
+//             }
+//         }
+        
+//         for (size_t j = 0; j < x_data.size(); ++j) {
+//             const size_t buffer_idx = (start_idx + j) % MAX_POINTS;
+//             if (hit_buffer[buffer_idx].load(std::memory_order_relaxed)) {
+//                 x_hit.push_back(x_data[j]);
+//                 y_hit.push_back(y_data[j]);
+//             } else {
+//                 x_miss.push_back(x_data[j]);
+//                 y_miss.push_back(y_data[j]);
+//             }
+//         }
+        
+//         // First Widget - Timeline
+//         ImGui::Begin("Prefetch Timeline");
+//         if (ImPlot::BeginPlot("PF Address Pattern", ImVec2(-1, -1))) {
+//             ImPlot::SetupAxes("Cycle", "Page Delta");
+//             ImPlot::SetupAxisLimits(ImAxis_X1, 
+//                 static_cast<double>(x_data.empty() ? 0 : x_data.front()), 
+//                 static_cast<double>(x_data.empty() ? 1000 : x_data.back()), 
+//                 ImGuiCond_Once);
+//             ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.0f, 0.5f, 1.0f, 1.0f));
+//             ImPlot::PlotLine("Timeline", x_data.data(), y_data.data(), x_data.size());
+//             ImPlot::PopStyleColor();
+            
+//             if (!x_hit.empty()) {
+//                 ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
+//                 ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0.0f, 0.8f, 0.0f, 1.0f));
+//                 ImPlot::PlotScatter("Hits", x_hit.data(), y_hit.data(), x_hit.size());
+//                 ImPlot::PopStyleColor(2);
+//             }
+            
+//             if (!x_miss.empty()) {
+//                 ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+//                 ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0.8f, 0.0f, 0.0f, 1.0f));
+//                 ImPlot::PlotScatter("Misses", x_miss.data(), y_miss.data(), x_miss.size());
+//                 ImPlot::PopStyleColor(2);
+//             }
+            
+//             ImPlot::EndPlot();
+//         }
+//         ImGui::End();
+        
+//         // Second Widget - Tree Graph
+//         ImGui::Begin("Access Tree Graph");
+//         if (ImPlot::BeginPlot("IP-ADDR Branch Structure", ImVec2(-1, -1))) {
+//             ImPlot::SetupAxes("Tree X", "Tree Depth");
+            
+//             build_graph_layout();
+            
+//             // Draw edges first
+//             for (const auto& edge : graph_edges) {
+//                 std::vector<double> edge_x = {edge.first.first, edge.second.first};
+//                 std::vector<double> edge_y = {edge.first.second, edge.second.second};
+//                 ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.7f, 0.7f, 0.7f, 0.8f));
+//                 ImPlot::PlotLine("", edge_x.data(), edge_y.data(), 2);
+//                 ImPlot::PopStyleColor();
+//             }
+            
+//             // Draw nodes
+//             if (!graph_nodes.empty()) {
+//                 std::vector<double> node_x, node_y;
+//                 for (const auto& node : graph_nodes) {
+//                     node_x.push_back(node.first);
+//                     node_y.push_back(node.second);
+//                 }
+                
+//                 ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(1.0f, 0.6f, 0.0f, 1.0f));
+//                 ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0.8f, 0.4f, 0.0f, 1.0f));
+//                 ImPlot::PushStyleVar(ImPlotStyleVar_MarkerSize, 8.0f);
+//                 ImPlot::PlotScatter("Blocks", node_x.data(), node_y.data(), node_x.size());
+//                 ImPlot::PopStyleVar();
+//                 ImPlot::PopStyleColor(2);
+                
+//                 // Handle tooltips
+//                 if (ImPlot::IsPlotHovered()) {
+//                     ImPlotPoint mouse_pos = ImPlot::GetPlotMousePos();
+//                     double min_dist = 0.2; // Hover distance threshold
+//                     int closest_node = -1;
+                    
+//                     for (int i = 0; i < graph_nodes.size(); ++i) {
+//                         double dx = graph_nodes[i].first - mouse_pos.x;
+//                         double dy = graph_nodes[i].second - mouse_pos.y;
+//                         double dist = sqrt(dx*dx + dy*dy);
+                        
+//                         if (dist < min_dist) {
+//                             min_dist = dist;
+//                             closest_node = i;
+//                         }
+//                     }
+                    
+//                     if (closest_node >= 0 && closest_node < node_lookup.size()) {
+//                         Node* node = node_lookup[closest_node];
+//                         ImGui::BeginTooltip();
+//                         ImGui::Text("Sequence: %lu", node->sequence);
+//                         ImGui::Text("Block Addr: 0x%lx", node->addr);
+//                         ImGui::Text("IP: 0x%lx", node->ip);
+//                         ImGui::EndTooltip();
+//                     }
+//                 }
+//             }
+            
+//             ImPlot::EndPlot();
+//         }
+//         ImGui::End();
+        
+//         ImGui::Render();
+//         int w, h;
+//         glfwGetFramebufferSize(window, &w, &h);
+//         glViewport(0, 0, w, h);
+//         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+//         glClear(GL_COLOR_BUFFER_BIT);
+//         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+//         glfwSwapBuffers(window);
+//     }
+    
+//     ImPlot::DestroyContext();
+//     ImGui_ImplOpenGL3_Shutdown();
+//     ImGui_ImplGlfw_Shutdown();
+//     ImGui::DestroyContext();
+//     glfwDestroyWindow(window);
+//     glfwTerminate();
+//     gui_running = false;
+// }
+
+// std::thread gui_thread_obj;
+// void CACHE::l1d_prefetcher_initialize() {
+//     gui_thread_obj = std::thread(gui_thread);
+// }
+
+// uint64_t pre_page = 0;
+// int pageDelta = 0;
+// static uint64_t last_addr = -999999;
+
+// void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type) {
+//     uint64_t addaligned_addr = ((addr>>LOG2_BLOCK_SIZE)) << LOG2_BLOCK_SIZE;
+//     // add addr to the vector and place the core cycle requested 
+//     pf_entry entry;
+//     entry.addr = block_addr;
+//     entry.req_cycle = current_core_cycle[cpu];
+//     entry.retired_cycle = 0;
+//     pf_trace.push_back(entry);
+//     uint64_t block_addr = addr >> LOG2_BLOCK_SIZE;
+    
+//     if (pre_page == (addr >> LOG2_PAGE_SIZE)) {
+//         pageDelta = (addr >> LOG2_BLOCK_SIZE) & ((1 << (LOG2_PAGE_SIZE - LOG2_BLOCK_SIZE)) - 1);
+//     } else {
+//         pageDelta = 128;
+//     }
+    
+//     // Add to tree if not duplicate
+//     if (block_addr != last_addr) {
+//         add_access(block_addr, ip);
+//         last_addr = block_addr;
+//     }
+    
+//     const size_t idx = pf_write_idx.fetch_add(1, std::memory_order_relaxed) % MAX_POINTS;
+//     pf_addr_buffer[idx].store((addr >> LOG2_PAGE_SIZE), std::memory_order_relaxed);
+//     ip_buffer[idx].store(ip, std::memory_order_relaxed);
+//     cycle_buffer[idx].store(current_core_cycle[0], std::memory_order_relaxed);
+//     hit_buffer[idx].store(cache_hit, std::memory_order_relaxed);
+    
+//     prefetch_line(ip, addr, pf_addr, FILL_L1, 0);
+//     pre_page = (addr >> LOG2_PAGE_SIZE);
+// }
+
+// void CACHE::l1d_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in) {
+// }
+
+// void CACHE::l1d_prefetcher_final_stats() {
+//     if (gui_thread_obj.joinable()) {
+//         gui_thread_obj.join();
+//     }
+// }
+// #include "cache.h"
+
+// #include <GL/glew.h>
+// #include <GLFW/glfw3.h>
+// #include <imgui.h>
+// #include <imgui_impl_glfw.h>
+// #include <imgui_impl_opengl3.h>
+// #include <implot.h>
+// #include <thread>
+// #include <atomic>
+// #include <vector>
+// #include <algorithm>
+// #include <chrono>
+// #include <unordered_map>
+// #include <memory>
+
+// std::atomic<bool> gui_running{false};
+
+// constexpr size_t MAX_POINTS = 10000;
+// std::atomic<uint64_t> pf_addr_buffer[MAX_POINTS];
+// std::atomic<uint64_t> ip_buffer[MAX_POINTS];
+// std::atomic<uint64_t> cycle_buffer[MAX_POINTS];
+// std::atomic<uint8_t> hit_buffer[MAX_POINTS];
+// std::atomic<size_t> pf_write_idx{0};
+
+// struct Node {
+//     uint64_t addr;
+//     uint64_t ip;
+//     uint64_t sequence;
+//     std::vector<std::shared_ptr<Node>> children;
+//     Node* parent = nullptr;
+//     double x_pos = 0.0;
+//     double y_pos = 0.0;
+    
+//     Node(uint64_t a, uint64_t i, uint64_t s) : addr(a), ip(i), sequence(s) {}
+// };
+
+// std::shared_ptr<Node> root = std::make_shared<Node>(-1, -1, 0);
+// std::unordered_map<uint64_t, std::shared_ptr<Node>> first_seen;
+// Node* current = root.get();
+// std::vector<std::pair<double, double>> graph_nodes;
+// std::vector<std::pair<std::pair<double, double>, std::pair<double, double>>> graph_edges;
+// std::vector<Node*> node_lookup; // For tooltip lookups
+// std::atomic<uint64_t> sequence_counter{0};
+
+// std::shared_ptr<Node> add_access(uint64_t addr, uint64_t ip) {
+//     Node* parent_node = (first_seen.find(addr) != first_seen.end()) ? 
+//                         first_seen[addr].get() : current;
+
+//     uint64_t seq = sequence_counter.fetch_add(1, std::memory_order_relaxed);
+//     auto new_node = std::make_shared<Node>(addr, ip, seq);
+//     new_node->parent = parent_node;
+//     parent_node->children.push_back(new_node);
+
+//     if (first_seen.find(addr) == first_seen.end()) {
+//         first_seen[addr] = new_node;
+//     }
+
+//     current = new_node.get();
+//     return new_node;
+// }
+
+// void build_graph_layout() {
+//     graph_nodes.clear();
+//     graph_edges.clear();
+//     node_lookup.clear();
+    
+//     std::function<void(Node*, double, double, double)> layout_node = 
+//         [&](Node* node, double x, double y, double x_spacing) {
+//             if (node->addr != (uint64_t)-1) {
+//                 node->x_pos = x;
+//                 node->y_pos = y;
+//                 graph_nodes.push_back({x, y});
+//                 node_lookup.push_back(node); // Store raw pointer
+                
+//                 if (node->parent && node->parent->addr != (uint64_t)-1) {
+//                     graph_edges.push_back({{node->parent->x_pos, node->parent->y_pos}, {x, y}});
+//                 }
+//             }
+            
+//             double child_x = x - (node->children.size() - 1) * x_spacing * 0.5;
+//             for (auto& child : node->children) {
+//                 layout_node(child.get(), child_x, y - 1.0, x_spacing * 0.7);
+//                 child_x += x_spacing;
+//             }
+//         };
+    
+//     layout_node(root.get(), 0.0, 0.0, 2.0);
+// }
+
+// void gui_thread() {
+//     glfwInit();
+//     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+//     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    
+//     GLFWwindow* window = glfwCreateWindow(1920, 1080, "Prefetch Monitor", NULL, NULL);
+//     glfwMakeContextCurrent(window);
+//     glewInit();
+//     glfwSwapInterval(1);
+    
+//     IMGUI_CHECKVERSION();
+//     ImGui::CreateContext();
+//     ImPlot::CreateContext();
+//     ImGui_ImplGlfw_InitForOpenGL(window, true);
+//     ImGui_ImplOpenGL3_Init("#version 330");
+    
+//     gui_running = true;
+    
+//     while (!glfwWindowShouldClose(window)) {
+//         glfwPollEvents();
+        
+//         ImGui_ImplOpenGL3_NewFrame();
+//         ImGui_ImplGlfw_NewFrame();
+//         ImGui::NewFrame();
+        
+//         const size_t total_written = pf_write_idx.load(std::memory_order_acquire);
+//         const size_t num_points = std::min<size_t>(MAX_POINTS, total_written);
+//         const size_t start_idx = (total_written - num_points) % MAX_POINTS;
+        
+//         std::vector<double> x_data, y_data;
+//         std::vector<double> x_hit, y_hit, x_miss, y_miss;
+//         x_data.reserve(num_points);
+//         y_data.reserve(num_points);
+        
+//         if (start_idx + num_points <= MAX_POINTS) {
+//             for (size_t i = start_idx; i < start_idx + num_points; ++i) {
+//                 x_data.push_back(static_cast<double>(cycle_buffer[i].load(std::memory_order_relaxed)));
+//                 y_data.push_back(static_cast<double>(pf_addr_buffer[i].load(std::memory_order_relaxed)));
+//             }
+//         } else {
+//             const size_t first_segment = MAX_POINTS - start_idx;
+            
+//             for (size_t i = start_idx; i < MAX_POINTS; ++i) {
+//                 x_data.push_back(static_cast<double>(cycle_buffer[i].load(std::memory_order_relaxed)));
+//                 y_data.push_back(static_cast<double>(pf_addr_buffer[i].load(std::memory_order_relaxed)));
+//             }
+            
+//             const size_t second_segment = num_points - first_segment;
+//             for (size_t i = 0; i < second_segment; ++i) {
+//                 x_data.push_back(static_cast<double>(cycle_buffer[i].load(std::memory_order_relaxed)));
+//                 y_data.push_back(static_cast<double>(pf_addr_buffer[i].load(std::memory_order_relaxed)));
+//             }
+//         }
+        
+//         for (size_t j = 0; j < x_data.size(); ++j) {
+//             const size_t buffer_idx = (start_idx + j) % MAX_POINTS;
+//             if (hit_buffer[buffer_idx].load(std::memory_order_relaxed)) {
+//                 x_hit.push_back(x_data[j]);
+//                 y_hit.push_back(y_data[j]);
+//             } else {
+//                 x_miss.push_back(x_data[j]);
+//                 y_miss.push_back(y_data[j]);
+//             }
+//         }
+        
+//         // First Widget - Timeline
+//         ImGui::Begin("Prefetch Timeline");
+//         if (ImPlot::BeginPlot("PF Address Pattern", ImVec2(-1, -1))) {
+//             ImPlot::SetupAxes("Cycle", "Page Delta");
+//             ImPlot::SetupAxisLimits(ImAxis_X1, 
+//                 static_cast<double>(x_data.empty() ? 0 : x_data.front()), 
+//                 static_cast<double>(x_data.empty() ? 1000 : x_data.back()), 
+//                 ImGuiCond_Once);
+//             ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.0f, 0.5f, 1.0f, 1.0f));
+//             ImPlot::PlotLine("Timeline", x_data.data(), y_data.data(), x_data.size());
+//             ImPlot::PopStyleColor();
+            
+//             if (!x_hit.empty()) {
+//                 ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
+//                 ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0.0f, 0.8f, 0.0f, 1.0f));
+//                 ImPlot::PlotScatter("Hits", x_hit.data(), y_hit.data(), x_hit.size());
+//                 ImPlot::PopStyleColor(2);
+//             }
+            
+//             if (!x_miss.empty()) {
+//                 ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+//                 ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0.8f, 0.0f, 0.0f, 1.0f));
+//                 ImPlot::PlotScatter("Misses", x_miss.data(), y_miss.data(), x_miss.size());
+//                 ImPlot::PopStyleColor(2);
+//             }
+            
+//             ImPlot::EndPlot();
+//         }
+//         ImGui::End();
+        
+//         // Second Widget - Tree Graph
+//         ImGui::Begin("Access Tree Graph");
+//         if (ImPlot::BeginPlot("IP-ADDR Branch Structure", ImVec2(-1, -1))) {
+//             ImPlot::SetupAxes("Tree X", "Tree Depth");
+            
+//             build_graph_layout();
+            
+//             // Draw edges first
+//             for (const auto& edge : graph_edges) {
+//                 std::vector<double> edge_x = {edge.first.first, edge.second.first};
+//                 std::vector<double> edge_y = {edge.first.second, edge.second.second};
+//                 ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.7f, 0.7f, 0.7f, 0.8f));
+//                 ImPlot::PlotLine("", edge_x.data(), edge_y.data(), 2);
+//                 ImPlot::PopStyleColor();
+//             }
+            
+//             // Draw nodes
+//             if (!graph_nodes.empty()) {
+//                 std::vector<double> node_x, node_y;
+//                 for (const auto& node : graph_nodes) {
+//                     node_x.push_back(node.first);
+//                     node_y.push_back(node.second);
+//                 }
+                
+//                 ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(1.0f, 0.6f, 0.0f, 1.0f));
+//                 ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0.8f, 0.4f, 0.0f, 1.0f));
+//                 ImPlot::PushStyleVar(ImPlotStyleVar_MarkerSize, 8.0f);
+//                 ImPlot::PlotScatter("Blocks", node_x.data(), node_y.data(), node_x.size());
+//                 ImPlot::PopStyleVar();
+//                 ImPlot::PopStyleColor(2);
+                
+//                 // Handle tooltips
+//                 if (ImPlot::IsPlotHovered()) {
+//                     ImPlotPoint mouse_pos = ImPlot::GetPlotMousePos();
+//                     double min_dist = 0.2; // Hover distance threshold
+//                     int closest_node = -1;
+                    
+//                     for (int i = 0; i < graph_nodes.size(); ++i) {
+//                         double dx = graph_nodes[i].first - mouse_pos.x;
+//                         double dy = graph_nodes[i].second - mouse_pos.y;
+//                         double dist = sqrt(dx*dx + dy*dy);
+                        
+//                         if (dist < min_dist) {
+//                             min_dist = dist;
+//                             closest_node = i;
+//                         }
+//                     }
+                    
+//                     if (closest_node >= 0 && closest_node < node_lookup.size()) {
+//                         Node* node = node_lookup[closest_node];
+//                         ImGui::BeginTooltip();
+//                         ImGui::Text("Sequence: %lu", node->sequence);
+//                         ImGui::Text("Block Addr: 0x%lx", node->addr);
+//                         ImGui::Text("IP: 0x%lx", node->ip);
+//                         ImGui::EndTooltip();
+//                     }
+//                 }
+//             }
+            
+//             ImPlot::EndPlot();
+//         }
+//         ImGui::End();
+        
+//         ImGui::Render();
+//         int w, h;
+//         glfwGetFramebufferSize(window, &w, &h);
+//         glViewport(0, 0, w, h);
+//         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+//         glClear(GL_COLOR_BUFFER_BIT);
+//         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+//         glfwSwapBuffers(window);
+//     }
+    
+//     ImPlot::DestroyContext();
+//     ImGui_ImplOpenGL3_Shutdown();
+//     ImGui_ImplGlfw_Shutdown();
+//     ImGui::DestroyContext();
+//     glfwDestroyWindow(window);
+//     glfwTerminate();
+//     gui_running = false;
+// }
+
+// std::thread gui_thread_obj;
+// void CACHE::l1d_prefetcher_initialize() {
+//     gui_thread_obj = std::thread(gui_thread);
+// }
+
+// uint64_t pre_page = 0;
+// int pageDelta = 0;
+// static uint64_t last_addr = -999999;
+// #include <chrono>
+// #include <thread>
+// void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type) {
+//     uint64_t pf_addr = ((addr>>LOG2_BLOCK_SIZE)+1) << LOG2_BLOCK_SIZE;
+//     uint64_t block_addr = addr >> LOG2_BLOCK_SIZE;
+    
+//     if (pre_page == (addr >> LOG2_PAGE_SIZE)) {
+//         pageDelta = (addr >> LOG2_BLOCK_SIZE) & ((1 << (LOG2_PAGE_SIZE - LOG2_BLOCK_SIZE)) - 1);
+//     } else {
+//         pageDelta = 128;
+//     }
+    
+//     // Add to tree if not duplicate
+//     if (block_addr != last_addr) {
+//         add_access(block_addr, ip);
+//         last_addr = block_addr;
+//     }
+    
+//     const size_t idx = pf_write_idx.fetch_add(1, std::memory_order_relaxed) % MAX_POINTS;
+//     pf_addr_buffer[idx].store((addr >> LOG2_PAGE_SIZE), std::memory_order_relaxed);
+//     ip_buffer[idx].store(ip, std::memory_order_relaxed);
+//     cycle_buffer[idx].store(current_core_cycle[0], std::memory_order_relaxed);
+//     hit_buffer[idx].store(cache_hit, std::memory_order_relaxed);
+    
+//     prefetch_line(ip, addr, pf_addr, FILL_L1, 0);
+//     pre_page = (addr >> LOG2_PAGE_SIZE);
+//     // sleep for 100ms 
+//     // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+// }
+
+// void CACHE::l1d_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in) {
+// }
+
+// void CACHE::l1d_prefetcher_final_stats() {
+//     if (gui_thread_obj.joinable()) {
+//         gui_thread_obj.join();
+//     }
+// }
+
+
+
+#include "cache.h"
+
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+#include <implot.h>
+#include <thread>
+#include <atomic>
+#include <vector>
+#include <algorithm>
+#include <chrono>
+
+std::atomic<bool> gui_running{false};
+
+constexpr size_t MAX_POINTS = 10000;
+std::atomic<uint64_t> pf_addr_buffer[MAX_POINTS];
+std::atomic<uint64_t> cycle_buffer[MAX_POINTS];
+std::atomic<uint8_t> hit_buffer[MAX_POINTS];
+std::atomic<size_t> pf_write_idx{0};
+
+void gui_thread() {
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "Prefetch Monitor", NULL, NULL);
+    glfwMakeContextCurrent(window);
+    glewInit();
+    glfwSwapInterval(1);
+    
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImPlot::CreateContext();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+    
+    gui_running = true;
+    
+    while (!glfwWindowShouldClose(window)) {
+        glfwPollEvents();
+        
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        
+        const size_t total_written = pf_write_idx.load(std::memory_order_acquire);
+        const size_t num_points = std::min<size_t>(MAX_POINTS, total_written);
+        const size_t start_idx = (total_written - num_points) % MAX_POINTS;
+        
+        std::vector<double> x_data, y_data;
+        std::vector<double> x_hit, y_hit, x_miss, y_miss;
+        x_data.reserve(num_points);
+        y_data.reserve(num_points);
+        
+        if (start_idx + num_points <= MAX_POINTS) {
+            // Single contiguous segment
+            for (size_t i = start_idx; i < start_idx + num_points; ++i) {
+                x_data.push_back(static_cast<double>(cycle_buffer[i].load(std::memory_order_relaxed)));
+                y_data.push_back(static_cast<double>(pf_addr_buffer[i].load(std::memory_order_relaxed)));
+            }
+        } else {
+            // Wrapped around buffer
+            const size_t first_segment = MAX_POINTS - start_idx;
+            
+            // First segment (start_idx to end)
+            for (size_t i = start_idx; i < MAX_POINTS; ++i) {
+                x_data.push_back(static_cast<double>(cycle_buffer[i].load(std::memory_order_relaxed)));
+                y_data.push_back(static_cast<double>(pf_addr_buffer[i].load(std::memory_order_relaxed)));
+            }
+            
+            // Second segment (start to remaining points)
+            const size_t second_segment = num_points - first_segment;
+            for (size_t i = 0; i < second_segment; ++i) {
+                x_data.push_back(static_cast<double>(cycle_buffer[i].load(std::memory_order_relaxed)));
+                y_data.push_back(static_cast<double>(pf_addr_buffer[i].load(std::memory_order_relaxed)));
+            }
+        }
+        
+        // Separate data by hit/miss
+        for (size_t j = 0; j < x_data.size(); ++j) {
+            const size_t buffer_idx = (start_idx + j) % MAX_POINTS;
+            if (hit_buffer[buffer_idx].load(std::memory_order_relaxed)) {
+                x_hit.push_back(x_data[j]);
+                y_hit.push_back(y_data[j]);
+            } else {
+                x_miss.push_back(x_data[j]);
+                y_miss.push_back(y_data[j]);
+            }
+        }
+        
+        ImGui::Begin("Prefetch Monitor");
+        if (ImPlot::BeginPlot("PF Address Pattern", ImVec2(-1, -1))) {
+            ImPlot::SetupAxes("Cycle", "Page Delta");
+            ImPlot::SetupAxisLimits(ImAxis_X1, 
+                static_cast<double>(x_data.empty() ? 0 : x_data.front()), 
+                static_cast<double>(x_data.empty() ? 1000 : x_data.back()), 
+                ImGuiCond_Once);
+            ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.0f, 0.5f, 1.0f, 1.0f)); // Blue
+            ImPlot::PlotLine("Timeline", x_data.data(), y_data.data(), x_data.size());
+            ImPlot::PopStyleColor();
+            // Plot hits in green
+            if (!x_hit.empty()) {
+                ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
+                ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0.0f, 0.8f, 0.0f, 1.0f));
+                ImPlot::PlotScatter("Hits", x_hit.data(), y_hit.data(), x_hit.size());
+                ImPlot::PopStyleColor(2);
+            }
+            
+            // Plot misses in red
+            if (!x_miss.empty()) {
+                ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+                ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0.8f, 0.0f, 0.0f, 1.0f));
+                ImPlot::PlotScatter("Misses", x_miss.data(), y_miss.data(), x_miss.size());
+                ImPlot::PopStyleColor(2);
+            }
+            
+            ImPlot::EndPlot();
+        }
+        ImGui::End();
+        
+        ImGui::Render();
+        int w, h;
+        glfwGetFramebufferSize(window, &w, &h);
+        glViewport(0, 0, w, h);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        glfwSwapBuffers(window);
+    }
+    
+    ImPlot::DestroyContext();
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    gui_running = false;
+}
+
+std::thread gui_thread_obj;
+void CACHE::l1d_prefetcher_initialize() {
+    gui_thread_obj = std::thread(gui_thread);
+}
+
+uint64_t pre_page = 0;
+int pageDelta = 0;
+
+void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type) {
+    uint64_t pf_addr = ((addr>>LOG2_BLOCK_SIZE)+1) << LOG2_BLOCK_SIZE;
+    uint64_t block_addr = addr >> LOG2_BLOCK_SIZE;
+    uint64_t page_startBlock = ((addr >> LOG2_PAGE_SIZE) << LOG2_PAGE_SIZE) >> LOG2_BLOCK_SIZE;
+    int64_t relative2page_delta =  block_addr - page_startBlock;
+
+    
+    cout << "Page Delta: " << relative2page_delta << " cycle: " << current_core_cycle[0] << endl;
+    
+    const size_t idx = pf_write_idx.fetch_add(1, std::memory_order_relaxed) % MAX_POINTS;
+    pf_addr_buffer[idx].store((addr >> LOG2_PAGE_SIZE), std::memory_order_relaxed);
+    cycle_buffer[idx].store(current_core_cycle[0], std::memory_order_relaxed);
+    hit_buffer[idx].store(cache_hit, std::memory_order_relaxed);
+    
+    // std::this_thread::sleep_for(std::chrono::milliseconds(15));
+    prefetch_line(ip, addr, pf_addr, FILL_L1, 0);
+    pre_page = (addr >> LOG2_PAGE_SIZE);
+}
+
+void CACHE::l1d_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in) {
+}
+
+void CACHE::l1d_prefetcher_final_stats() {
+    if (gui_thread_obj.joinable()) {
+        gui_thread_obj.join();
+    }
+}

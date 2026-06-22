@@ -1,0 +1,16 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+#define L1D_type 4
+#define L2C_type 5
+#define LLC_type 6
+static bool ByP_model_init = false;
+inline bool shall_L1D_Bypass_OnCacheMissedMSHRcap(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (ByP_model_init == false){
+        cout << "Bypass on: MSHR free slots ratio 0.3" << endl;
+        ByP_model_init = true;
+    }
+    if (L1D->MSHR.occupancy * 2 < L1D->MSHR.SIZE) return false;
+    double free_ratio = (double)(L2C->MSHR.SIZE - L2C->MSHR.occupancy) / L2C->MSHR.SIZE;
+    if (free_ratio < 0.3) return false;
+    return true;
+}
