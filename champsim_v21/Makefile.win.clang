@@ -1,0 +1,61 @@
+# Makefile.win.clang — native Windows build using LLVM-MinGW clang (NOT a VM).
+# Driven by w64devkit make/sh (compiler-agnostic) but compiled with clang++.
+# Run with w64devkit\bin on PATH:
+#     make -f Makefile.win.clang -j4
+# NOTE: llvm-mingw ships libc++ (no libstdc++). The Linux Makefile asks for
+# -stdlib=libstdc++ for output equivalence; we CANNOT here, so results are
+# compared against the g++/libstdc++ build via execution_checksum.
+
+CLANG  := C:/Users/vasum/llvm-mingw/bin
+CXX    := $(CLANG)/clang++.exe
+CC     := $(CLANG)/clang.exe
+SHELL  := C:/Users/vasum/w64devkit/bin/sh.exe
+
+DEPS   := win_deps
+INC    := -Iinc -I$(DEPS)/sqlite -I$(DEPS)/lzma/include
+
+# No -fno-aggressive-loop-optimizations (GCC-only flag; clang rejects it).
+# clang defaults to libc++ for the x86_64-w64-windows-gnu target.
+# Ported from the Linux Makefile clang branch (DETECTED==clang). ELF-only -Wl,-z,max-page-size
+# is omitted below (Windows is PE/COFF; lld mingw mode rejects -z).
+CXXFLAGS := -Wall -O3 -g -std=c++17 -D_DEFAULT_SOURCE -fno-omit-frame-pointer \
+            -march=native -mfma -mbmi2 -mlzcnt -mavx2 \
+            -fno-semantic-interposition -fvisibility-inlines-hidden -ffunction-sections -fdata-sections \
+            -faligned-allocation -falign-functions=32 -falign-loops=32 -fjump-tables \
+            -fno-rtti -flto=thin $(EXTRA_CFLAGS) $(INC)
+CFLAGS   := -O2 $(INC)
+LDFLAGS  := -static -pthread -fuse-ld=lld -flto=thin -Wl,--gc-sections   # static + lld + thinLTO + gc-sections
+LZMA_DLL := $(DEPS)/liblzma.dll
+
+OBJDIR := obj_win_clang
+BIN    := bin/champsim.exe
+
+SRCS := $(wildcard src/*.cc) $(wildcard src/hermes/*.cc) \
+        $(wildcard branch/*.cc) $(wildcard replacement/*.cc) \
+        $(wildcard prefetcher/*.cc)
+SRCS := $(filter-out replacement/hawkeye.cc replacement/hawkeye_crc2.cc,$(SRCS))
+SRCS := $(filter-out src/main_helper.cc src/cache_helper.cc src/ooo_cpu_helper.cc src/dram_helper.cc src/main_loop.cc src/main_paging.cc,$(SRCS))
+OBJS := $(patsubst %.cc,$(OBJDIR)/%.o,$(SRCS)) $(OBJDIR)/sqlite3.o
+
+.PHONY: all clean
+all: $(BIN)
+
+$(BIN): $(OBJS)
+	@mkdir -p bin
+	@echo "Linking $@ (clang) ..."
+	$(CXX) $(OBJS) $(LZMA_DLL) $(LDFLAGS) -o $@
+	@cp $(LZMA_DLL) bin/liblzma-5.dll
+	@echo "Built $@ (clang/libc++) (+ liblzma-5.dll beside it)"
+
+$(OBJDIR)/%.o: %.cc
+	@mkdir -p $(dir $@)
+	@echo "Compiling $< (clang) ..."
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJDIR)/sqlite3.o: $(DEPS)/sqlite/sqlite3.c
+	@mkdir -p $(dir $@)
+	@echo "Compiling sqlite3.c (clang) ..."
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -rf $(OBJDIR) $(BIN)

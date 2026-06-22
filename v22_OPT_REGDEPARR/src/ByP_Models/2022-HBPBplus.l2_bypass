@@ -1,0 +1,35 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+
+#ifndef L1D_type
+#define L1D_type  4
+#define L2C_type  5
+#define LLC_type  6
+#endif
+
+// MODEL 1310 — HBPBplusLPM — L2
+
+inline bool l2_bypass_init_1310[NUM_CPUS] = {};
+
+#define SHALL_L2C_BYPASS_DEFINED
+inline void l2c_bypass_initialize(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (l2_bypass_init_1310[cpu]) return;
+    cout << "L2 Bypass [1310-HBPBplusLPM]: HBPB + CAMAT/CPA(LLC) gate" << endl;
+    l2_bypass_init_1310[cpu] = true;
+}
+
+inline bool l2c_bypass_operate(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    l2c_bypass_initialize(cpu, L1D, L2C, LLC);
+
+    double phi = get_phi_short(cpu, LPM_L2C);
+    if (phi > 0.30) return false;
+
+    double llc_camat = lpm[cpu][LPM_LLC].met[MET_WL].camat_activeMemCyDivAccesses;
+    double llc_cpa   = lpm[cpu][LPM_LLC].met[MET_WL].cpa_totalCyDivAccesses;
+    if (llc_cpa < 1.0) return false;
+
+    double pressure = llc_camat / llc_cpa;
+    if (pressure > 0.85) return false;
+
+    return true;
+}

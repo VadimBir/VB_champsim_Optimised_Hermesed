@@ -1,0 +1,558 @@
+// multiple delta bucket counters 
+// every access L2 or L1 miss, cnt ++
+// likewise, get top window and get top D delta with in a thresh BUT with count above top 2 window 
+// adjust MSHR based on number of MSHR available where fill%/T% or TopD is max num Pf 
+
+#include "cache.h"
+
+#define PRINT_TOP_DELTA_DISTANCE 0
+#define DEGREE 4
+
+void CACHE::l1d_prefetcher_initialize() 
+{
+    cout << "CPU " << cpu << " L1D next line prefetcher" << endl;
+}
+int printperiod = 50000;
+// vector of retaining dists with 1 2 4 dist 
+#include <vector>
+std::vector<int> retaining_dists = {1,4};
+#include <algorithm>
+struct BlockHistory {
+    // num of distances to show and num of history blocks 
+    const static int HIST_SIZE = 5;            
+    // limit to a page
+    const static int MAX_DELTA = 63;            
+    // each delta bucket is cnt, upon reaching this, halve all counts in that row
+    const static int RESET_THRESHOLD = 1073741823;     
+    // calc AVG of top deltas in a row
+    static constexpr int TOP_D = 8;
+    // ratio of count filled before prefetching, e.g. TOP 1 is > thresh then Pf, then if TOP 2 is < thresh then skip                   
+    float count_thresh = 0.45; 
+    // % by which MSHR available allows more pf 
+    float eachMSHRavailable_stepping = 25;
+    uint64_t addrs[HIST_SIZE];
+    int head = 0;
+    int size = 0;
+    int mshr_size;
+    int mshr_occupancy;
+    
+    bool didPrintTop = false;
+    // 2D array: [distance][delta] 
+    int delta_counts[HIST_SIZE][MAX_DELTA + 1]; // +1 for 1-based indexing
+    
+    BlockHistory() {
+        // Initialize delta_counts to 0
+        for (int i = 0; i < HIST_SIZE; i++) {
+            for (int j = 0; j <= MAX_DELTA; j++) {
+                delta_counts[i][j] = 0;
+            }
+        }
+        
+    }
+    
+    void add(uint64_t block) {
+        addrs[head] = block;
+        head = (head + 1) % HIST_SIZE;
+        if (size < HIST_SIZE) size++;
+    }
+    
+    uint64_t getLast(int idx) {
+        if (idx > size) return 0;
+        int actual_idx = (head - idx + HIST_SIZE) % HIST_SIZE;
+        return addrs[actual_idx];
+    }
+    
+    void print() {
+        for (int i = 0; i < size; i++) {
+            int idx = (head + i) % HIST_SIZE;
+            cout << addrs[idx] << " ";
+        }
+        cout << endl;
+    }
+    
+    void check_and_reset_row(int distance) {
+        for (int d = 1; d <= MAX_DELTA; d++) {
+            if (delta_counts[distance][d] >= RESET_THRESHOLD) {
+                // Reset only this distance row
+                for (int dd = 1; dd <= MAX_DELTA; dd++) {
+                    delta_counts[distance][dd] >>= 1; // Halve only this row
+                }
+                // cout << "RESET: Distance " << distance << " counts halved" << endl;
+                return;
+            }
+        }
+    }
+    struct DistanceInfo {
+        int distance;
+        float avg_top;
+        vector<pair<int,int>> sorted_deltas; // (delta, count) pairs sorted by count descending
+        int next_index; // tracks which delta to consider next
+        
+        DistanceInfo(int d, float avg) : distance(d), avg_top(avg), next_index(0) {}
+    };
+
+    vector<int> getBestDeltas() {
+        vector<DistanceInfo> distance_infos;
+        
+        // Step 1: Calculate averages and get sorted distances (like original)
+        for (int i = 1; i < HIST_SIZE; i++) {
+            int top[TOP_D] = {0};
+            for (int d = 1; d <= MAX_DELTA; d++) {
+                int val = delta_counts[i][d];
+                for (int j = 0; j < TOP_D; j++) {
+                    if (val > top[j]) {
+                        for (int k = TOP_D - 1; k > j; k--) {
+                            top[k] = top[k-1];
+                        }
+                        top[j] = val;
+                        break;
+                    }
+                }
+            }
+            
+            int top_sum = 0;
+            int count = 0;
+            for (int j = 0; j < TOP_D; j++) {
+                if (top[j] > 0) {
+                    top_sum += top[j];
+                    count++;
+                }
+            }
+            
+            float avg_top = (count > 0) ? (float)top_sum / count : 0;
+            if (avg_top > 0) {
+                distance_infos.emplace_back(i, avg_top);
+            }
+        }
+        
+        // Sort distances by average (best distances first)
+        sort(distance_infos.begin(), distance_infos.end(), [](const DistanceInfo& a, const DistanceInfo& b) {
+            return a.avg_top > b.avg_top;
+        });
+        
+        
+        // Step 2: For each distance, get its sorted deltas
+        for (auto& info : distance_infos) {
+            for (int d = 1; d <= MAX_DELTA; d++) {
+                if (delta_counts[info.distance][d] > 0 && 
+                    isCounterAboveThreshold(delta_counts[info.distance][d], info.distance)) {
+                    // cout << "cnt " << delta_counts[info.distance][d] << " isCounterAboveThreshold " << isCounterAboveThreshold(delta_counts[info.distance][d], info.distance) << endl;
+                    info.sorted_deltas.push_back({d, delta_counts[info.distance][d]});
+                }
+            }
+            
+            // Sort this distance's deltas by count descending
+            sort(info.sorted_deltas.begin(), info.sorted_deltas.end(), [](const auto& a, const auto& b) {
+                return a.second > b.second;
+            });
+            
+        }
+        
+        // Step 3: Step-by-step comparison as you described
+        vector<int> selected_deltas;
+        int adjusted_top_d = getMSHR_AdjustedTopD();
+        
+        for (int selection = 0; selection < adjusted_top_d; selection++) {
+            int best_distance_idx = -1;
+            int best_count = 0;
+            
+            // Find which distance has the highest count for its "next" delta
+            for (int i = 0; i < distance_infos.size(); i++) {
+                if (distance_infos[i].next_index < distance_infos[i].sorted_deltas.size()) {
+                    int current_count = distance_infos[i].sorted_deltas[distance_infos[i].next_index].second;
+                    if (current_count > best_count) {
+                        best_count = current_count;
+                        best_distance_idx = i;
+                    }
+                }
+            }
+            
+            // If no more deltas available, break
+            if (best_distance_idx == -1) break;
+            
+            // Select this delta and advance the pointer for this distance
+            int selected_delta = distance_infos[best_distance_idx].sorted_deltas[distance_infos[best_distance_idx].next_index].first;
+            // selected_deltas.push_back(selected_delta);
+            if (std::find(selected_deltas.begin(), selected_deltas.end(), selected_delta) == selected_deltas.end()) {
+                // degree add
+                for (int degree = 1; degree <= DEGREE; degree++) {
+                    // check if >63 
+                    if (selected_delta * degree >= MAX_DELTA) continue;
+                    if (adjusted_top_d <= 0) break;
+                    selected_deltas.push_back(selected_delta); 
+                    adjusted_top_d--;
+                }
+                // selected_deltas.push_back(selected_delta);
+            }
+            distance_infos[best_distance_idx].next_index++;
+        }
+        
+        if (PRINT_TOP_DELTA_DISTANCE && !didPrintTop) {
+            cout << "STEP-BY-STEP SELECTION: ";
+            for (int i = 0; i < min((int)selected_deltas.size(), 5); i++) {
+                // Find which distance this delta came from (for debugging)
+                cout << "Δ" << selected_deltas[i] << " ";
+            }
+            cout << endl;
+        }
+        
+        didPrintTop = true;
+        return selected_deltas;
+    }
+    // struct DeltaCandidate {
+    //     int distance;
+    //     int delta;
+    //     int count;
+        
+    //     DeltaCandidate(int d, int dt, int c) : distance(d), delta(dt), count(c) {}
+    // };
+    // vector<int> getBestDeltas() {
+    //     vector<DeltaCandidate> all_candidates;
+        
+    //     // Step 1: Extract top deltas from each distance
+    //     for (int i = 1; i < HIST_SIZE; i++) {
+    //         // Get top deltas for this distance (similar to original logic)
+    //         vector<pair<int,int>> distance_deltas; // (delta, count) pairs
+            
+    //         for (int d = 1; d <= MAX_DELTA; d++) {
+    //             if (delta_counts[i][d] > 0 && isCounterAboveThreshold(delta_counts[i][d], i)) {
+    //                 distance_deltas.push_back({d, delta_counts[i][d]});
+    //             }
+    //         }
+            
+    //         // Sort this distance's deltas by count
+    //         sort(distance_deltas.begin(), distance_deltas.end(), [](const auto& a, const auto& b) {
+    //             return a.second > b.second;
+    //         });
+            
+    //         // Take top candidates from this distance (limit to TOP_D to avoid too many weak candidates)
+    //         int take_count = min((int)distance_deltas.size(), TOP_D);
+    //         for (int j = 0; j < take_count; j++) {
+    //             all_candidates.emplace_back(i, distance_deltas[j].first, distance_deltas[j].second);
+    //         }
+    //     }
+        
+    //     // Step 2: Global competition - sort all candidates by count across distances
+    //     sort(all_candidates.begin(), all_candidates.end(), [](const DeltaCandidate& a, const DeltaCandidate& b) {
+    //         return a.count > b.count;
+    //     });
+        
+    //     // Step 3: Select top candidates globally, respecting MSHR limits
+    //     int adjusted_top_d = getMSHR_AdjustedTopD();
+    //     int final_count = min((int)all_candidates.size(), adjusted_top_d);
+        
+    //     vector<int> deltas;
+    //     for (int i = 0; i < final_count; i++) {
+    //         deltas.push_back(all_candidates[i].delta);
+    //     }
+        
+    //     if (PRINT_TOP_DELTA_DISTANCE && !didPrintTop) {
+    //         cout << "GLOBAL TOP DELTAS: ";
+    //         for (int i = 0; i < min(final_count, 5); i++) { // Show top 5
+    //             cout << "D" << all_candidates[i].distance << "Δ" << all_candidates[i].delta 
+    //                 << "(" << all_candidates[i].count << ") ";
+    //         }
+    //         cout << endl;
+    //     }
+        
+    //     didPrintTop = true;
+    //     return deltas;
+    // }
+    // vector<int> getBestDeltas() {
+    //     float best_avg = 0;
+    //     int best_distance = 1;
+        
+    //     for (int i = 1; i < HIST_SIZE; i++) {
+    //         int top[TOP_D] = {0};
+    //         for (int d = 1; d <= MAX_DELTA; d++) {
+    //             int val = delta_counts[i][d];
+    //             for (int j = 0; j < TOP_D; j++) {
+    //                 if (val > top[j]) {
+    //                     for (int k = TOP_D - 1; k > j; k--) {
+    //                         top[k] = top[k-1];
+    //                     }
+    //                     top[j] = val;
+    //                     break;
+    //                 }
+    //             }
+    //         }
+            
+    //         int top_sum = 0;
+    //         int count = 0;
+    //         for (int j = 0; j < TOP_D; j++) {
+    //             if (top[j] > 0) {
+    //                 top_sum += top[j];
+    //                 count++;
+    //             }
+    //         }
+            
+    //         float avg_top = (count > 0) ? (float)top_sum / count : 0;
+    //         if (avg_top > best_avg) {
+    //             best_avg = avg_top;
+    //             best_distance = i;
+    //         }
+    //     }
+        
+    //     // Get deltas for best distance
+    //     vector<int> deltas;
+    //     for (int d = 1; d <= MAX_DELTA; d++) {
+    //         if (delta_counts[best_distance][d] > 0 && (isCounterAboveThreshold(delta_counts[best_distance][d], best_distance))) {
+    //             deltas.push_back(d);
+    //         }
+    //     }
+        
+    //     sort(deltas.begin(), deltas.end(), [&](int a, int b) {
+    //         return delta_counts[best_distance][a] > delta_counts[best_distance][b];
+    //     });
+        
+    //     // if (deltas.size() > TOP_D) deltas.resize(TOP_D);
+    //     int adjusted_top_d = getMSHR_AdjustedTopD();
+    //     if (deltas.size() > deltas.size() > adjusted_top_d) deltas.resize(TOP_D);
+
+    //     if (PRINT_TOP_DELTA_DISTANCE && !didPrintTop){
+    //         cout << "TOP D: " << best_distance << " TOP AVG: " << TOP_D<<"| Tops";
+    //         for (int i = 0; i < deltas.size(); i++) {
+    //             cout << " " << deltas[i];
+    //         }
+    //         cout << endl;
+    //     }
+    //     didPrintTop = true;
+    //     return deltas;
+    // }
+    bool isCounterAboveThreshold(int counter_value, int best_distance) {
+        // Find max count for this distance to calculate ratio
+        int max_count = 0;
+        for (int d = 1; d <= MAX_DELTA; d++) {
+            if (delta_counts[best_distance][d] > max_count) {
+                max_count = delta_counts[best_distance][d];
+            }
+        }
+        
+        if (max_count == 0) return false;
+        
+        float ratio = (float)counter_value / (float) RESET_THRESHOLD;
+        // cout << "isCounterAboveThreshold: counter_value=" << counter_value 
+        //      << ", max_count=" << max_count << ", ratio=" << ratio 
+        //      << ", count_thresh=" << count_thresh << " ratio >= count_thresh " << (ratio >= count_thresh) << endl;
+        return ratio >= count_thresh;
+    }
+    int getMSHR_AdjustedTopD() {
+        float fill_percentage = (float)mshr_occupancy / mshr_size * 100.0;
+        
+        int allowed_top_d;
+        if (fill_percentage >= 100.0) {
+            allowed_top_d = 1;
+        } else {
+            // For every 5% away from full, add 1 (starting from 2)
+            allowed_top_d = 1 + (int)((100.0 - fill_percentage) / eachMSHRavailable_stepping);
+        }
+        
+        // Cap at hard limit
+        return min(allowed_top_d, TOP_D);
+    }
+
+
+    void print_delta_matrix() {
+        cout << "Delta Count Matrix [distance][delta]:" << endl;
+        
+        // Header row - match distance column width
+        cout << setw(7) << "Δ=>";
+        for (int d = 1; d <= MAX_DELTA; d++) {
+            cout << setw(4) << d;
+        }
+        cout << " | Sum" << endl;
+        
+        for (int i = 1; i < HIST_SIZE; i++) {
+            cout << setw(2) << i;
+            for (int d = 1; d <= MAX_DELTA; d++) {
+                cout << setw(4) << delta_counts[i][d];
+            }
+            // calc sum for given i for all delta counts 
+            int sum = 0;
+            for (int d = 1; d <= MAX_DELTA; d++) {
+                sum += delta_counts[i][d];
+            }
+            cout << " | " << setw(4) << sum;
+            cout << endl;
+        }
+    }
+    void print_incandescent_delta_matrix()    {
+    didPrintTop = false;
+    const float NAVY_TO_BLUE = 0.01f;
+    const float BLUE_TO_GREEN = 0.5f;
+    const float GREEN_TO_YELLOW = 0.75f;
+    const float YELLOW_TO_RED = 0.97f;
+
+    // cout << "Colored Delta Count Matrix [distance][delta]:" << endl;
+    
+    cout << "↓DIST↓\\→Δ→"<<endl;
+    // for (int d = 1; d <= MAX_DELTA; d++) {
+    //     cout << setw(2) << d;
+    // }
+    // cout << " | Sum" << endl;
+    
+    for (int i = 1; i < HIST_SIZE; i++) {
+        cout << setw(2) << i;
+        for (int d = 1; d <= MAX_DELTA; d++) {
+            int val = delta_counts[i][d];
+            float norm = min(1.0f, (float)val / RESET_THRESHOLD);
+            
+            int r, g, b;
+            if (norm <= NAVY_TO_BLUE) {
+                float t = norm / NAVY_TO_BLUE;
+                r = 0; g = 0; b = (int)(128 + 127 * t);
+            } else if (norm <= BLUE_TO_GREEN) {
+                float t = (norm - NAVY_TO_BLUE) / (BLUE_TO_GREEN - NAVY_TO_BLUE);
+                r = 0; g = (int)(255 * t); b = (int)(255 * (1 - t));
+            } else if (norm <= GREEN_TO_YELLOW) {
+                float t = (norm - BLUE_TO_GREEN) / (GREEN_TO_YELLOW - BLUE_TO_GREEN);
+                r = (int)(255 * t); g = 255; b = 0;
+            } else if (norm <= YELLOW_TO_RED) {
+                float t = (norm - GREEN_TO_YELLOW) / (YELLOW_TO_RED - GREEN_TO_YELLOW);
+                r = 255; g = (int)(255 * (1 - t)); b = 0;
+            } else {
+                r = 255; g = 0; b = 0;
+            }
+            cout << "\033[38;2;" << r << ";" << g << ";" << b << "m■\033[0m";
+        }
+        
+        int sum = 0;
+        for (int d = 1; d <= MAX_DELTA; d++) {
+            sum += delta_counts[i][d];
+        }
+        cout << " | " << setw(5) << sum;
+        
+        
+
+        int top[TOP_D] = {0}; // Initialize to 0
+        for (int d = 1; d <= MAX_DELTA; d++) {
+            int val = delta_counts[i][d];
+            
+            // Insert val into top array if it's larger
+            for (int j = 0; j < TOP_D; j++) {
+                if (val > top[j]) {
+                    // Shift elements down
+                    for (int k = TOP_D - 1; k > j; k--) {
+                        top[k] = top[k-1];
+                    }
+                    top[j] = val;
+                    break;
+                }
+            }
+        }
+        // Calculate average of top elements
+        int top_sum = 0;
+        int count = 0;
+        for (int j = 0; j < TOP_D; j++) {
+            if (top[j] > 0) {
+                top_sum += top[j];
+                count++;
+            }
+        }
+        float avg_top = (count > 0) ? (float)top_sum / count : 0;
+        // avg 
+        cout << " | " << setw(4) << avg_top << endl;
+    }
+}
+void print_colored_delta_matrix() {
+    cout << "Colored Delta Count Matrix [distance][delta]:" << endl;
+    
+    cout << setw(7) << "Δ=>";
+    for (int d = 1; d <= MAX_DELTA; d++) {
+        cout << setw(4) << d;
+    }
+    cout << " | Sum" << endl;
+    
+    for (int i = 1; i < HIST_SIZE; i++) {
+        cout << setw(2) << i;
+        for (int d = 1; d <= MAX_DELTA; d++) {
+            int val = delta_counts[i][d];
+            float norm = (float)val / RESET_THRESHOLD;
+            
+            int r, g, b;
+            if (norm <= 0.33f) {
+                // Black to Blue
+                float t = norm / 0.33f;
+                r = 0; g = 0; b = (int)(255 * t);
+            } else if (norm <= 0.66f) {
+                // Blue to Yellow
+                float t = (norm - 0.33f) / 0.33f;
+                r = (int)(255 * t); g = (int)(255 * t); b = (int)(255 * (1-t));
+            } else {
+                // Yellow to Red
+                float t = (norm - 0.66f) / 0.34f;
+                r = 255; g = (int)(255 * (1-t)); b = 0;
+            }
+            
+            cout << "\033[38;2;" << r << ";" << g << ";" << b << "m■\033[0m";
+        }
+        
+        int sum = 0;
+        for (int d = 1; d <= MAX_DELTA; d++) {
+            sum += delta_counts[i][d];
+        }
+        cout << " | " << setw(4) << sum << endl;
+    }
+}
+};
+
+BlockHistory block_history;
+uint64_t cnt = 0;
+
+void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type)
+{
+    if (cache_hit == 1) return;
+    block_history.mshr_size = MSHR.SIZE;
+    block_history.mshr_occupancy = MSHR.occupancy;
+    uint64_t pf_addr = ((addr>>LOG2_BLOCK_SIZE)+1) << LOG2_BLOCK_SIZE;
+    uint64_t block = addr >> LOG2_BLOCK_SIZE;
+    // if (cache_hit == 0)
+        block_history.add(block);
+    
+    for (int i=1; i<block_history.HIST_SIZE; i++) {
+        if (std::find(retaining_dists.begin(), retaining_dists.end(), i) == retaining_dists.end()) 
+            continue;
+        int64_t deltaX = block_history.getLast(1) - block_history.getLast(i+1);
+        if (deltaX >= 1 && deltaX <= 63) {
+            block_history.delta_counts[i][deltaX]++;
+        }
+        block_history.check_and_reset_row(i);
+    }
+
+    if (cnt % printperiod == 0 && PRINT_TOP_DELTA_DISTANCE == 1) {
+        cout << endl;
+        // block_history.print();
+        block_history.print_incandescent_delta_matrix();
+        // block_history.print_delta_matrix();
+    }
+
+    // prefetching of top avg top 3 
+    vector<int> best_deltas = block_history.getBestDeltas();
+    uint64_t current_block = addr >> LOG2_BLOCK_SIZE;
+    for (int delta : best_deltas) {
+            uint64_t pf_addr = ((current_block + (delta)) << LOG2_BLOCK_SIZE);
+            prefetch_line(ip, addr, pf_addr, FILL_L1, 0);
+        // for (int degree = 1; degree < DEGREE; degree++) {
+        //     // page check for next addr 
+        //     if (((current_block + (delta * degree)) << LOG2_BLOCK_SIZE)>> LOG2_PAGE_SIZE != (addr >> LOG2_PAGE_SIZE)) {
+        //         continue;
+        //     }
+        //     uint64_t pf_addr = ((current_block + (delta * degree)) << LOG2_BLOCK_SIZE);
+        //     prefetch_line(ip, addr, pf_addr, FILL_L1, 0);
+        // }
+        // uint64_t pf_addr = ((current_block + delta) << LOG2_BLOCK_SIZE);
+        // prefetch_line(ip, addr, pf_addr, FILL_L1, 0);
+    }
+
+    cnt++;
+}
+
+void CACHE::l1d_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in)
+{
+}
+
+void CACHE::l1d_prefetcher_final_stats()
+{
+    cout << "CPU " << cpu << " L1D next line prefetcher final stats" << endl;
+    // block_history.print_delta_matrix();
+}

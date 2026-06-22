@@ -1,0 +1,182 @@
+#include "cache.h"
+#include "ANSI_colors.h"
+
+// #define ByP_Pf_L1_Debug_Print
+#define ByP_Pf_L1_Debug_Summary
+
+
+void CACHE::l1d_prefetcher_initialize() 
+{
+    cout << "CPU " << cpu << " L1D next line prefetcher" << endl;
+}
+
+// === LPM tracking (L1D) ===
+static uint64_t l1d_acc_since_miss = 0;
+static uint64_t l1d_lpm_ewma = 0;       // <<8 fixed-point
+static uint64_t l1d_lpm_sum = 0;
+static uint64_t l1d_lpm_samples = 0;
+
+// === MLP tracking (sampled at operate calls) ===
+static uint64_t l1d_mlp_sample_sum = 0;
+static uint64_t l1d_mlp_sample_n = 0;
+
+// === Interval tracking ===
+static uint64_t l1d_last_op_cy = 0;
+static uint64_t l1d_interval_ewma = 0;
+
+// === Debug counters ===
+#ifdef ByP_Pf_L1_Debug_Print
+static uint64_t l1d_dbg_op_count = 0;
+static uint64_t l1d_dbg_hits = 0;
+static uint64_t l1d_dbg_total = 0;
+#endif
+
+uint64_t pf_addr;
+
+// BYPASS_L1D_OnNewMiss = false;
+void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type)
+{
+    // if (MSHR.occupancy >= MSHR_SIZE) {
+    //         BYPASS_L1D_OnNewMiss = true;
+    //     } else {
+    //         BYPASS_L1D_OnNewMiss = false;
+    //     }
+    
+    uint64_t now = current_core_cycle[cpu];
+
+    // === LPM_L1D ===
+    l1d_acc_since_miss++;
+    if (!cache_hit) {
+        if (l1d_acc_since_miss > 0) {
+            l1d_lpm_sum += l1d_acc_since_miss;
+            l1d_lpm_samples++;
+            l1d_lpm_ewma = l1d_lpm_ewma - (l1d_lpm_ewma >> 5)
+                         + ((l1d_acc_since_miss << 8) >> 5);
+        }
+        l1d_acc_since_miss = 0;
+    }
+
+    // === MLP_L1D (sampled) ===
+    if (MSHR.occupancy > 0) {
+        l1d_mlp_sample_sum += MSHR.occupancy;
+        l1d_mlp_sample_n++;
+    }
+
+    // === Interval ===
+    if (l1d_last_op_cy > 0) {
+        uint64_t interval = now - l1d_last_op_cy;
+        l1d_interval_ewma = l1d_interval_ewma - (l1d_interval_ewma >> 5)
+                          + ((interval << 8) >> 5);
+    }
+    l1d_last_op_cy = now;
+
+#ifdef ByP_Pf_L1_Debug_Print
+    l1d_dbg_op_count++;
+    l1d_dbg_total++;
+    if (cache_hit) l1d_dbg_hits++;
+
+    if (warmup_complete[cpu] && (cache_hit == 0) && (l1d_dbg_op_count % 4096) != 0) {
+        cout << COLOR_RED << "> DBG [L1D] " << RESET_ANSI
+             << "cy:"      << setw(8) << now
+
+             << COLOR_LIGHT_GREEN
+             << " L1MSHR:"   << setw(2) << MSHR.occupancy << "/" << setw(2) << MSHR.SIZE
+             << " L1RQ:"     << setw(2) << RQ.occupancy
+             << " L1PQ:"     << setw(2) << PQ.occupancy
+
+             << COLOR_LIGHT_YELLOW
+             << setw(35) << right << " LPM1:"   << setw(3) << (l1d_lpm_ewma >> 8)
+             << left << " MLP1:"   << setw(3) << (l1d_mlp_sample_n ? l1d_mlp_sample_sum/l1d_mlp_sample_n : 0)
+
+             << COLOR_MAGENTA
+             << " interv:" << setw(4) << (l1d_interval_ewma >> 8)
+             << setw(15) << right << " L1H%:"   << setw(3) << (l1d_dbg_total ? (l1d_dbg_hits*100)/l1d_dbg_total : 0)
+
+             << COLOR_RED << "\t[MISS]"<< left << RESET_ANSI << endl;
+    }
+    if (warmup_complete[cpu] && (l1d_dbg_op_count % 4096) == 0 && (cache_hit == 1)) {
+        cout << COLOR_RED << "> DBG [L1D] " << RESET_ANSI
+             << "cy:"      << setw(8) << now
+
+             << COLOR_LIGHT_GREEN
+             << " L1MSHR:"   << setw(2) << MSHR.occupancy << "/" << setw(2) << MSHR.SIZE
+             << " L1RQ:"     << setw(2) << RQ.occupancy
+             << " L1PQ:"     << setw(2) << PQ.occupancy
+
+             << COLOR_LIGHT_YELLOW
+             << setw(35) << right << " LPM1:"   << setw(3) << (l1d_lpm_ewma >> 8)
+             << left << " MLP1:"   << setw(3) << (l1d_mlp_sample_n ? l1d_mlp_sample_sum/l1d_mlp_sample_n : 0)
+
+             << COLOR_MAGENTA
+             << " interv:" << setw(4) << (l1d_interval_ewma >> 8)
+             << setw(15) << right << " L1H%:"   << setw(3) << (l1d_dbg_total ? (l1d_dbg_hits*100)/l1d_dbg_total : 0)
+
+             << left << RESET_ANSI << endl;
+    }
+    if (warmup_complete[cpu] && (l1d_dbg_op_count % 4096) == 0 && (cache_hit == 0)) {
+        cout << COLOR_RED << "> DBG [L1D] " << RESET_ANSI
+             << "cy:"      << setw(8) << now
+
+             << COLOR_LIGHT_GREEN
+             << " L1MSHR:"   << setw(2) << MSHR.occupancy << "/" << setw(2) << MSHR.SIZE
+             << " L1RQ:"     << setw(2) << RQ.occupancy
+             << " L1PQ:"     << setw(2) << PQ.occupancy
+
+             << COLOR_LIGHT_YELLOW
+             << setw(35) << right << " LPM1:"   << setw(3) << (l1d_lpm_ewma >> 8)
+             << left << " MLP1:"   << setw(3) << (l1d_mlp_sample_n ? l1d_mlp_sample_sum/l1d_mlp_sample_n : 0)
+
+             << COLOR_MAGENTA
+             << " interv:" << setw(4) << (l1d_interval_ewma >> 8)
+             << setw(15) << right << " L1H%:"   << setw(3) << (l1d_dbg_total ? (l1d_dbg_hits*100)/l1d_dbg_total : 0)
+
+             << COLOR_RED << "\t[MISS]" << left << RESET_ANSI << endl;
+    }
+#endif
+
+    // === Prefetch logic (unchanged) ===
+    pf_addr = ((addr>>LOG2_BLOCK_SIZE)+1) << LOG2_BLOCK_SIZE;
+    prefetch_line(ip, addr, pf_addr, FILL_L1, 0);
+
+    pf_addr = ((addr>>LOG2_BLOCK_SIZE)+2) << LOG2_BLOCK_SIZE;
+    prefetch_line(ip, addr, pf_addr, FILL_L1, 0);
+
+    pf_addr = ((addr>>LOG2_BLOCK_SIZE)+4) << LOG2_BLOCK_SIZE;
+    prefetch_line(ip, addr, pf_addr, FILL_L1, 0);
+}
+
+void CACHE::l1d_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way,
+                                      uint8_t prefetch, uint64_t evicted_addr,
+                                      uint32_t metadata_in)
+{
+}
+
+void CACHE::l1d_prefetcher_final_stats()
+{
+    cout << "CPU " << cpu << " L1D next line prefetcher final stats" << endl;
+
+#ifdef ByP_Pf_L1_Debug_Summary
+    cout << COLOR_LIGHT_CYAN << "LPM_L1|"
+         << " avg:" << (l1d_lpm_samples ? l1d_lpm_sum/l1d_lpm_samples : 0)
+         << " ewma:" << (l1d_lpm_ewma >> 8)
+         << " n:" << l1d_lpm_samples
+         << endl;
+
+    cout << "MLP_L1|"
+         << " avg:" << (l1d_mlp_sample_n ? l1d_mlp_sample_sum/l1d_mlp_sample_n : 0)
+         << " n:" << l1d_mlp_sample_n
+         << endl;
+
+    cout << "IV_L1|"
+         << " ewma:" << (l1d_interval_ewma >> 8)
+         << endl;
+#endif
+#ifdef ByP_Pf_L1_Debug_Print
+    cout << "HIT_L1|"
+         << " ops:" << l1d_dbg_op_count
+         << " hit:" << l1d_dbg_hits
+         << " L1H%:" << (l1d_dbg_total ? (l1d_dbg_hits*100)/l1d_dbg_total : 0)
+         << RESET_ANSI << endl;
+
+#endif
+}

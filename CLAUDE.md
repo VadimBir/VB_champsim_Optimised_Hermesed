@@ -1,3 +1,7 @@
+NEVER VERIFY RECHECK RETEST IN CYCLE ENDLESSLY WHEN ANSWER IS KNOWN AND WONT CHANGE
+NEVER VERIFY RECHECK RETEST IN CYCLE ENDLESSLY WHEN ANSWER IS KNOWN AND WONT CHANGE
+NEVER VERIFY RECHECK RETEST IN CYCLE ENDLESSLY WHEN ANSWER IS KNOWN AND WONT CHANGE
+
 # TMP-FILES RULE (HARD):
 - NEVER write scratch/temp/log/output files into the repo dir. ALL temp files go in `/tmp` (e.g. `/tmp/claude-<name>`). DO NOT POLLUTE THE REPO. UNLESS USER SAYS OTHERWISE.
 - Applies to logs, captures, redirects (`>`, `tee`), test artifacts, downloads-for-inspection — `/tmp` ALWAYS.

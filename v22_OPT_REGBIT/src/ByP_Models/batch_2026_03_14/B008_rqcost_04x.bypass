@@ -1,0 +1,24 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+#define L1D_type 4
+#define L2C_type 5
+#define LLC_type 6
+static bool ByP_model_init = false;
+inline bool shall_L1D_Bypass_OnCacheMissedMSHRcap(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (ByP_model_init == false){
+        cout << "Bypass on: Budget model RQ cost 0.4x" << endl;
+        ByP_model_init = true;
+    }
+    if (L1D->MSHR.occupancy * 2 < L1D->MSHR.SIZE) return false;
+    uint32_t free = L2C->MSHR.SIZE - L2C->MSHR.occupancy;
+    if (free == 0) return false;
+    double camat = lpm[cpu][L2C_type].gm.camat_activeMemCyDivAccesses;
+    double lpmr_l1d = lpm[cpu][L1D_type].gm.lpmr_activeMemCyDivIdealCy;
+    double lpmr_l2c = lpm[cpu][L2C_type].gm.lpmr_activeMemCyDivIdealCy;
+    if (lpmr_l1d < 0.001) lpmr_l1d = 0.001;
+    double rq_unmatch = 1.0 - (lpmr_l2c / lpmr_l1d);
+    if (rq_unmatch < 0) rq_unmatch = 0;
+    double available = (double)free * camat;
+    double immediate = (double)L2C->RQ.occupancy * rq_unmatch * 0.4 * camat;
+    return available > immediate;
+}
