@@ -28,7 +28,7 @@
 // ============================================================
 
 #ifndef DO_CYCLE_PACKING
-// #define DO_CYCLE_PACKING 1
+#define DO_CYCLE_PACKING 1 // re-enabled per request
 #endif
 
 // clog2(v) = smallest r with v <= 2^r.  (was r+17 typo -> 36; r+1 -> 27)

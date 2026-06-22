@@ -1,0 +1,111 @@
+#include "cache.h"
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+#include <memory>
+#include <functional>
+
+struct Node {
+    int addr;
+    std::vector<std::shared_ptr<Node>> children;
+    Node* parent = nullptr;
+    Node(int a) : addr(a) {}
+};
+
+std::shared_ptr<Node> root = std::make_shared<Node>(-1);
+std::unordered_map<int, std::shared_ptr<Node>> first_seen;
+Node* current = root.get();
+
+std::shared_ptr<Node> add_access(int addr) {
+    Node* parent_node = (first_seen.find(addr) != first_seen.end()) ? 
+                        first_seen[addr].get() : current;
+
+    auto new_node = std::make_shared<Node>(addr);
+    new_node->parent = parent_node;
+    parent_node->children.push_back(new_node);
+
+    if (first_seen.find(addr) == first_seen.end()) {
+        first_seen[addr] = new_node;
+    }
+
+    current = new_node.get();
+    return new_node;
+}
+int childNum = 1;
+void print_chain(Node* node, std::vector<int>& path, int base_indent, bool is_branch) {
+    if (node->addr != -1) {
+        path.push_back(node->addr);
+    }
+    
+    if (node->children.size() == 0) {
+        std::cout << std::string(base_indent, ' ');
+        if (is_branch) {
+            std::cout << "#"<<childNum<<"|";
+            childNum++;
+        }
+        for (int i = 0; i < path.size(); ++i) {
+            if (i > 0 || is_branch) {
+                std::cout << "=>";
+            }
+            std::cout << path[i];
+        }
+        std::cout << std::endl;
+    } else if (node->children.size() == 1) {
+        print_chain(node->children[0].get(), path, base_indent, is_branch);
+    } else {
+        // Print main chain first (first child)
+        print_chain(node->children[0].get(), path, base_indent, is_branch);
+        
+        // Then print branches in reverse order (newest last)
+        int branch_indent = base_indent;
+        for (int i = 0; i < path.size(); ++i) {
+            branch_indent += std::to_string(path[i]).length();
+            if (i < path.size() - 1) branch_indent += 2;
+        }
+        
+        for (int j = node->children.size() - 1; j >= 1; j--) {
+            std::vector<int> branch_path;
+            print_chain(node->children[j].get(), branch_path, branch_indent, true);
+        }
+    }
+    
+    if (node->addr != -1) {
+        path.pop_back();
+    }
+}
+
+void print_horizontal_tree() {
+    std::vector<int> path;
+    print_chain(root.get(), path, 0, false);
+}
+
+void CACHE::l1d_prefetcher_initialize() {
+}
+int last_block = 0;
+void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type) {
+    
+    int block_addr = ip;
+    
+    if (block_addr != last_block) {
+        add_access(block_addr);
+        cout << "T:" << std::endl;
+        print_horizontal_tree();
+        childNum=1;
+    }
+    last_block = block_addr;
+    // int block_addr = addr >> LOG2_BLOCK_SIZE;
+    
+    // if (block_addr != last_block) {
+    //     add_access(block_addr);
+    //     cout << "T:" << std::endl;
+    //     print_horizontal_tree();
+    //     childNum=1;
+    // }
+    // last_block = block_addr;
+}
+
+void CACHE::l1d_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in) {
+}
+
+void CACHE::l1d_prefetcher_final_stats() {
+}

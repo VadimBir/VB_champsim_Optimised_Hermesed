@@ -1,0 +1,25 @@
+--- /c/Users/vasum/VB_champsim_Optimised_Hermesed/champsim_v17/src/cache.cc	2026-06-09 23:51:11.000000000 +0900
++++ /c/Users/vasum/VB_champsim_Optimised_Hermesed/champsim_v17_D2/src/cache.cc	2026-06-19 02:28:06.615439700 +0900
+@@ -1005,7 +1005,7 @@
+                 uint64_t α_c = __lsc.alpha_total;
+                 uint64_t load_α_c = __lsc.load_alpha;
+                 uint64_t load_miss_c = __lsc.load_miss;
+-                lpm_operate(c, cache_type, hit_active, miss_active, α_c, has_byp, load_α_c, load_miss_c);
++                lpm_operate(lpm[c][cache_type], c, cache_type, hit_active, miss_active, α_c, has_byp, load_α_c, load_miss_c);
+             }
+ #else
+             /* LLC per-core — bucket MSHR state by entry.cpu, then tick each CPU separately */
+@@ -1057,11 +1057,11 @@
+                 uint64_t load_α_c = __lsc.load_alpha;
+                 uint64_t load_miss_c = __lsc.load_miss;
+                 bool hit_active_c = (RQ.occupancy | WQ.occupancy) > 0;
+-                lpm_operate(c, cache_type, hit_active_c, miss_active_pc[c], α_c, has_byp_pc[c], load_α_c, load_miss_c);
++                lpm_operate(lpm[c][cache_type], c, cache_type, hit_active_c, miss_active_pc[c], α_c, has_byp_pc[c], load_α_c, load_miss_c);
+             }
+ #endif
+         } else {
+-            lpm_operate(cpu, cache_type, hit_active, miss_active,
++            lpm_operate(lpm[cpu][cache_type], cpu, cache_type, hit_active, miss_active,
+                         α, has_byp, load_α, load_miss);
+         }
+     }

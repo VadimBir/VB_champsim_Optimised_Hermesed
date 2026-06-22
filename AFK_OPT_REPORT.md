@@ -11,21 +11,27 @@ Single source of truth, refreshed each session. Categories at `#`; each opt `## 
 **RULES:** sim cmd `quick.sh --dir <D> -p 1 --L1 no --L2 spp --L3 no --trace 256.Pythia -d 2 -c 4 -bypca --l1byp/--l2byp/--l3byp 4000fix-KappaPhiL1L2 --ocp ttp --time`. IPC gate = `FINAL ROI CORE AVG IPC:` BIT-EXACT (4-core 0.62461). Metric = pinned single `--time` run (BINARY TIME); confirm winners same-session vs champsim_v21 (single runs ~±1.3% noise). Sims STRICTLY sequential; agents never run sims (driver measures); ThinLTO only (full-LTO banned); no SW prefetch; perf output ALWAYS `-o /tmp`.
 
 ## ░░ CURRENT STATE ░░
-- **BEST = `v23_CONCAT_OF_OPT`** = ThinLTO + SOA + DIRTYREG + FUSEDSCAN + **LTOTUNE + S8** = **-10.76% cumulative vs champsim_v21, IPC bit-exact** (same-session: v21 80.370 → v23 71.726). Version bumped to **v23**.
-- Chain: champsim_v21 (=dup champsim_v20_refactor) → v22 (-7.18% earlier / -4.5% this fresh session, single-run) → **v23 (-10.76%)**.
+- **CURRENT VERSION = `champsim_v24` = BEST.** = v23_CONCAT_OF_OPT [ThinLTO + SOA + DIRTYREG + FUSEDSCAN + LTOTUNE + S8] **+ PKTSLIM + RTEBRK** → **≈ -14.3% cumulative vs champsim_v21, IPC bit-exact 0.62461.**
+- Prior milestone (v23) = `v23_CONCAT_OF_OPT` = -10.76% vs v21 (same-session v21 80.370 → v23 71.726).
+- **`champsim_v25`** = v24 + gated cycle-packing — built, correct, proven-safe, but a host-speed REGRESSION → PARKED (not on the perf path; see v25 line below).
+- Chain: champsim_v21 (=dup champsim_v20_refactor) → v22 (-7.18%) → v23 (-10.76%) → **v24 (≈-14.3%, BEST)** → v25 (packing, parked correctness milestone).
 - PENDING grade: `v22_OPT_REGBIT`, `v22_OPT_LQBIT` (dense-key bitset ADTs, in the v23 sweep tail).
 - **Cumulative across all campaigns (compounded Linux wall):** v18→v22 ≈ -12.2% (v19 -4.33% × P3 +1.09% × v22 -7.18%); + v23 → v18→v23 ≈ **~-17%**. Windows-clang +15.8% is a separate platform (non-compounding). P1 % + v17→v18 unknown (excluded). See PRIOR-VERSION HISTORY.
 - **(2026-06-22 update) BEST is now `champsim_v24`** = v23 + **PKTSLIM + RTEBRK** (same-session min-of-3: PKTSLIM -2.17%, RTEBRK -1.88%, PKTRTE stack **-3.96% vs v23**, IPC bit-exact 0.62461) → ≈ **-14.3% cumulative vs v21**. ⚠ the v24-vs-v21 same-session confirm was LOST in an OS-lock /tmp wipe; -14.3% is derived from the v23-relative confirm, not re-measured direct.
-- **`champsim_v25`** = v24 + **cycle packing re-enabled, correctly** (gated `DO_CYCLE_PACKING`, narrowed `rob_events.event_cycle` uint64→uint32). IPC bit-exact 0.62461 ✓. **NOT a host-speed win — a REGRESSION, and form-sensitive:** hand-rolled inline serial macro ≈ **+1.4%**; vendored WebRTC `AheadOrAt` template **call ≈ +31.5%** (clean min-of-4: v24 67.978s → v25 89.410s, uniform 89-91s every run) — the per-compare template call does NOT inline on the every-cycle `update_rob` hot path. Correctness identical either way. **Verdict: keep v25 as parked correctness/safety milestone (4B deadlock fixed+proven); if kept, revert the compare to the force-inlined macro (panel-proven == lib in-window) to avoid the -31%; do NOT put packing on the perf path.**
-- **`v24_OPT_CCPHOIST`** = v24 + hoist redundant `current_core_cycle[cpu]` reloads (update_rob/do_execution/fetch/add_rq/wq). Built, IPC bit-exact ✓. Clean min-of-4: 67.505s vs v24 67.978s = -0.70% BUT `all` runs overlap v24 → **sub-noise / NEUTRAL, not a confirmed win.**
+- **`champsim_v25`** = v24 + **cycle packing re-enabled, correctly** (gated `DO_CYCLE_PACKING`, narrowed `rob_events.event_cycle` uint64→uint32). IPC bit-exact 0.62461 ✓. **NOT a host-speed win — a REGRESSION, and form-sensitive:** hand-rolled inline serial macro ≈ **+1.4%** (contaminated sweep 69.226 vs 68.271) / **+2.4%** (packing-on rebuild single-run 69.761 vs v24 68.126); vendored WebRTC `AheadOrAt` template **call ≈ +31.5%** (clean min-of-4: v24 67.978s → v25 89.410s, uniform 89-91s every run) — the per-compare template call does NOT inline on the every-cycle `update_rob` hot path. Correctness identical either way. **Verdict: keep v25 as parked correctness/safety milestone (4B deadlock fixed+proven); if kept, revert the compare to the force-inlined macro (panel-proven == lib in-window) to avoid the -31%; do NOT put packing on the perf path.**
+- **`v24_OPT_CCPHOIST`** = v24 + hoist redundant `current_core_cycle[cpu]` reloads (update_rob/do_execution/fetch/add_rq/wq). Built, IPC bit-exact ✓. Clean min-of-4: 67.505s vs v24 67.978s = -0.70% BUT `all` runs overlap v24 → **sub-noise / NEUTRAL, not a confirmed win.** (PGO-confound flagged — see below.)
+- **(2026-06-22 update) RESTRICT / source-micro-opt class BLOCKED by PGO confound.** Editing any PGO-hot `O3_CPU` function discards that function's PGO profile (build emits `function control flow change detected (hash mismatch)`) → it rebuilds WITHOUT PGO → can regress independent of the opt's merit. Measured this session: `v24_OPT_SMEMRESTRICT` AVG-of-2 **+1.64%** (69.692 vs v24 68.568, IPC ✓), `v24_OPT_SCHEDREST` **+0.63%** (69.002 vs 68.568, IPC ✓) — both regressions, both PGO-confound-flagged, NOT proven bad. A clean verdict on restrict/hoist/CSE needs a **PGO rebuild on the edited binary**. This likely also explains CCPHOIST coming back sub-noise. → Next lever = either PGO-rebuild measurement or wins that DON'T edit hot PGO functions (build flags / layout).
+- **POLLY rejected** (`-mllvm -polly`): runtime alias-check + loop versioning, NOT `restrict`. Three strikes — slow builds (same class as banned full-LTO), can't model the hot loops (they contain function calls: update_rob→complete_execution, reg_dependency→get_latest_producer, check_and_add_lsq→add_load_queue), runtime-check overhead. DO-NOT-USE.
 
 ## ☐ TODO / NEXT
-1. Grade REGBIT/LQBIT (sweep tail); merge any B/E onto v23.
+1. Grade REGBIT/LQBIT (sweep tail); merge any B/E onto **v24** (current best).
 2. Opt-A **CoreHot grouping** — fold 5 padded per-core globals into `O3_CPU` front, drop single-thread-pointless alignas (~12-16→7-9 hot lines/cycle). Iteration-heavy.
 3. Opt-B **gated `#ifdef DO_CYCLE_PACKING`** — ✅ RESOLVED 2026-06-22 in `champsim_v25`: correct UB-free serial compare via vendored WebRTC `AheadOrAt`, proven safe at infinite run length (gap-bound + wrap test past 2^33). See TIMING/CYCLE OPT entry. Remaining: not a speedup; non-ROB-head gap-bound enumerated-not-formally-proven.
 4. **PACKET/AddressProxy shrink** — PKTSLIM done (-2.17%, in v24). PACKET/queue `event_cycle` NOT yet narrowed (left wide in v25, layout-sensitive); mem profile still says ~67% load traffic = stack PACKET/instr temporaries → top remaining data-movement lever (UNTESTED).
 5. ✅ DONE 2026-06-22: re-ran cy + mem + branch-miss/cache-miss perf profiles on-model `-o /tmp` (`/tmp/claude-afk-perf/{cy,mem,br}.data.zst`). Original 16-core perf.data still LOST.
 6. Pick remaining UNTESTED catalog items by profile.
+7. **(2026-06-22) RESTRICT campaign is PGO-blocked** — SMEMRESTRICT (+1.64%), SCHEDREST (+0.63%) both regressed under PGO-profile loss (cause confounded, NOT proven bad). To unblock: re-measure one restrict candidate with a full **PGO rebuild** on the edited binary; if it wins, proceed through the PHASED RESTRICT PLAN (Phase 1 update_rob first). Else chase non-hot-function wins (build flags / layout). Polly killed (slow + can't model call-containing loops).
+8. **PHASED RESTRICT PLAN** built this session (harvest-grounded) — see new RESTRICT section below; Phase 1 (update_rob scan_range, 89 LoadClobbered+48 LICM) is the highest-value next build, not yet built.
 
 ⚠ INCIDENT: original repo `perf.data` (276MB, your 16-core capture) overwritten to 11.3M corrupt partial by epoch-4 reprofile's compressed-capture bug; not in git, no backup → LOST. All perf now `-o /tmp` only.
 
@@ -56,7 +62,7 @@ LESSON reinforced: structural/ADT/codegen micro-changes mostly N or W at these q
 ## ▼ v24 OPPORTUNITY CATALOG (2026-06-22) — UNTESTED proposals from 2 sweeps (static-source `wbskfemjy` + perf-mine `whre2jrw9`); all checked vs DO-NOT-RETRY ledger; full JSON in task outputs. None measured except CCPHOIST (see CURRENT STATE).
 | ID | file:function | what | source | state |
 |----|---------------|------|--------|-------|
-| CCPHOIST (=UPDROB-CCPHOIST/CYCHOIST + wider) | ooo_cpu update_rob/do_execution/fetch + cache add_rq/wq | hoist redundant `current_core_cycle[cpu]` reloads on #1 hotspot | both | **BUILT v24_OPT_CCPHOIST, IPC ✓, clean timing pending** |
+| CCPHOIST (=UPDROB-CCPHOIST/CYCHOIST + wider) | ooo_cpu update_rob/do_execution/fetch + cache add_rq/wq | hoist redundant `current_core_cycle[cpu]` reloads on #1 hotspot | both | **GRADED NEUTRAL (sub-noise -0.70% clean min, overlaps control; PGO-confound flagged)** |
 | ADDTOROB-SELFCOPY-GUARD | ooo_cpu add_to_rob:533 | guard the 3.95% `__memmove` self-copy (`if(arch_instr!=&entry)`) | perf-mem | UNTESTED (Tier-1) |
 | BRANCH-MISPRED-BITSET | flat_branch_mispredicted | uint8[NUM_CPUS][ROB_SIZE] → bitset (128B); update_rob top branch-miss | static | UNTESTED (Tier-1, only H-rated) |
 | TTPLAMBDA-REF | hermes lookup_catalog_cache:147 | find_if lambda by-value→const-ref, kills per-elem pair copy | perf-cy | UNTESTED (Tier-1) |
@@ -73,6 +79,22 @@ LESSON reinforced: structural/ADT/codegen micro-changes mostly N or W at these q
 | ADDQ-RAWSLOT / FETCH-ENTRYREF / SMEMSCHED-RANGEBUILD / ADDRQ-CYCLOCAL / ADDRQ-WQSKIP-EXPECT / ADDQ-HOLESKIP-BRANCHLESS / CHECKQ-WQ-DISPATCH-LIFT | cache/ooo hot loops | raw-slot scans, ref/cycle hoists, branchless hole-skip, de-lambda check_queue | perf | UNTESTED |
 | HBRANCH-DESTLOCAL / HBRANCH-MEMOP-GUARD-DROP | ooo_cpu handle_branch:456/463 | local dest test; drop dead num_mem_ops guard | perf | ⚠ HOLD — overlap tried-neutral BRGUARD |
 | SMEMSCHED-RANGEBUILD | ooo_cpu schedule_memory_instr:1011 | lazy ready[] build | perf | ⚠ HOLD — abuts the 3×-failed cr-mask loop |
+
+## ▼ v24 5-OPUS SCHEDULE + BULK HOTSPOT MINING (2026-06-22) — from the 8-core perf-tree-driven 5-Opus mine (`w6hksd6xw`); schedule = user's worst (~21% combined self-time). Catalog-coverage finding: `schedule_instruction` lambda ALREADY has `__restrict__` (ooo_cpu.cc:740-745); `schedule_memory` lambda did NOT (plain `const uint64_t*` captured `[&]`) = SMEMSCHED-RESTRICT. POLLY-RESTRICT only partially covers; SMEMSCHED-RANGEBUILD covers nothing (banned-adjacent); CCPHOIST never touched these. All explicitly clear of the 3×-failed cr-mask/early-break loop (S6/FCGATE/EARLYBRK).
+| ID | file:function | what | state |
+|----|---------------|------|-------|
+| SMEMSCHED-RESTRICT (=`v24_OPT_SMEMRESTRICT`) | ooo_cpu schedule_memory λ | `__restrict__` the 5 bitset ptrs + ready[] (mirror instruction-λ pattern); hits the 10.4% lambda | **GRADED WORSEN 1 — AVG-of-2 +1.64% (69.692 vs 68.568), IPC ✓; PGO-confound flagged (NOT proven bad)** |
+| REGDEP-ENTRYREF | ooo_cpu reg_dependency (5.57% under schedule_instr) | hoist `ROB.entry[rob_index]` ref; downstream of do_scheduling, outside loop | in `v24_OPT_SCHEDREST` bulk → WORSEN 1 |
+| GLP-HEAD-INVARIANT | ooo_cpu get_latest_producer | hoist wrap/no-wrap decision out of loop; RAW lookup far downstream | in `v24_OPT_SCHEDREST` bulk → WORSEN 1 |
+| CCP-DOSCHED | ooo_cpu do_scheduling:812 | reloads `current_core_cycle[cpu]` CCPHOIST missed; post-readiness, outside loop | in `v24_OPT_SCHEDREST` bulk → WORSEN 1 |
+| REGDEP-EARLY-EMPTY-SOURCES | ooo_cpu reg_dependency | skip get_latest_producer when all 4 source regs zero; downstream | in `v24_OPT_SCHEDREST` bulk → WORSEN 1 |
+| SCHEDREST (=`v24_OPT_SCHEDREST`, bulk of the 4 above) | ooo_cpu reg_dependency/get_latest_producer/do_scheduling | REGDEP-ENTRYREF + GLP-HEAD-INVARIANT + CCP-DOSCHED + REGDEP-EARLY-EMPTY-SOURCES | **GRADED WORSEN 1 — AVG-of-2 +0.63% (69.002 vs 68.568), IPC ✓; PGO-confound flagged (NOT proven bad)** |
+| CHKHIT-SETPARAM | cache check_hit | recomputes `get_set` the caller already did, twice/read — pass it down | UNTESTED (bulk cache, M/S) |
+| RDHIT-ENTRYREF-TYPECSE | cache handle_read_hit | entry-ref + type CSE | UNTESTED (M/M) |
+| CDF-PKTREF / CIF-PKTREF | ooo_cpu complete_data_fetch / complete_instr_fetch | `queue->entry[index]` re-indexed 27×/body → ref-hoist | UNTESTED (exec/rob, M/S) |
+| FETCH-PKT-HOIST | ooo_cpu fetch_instruction | hoist PACKET ref | UNTESTED (fetch/dep, M/M) |
+| ADDQ-PROXYBYPASS / CHECKQ-PF8-GUARD / WB-SETONCE | cache add_queue / check_queue / handle_writeback | bulk ref/guard/set-once | UNTESTED |
+LESSON: all of these are the ref-hoist/CSE/`__restrict__` class — same class as CCPHOIST (sub-noise) and SMEMRESTRICT/SCHEDREST (regressed under PGO loss). Bet is they STACK; but the PGO confound masks every per-function edit → a clean read needs a PGO rebuild.
 
 ---
 # MEMORY OPT
@@ -318,8 +340,39 @@ LESSON reinforced: structural/ADT/codegen micro-changes mostly N or W at these q
 
 ---
 
+# CODEGEN / RESTRICT OPT (2026-06-22)
+
+## PGO-LOSS CONFOUND (major methodological finding)         — Editing a PGO-hot function discards that function's PGO profile → rebuilds WITHOUT PGO → can regress independent of opt merit.
+### LESSON — Build of any edited hot `O3_CPU` function emits `function control flow change detected (hash mismatch)`; that function loses PGO and rebuilds un-profiled. A micro-opt's reload-saving can be < the PGO it just lost → net regression that is NOT the opt's fault. Masks the whole restrict/hoist/CSE class (SMEMRESTRICT +1.64%, SCHEDREST +0.63%, likely CCPHOIST sub-noise). A clean verdict needs a PGO rebuild on the edited binary. NOT a correctness issue — IPC stays bit-exact 0.62461.
+
+## SMEMSCHED-RESTRICT __restrict__ schedule_memory λ         — `__restrict__` the 5 bitset ptrs + ready[] in schedule_memory lambda; mirrors the already-restrict'd schedule_instruction λ. Non-aliasing confirmed (distinct rob_events.per_cpu[cpu] members + local stack array).
+### WORSEN 1 — AVG-of-2 +1.64% (69.692 vs v24 68.568), IPC ✓; `v24_OPT_SMEMRESTRICT`; PGO-confound flagged — NOT proven bad, needs PGO rebuild.
+
+## SCHEDREST bulk hoist/CSE schedule path                    — bulk of REGDEP-ENTRYREF + GLP-HEAD-INVARIANT + CCP-DOSCHED + REGDEP-EARLY-EMPTY-SOURCES; ref-CSE, two-loop split, read-cycle-once, reg-0 early-skip.
+### WORSEN 1 — AVG-of-2 +0.63% (69.002 vs v24 68.568), IPC ✓; `v24_OPT_SCHEDREST`; PGO-confound flagged — NOT proven bad, needs PGO rebuild.
+
+## CCPHOIST current_core_cycle reload hoist                   — hoist redundant `current_core_cycle[cpu]` reloads on update_rob/do_execution/fetch/add_rq/wq (#1 hotspot).
+### NEUTRAL 3 — clean min-of-4 -0.70% (67.505 vs v24 67.978) BUT `all` runs overlap v24 → sub-noise; `v24_OPT_CCPHOIST`; PGO-confound flagged.
+
+## POLLY auto-alias loop versioning                          — `-mllvm -polly`: runtime alias-check + loop versioning (NOT restrict; emits fast/slow loop copies guarded by a runtime overlap test).
+### WORSEN 3 — REJECTED, DO-NOT-USE. Slow builds (same class as banned full-LTO); can't model the hot loops (they contain calls: update_rob→complete_execution, reg_dependency→get_latest_producer, check_and_add_lsq→add_load_queue → Polly skips them); runtime-check overhead. Only clean call-free affine loops qualify (≈ schedule_memory ready[] AND-fold). Three strikes.
+
+## ▼ PHASED RESTRICT PLAN (2026-06-22, harvest-grounded)     — built via clang `-Rpass-missed=licm,gvn,loop-vectorize -fsave-optimization-record` harvest on ooo_cpu.cc (the systematic restrict-discovery TOOL: gvn-miss = alias-blocked load it couldn't eliminate; licm-miss = loop-invariant load it couldn't hoist). Artifacts `/tmp/claude-restrict-harvest/`. Each phase scoped to ONE loop/method/class; apply one-at-a-time, IPC-gated; NEVER bulk-restrict-all.
+| Order | Phase | Scope | Harvest signal | Risk |
+|-------|-------|-------|----------------|------|
+| **1st (apply FIRST)** | update_rob completion scan | `scan_range` λ L1696-1711 (hot L1700/L1706) | **89 LoadClobbered + 48 LICM** (`ei_ptr`/`ec_ptr` reloaded each iter — `complete_execution` may clobber) | LOW — best risk/reward; #1 hotspot (9.73% self / 15.9% branch-miss); NOT in any built candidate yet |
+| 2nd | schedule_memory ready[] build | L1013-1014 AND-fold | 9.44% hotspot, vectorizable | low (confirm vs SMEMRESTRICT scope) |
+| 3rd | check_and_add_lsq loops | L1099-1126 | 72 + 20 | MED — helper writes same entry; restrict read-only sub-arrays only |
+| 4th | reg_dependency loop | L827-842 | 88 + 59 | MED — `current==rob_index` self-write; restrict read-only sub-arrays only |
+| ✗ DO-NOT-APPLY | get_way / check_hit tag scan | cache.cc | — | read-only scan loop, NO store-in-loop → restrict buys NOTHING |
+| ✗ DO-NOT-APPLY | update_fill_cycle min-scan | cache.cc | — | read-only scan loop, NO store-in-loop → restrict buys NOTHING |
+GUARDRAIL: restrict must NOT be promised across the mutating helper calls (Phases 2 & 4) — scope only to loop-local read-only sub-arrays, else codegen diverges (IPC break). Each phase passes the 0.62461 gate or reverts. Phases 5/6 documented as DO-NOT-APPLY so they are never retried.
+
+---
+
 # CORRECTNESS / VERIFY
 
+- **(2026-06-22) PGO-LOSS CONFOUND** — editing a PGO-hot function (build emits `function control flow change detected (hash mismatch)`) discards that function's PGO profile → un-profiled rebuild → can regress independent of opt merit. Blocks honest measurement of the restrict/hoist/CSE class (SMEMRESTRICT/SCHEDREST/CCPHOIST). Clean verdict requires a PGO rebuild on the edited binary. IPC stays bit-exact — not a correctness defect, a measurement confound. (Full entry in CODEGEN / RESTRICT OPT.)
 - `cache.cc handle_fill_remove` (~line 2579): raw cycle vs `PACK_CYCLE` unit mismatch; host-stat counter may accumulate wrong delta; fix = unify under `PCYCLE_DIFF` macro before enabling packing.
 - `SANITY_CHECK` / `PCYCLE_SANITY` guards: must be compiled out in release (`#ifdef TRUE_CHAMPSIM_SANITY`) — string construction in hot path; verified gated; confirm no accidental inclusion.
 - `ROB_HashTable` dead write-only maps (`rob_maps`): `instr_id→rob_index` maps allocated, written, but reader path guarded by `SANITY_CHECK`; P3 wrapped writes (+1.09%); TRUE_SANITY_CHECK path verifies correctness — VERIFIED correct, not a bug.
@@ -345,15 +398,17 @@ All figures = Linux wall time, single-run pinned, unless noted. IPC gate = 0.624
 | Windows clang | `8b06bab` | port Linux clang flag set to Makefile.win.clang | **platform-only** +15.8% Windows host speedup; does NOT compound with Linux figures |
 | v21 → v22 | this session | ThinLTO + SOA + DIRTYREG + FUSEDSCAN confirmed stack | **0.9282** (−7.18% wall vs champsim_v21; IPC bit-exact) |
 | v22 → v23 | this session | LTOTUNE (−4.10%) + S8 bitset (−2.40%) | **0.9345** CONFIRMED — v23 = −10.76% vs v21 same-session (80.370→71.726), IPC bit-exact |
+| v23 → v24 | 2026-06-22 | PKTSLIM (−2.17%) + RTEBRK (−1.88%) = PKTRTE stack | **0.9604** (−3.96% vs v23) → v24 ≈ **−14.3% vs v21**. ⚠ v24-vs-v21 same-session confirm LOST in /tmp wipe; derived from the v23-relative min-of-3 confirm |
+| v24 → v25 | 2026-06-22 | gated cycle-packing (correct, proven-safe past 2^33) | **PARKED — REGRESSION** (+2.4% inline / +31.5% vendored-template); NOT on perf path; v24 remains BEST |
 
-## Compounded Linux Wall-Time Speedup (v18 → v23)
+## Compounded Linux Wall-Time Speedup (v18 → v24)
 
 ```
-Factor product = 0.9567 × 1.0000 (P1 neutral) × 0.9891 (P3) × 1.0000 (v20→v21 unknown) × 0.9282 (v22) × 0.9345 (v23)
-               = 0.8783 (v18→v22) × 0.9345 = 0.8208
+Factor product = 0.9567 × 1.0000 (P1 neutral) × 0.9891 (P3) × 1.0000 (v20→v21 unknown) × 0.9282 (v22) × 0.9345 (v23) × 0.9604 (v24)
+               = 0.8208 (v18→v23) × 0.9604 = 0.7883
 ```
 
-**Total Linux wall-time reduction v18 → v23: ~17.9% faster** (time factor 0.821). [v18→v22 = ~12.2%; v23 adds confirmed −6.55% over v22.]
+**Total Linux wall-time reduction v18 → v24: ~21.2% faster** (time factor 0.788). [v18→v23 = ~17.9%; v24 adds −3.96% over v23.] v25 (packing) is a parked regression — excluded from the best-chain.
 
 Caveats:
 1. v17→v18 gain unknown — not in ledger; excluded from product.
