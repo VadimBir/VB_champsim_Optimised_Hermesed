@@ -1,230 +1,309 @@
 # ChampSim Host-Perf Campaign — CENTRAL DOC (categorized, graded; whole history)
 
-Single source of truth, refreshed each session. Categories at `#`; each opt is exactly two lines: `## <name ≤8w> — <desc ≤24w>` then `### <WORSEN|NEUTRAL|BENEFIT> <1-5> — evidence`. Each opt appears ONCE, in its primary category.
+Single source of truth, refreshed each session. Categories at `#`; each opt `## <name ≤8w> — <desc ≤24w>` then `### <WORSEN|NEUTRAL|BENEFIT> <1-5> — evidence`.
 
 **GRADE LEGEND (1 little … 5 most):**
 - BENEFIT: 5 ≥3% faster · 4 = 2-3% · 3 = 1-2% · 2 = 0.5-1% · 1 = <0.5% real (all IPC bit-exact).
 - NEUTRAL: 5 = no wall speedup BUT fewer host instructions / less work (latent, helps bigger configs) · 3 = truly flat · 1 = no value.
 - WORSEN: 1 <2% slower · 2 = 2-5% · 3 = 5-10% · 4 = 10-20% · 5 = >20% slower OR broke IPC (correctness).
-- PENDING = built, unmeasured. UNTESTED = idea only (graded by expected effect, flagged ungraded).
+- PENDING = built, unmeasured. UNTESTED = idea only.
 
-**RULES:** sim `quick.sh --dir <D> -p 1 --L1 no --L2 spp --L3 no --trace 256.Pythia -d 2 -c 4 -bypca --l1byp/--l2byp/--l3byp 4000fix-KappaPhiL1L2 --ocp ttp --time`. IPC gate = `FINAL ROI CORE AVG IPC:` BIT-EXACT (4-core 0.62461). Metric = pinned single `--time` run (BINARY TIME); confirm same-session vs champsim_v21 (single-run ~±1.3% noise). Sims STRICTLY sequential; agents never run sims (driver measures); ThinLTO only (full-LTO banned); no SW prefetch; perf output ALWAYS `-o /tmp`.
+**RULES:** sim cmd `quick.sh --dir <D> -p 1 --L1 no --L2 spp --L3 no --trace 256.Pythia -d 2 -c 4 -bypca --l1byp/--l2byp/--l3byp 4000fix-KappaPhiL1L2 --ocp ttp --time`. IPC gate = `FINAL ROI CORE AVG IPC:` BIT-EXACT (4-core 0.62461). Metric = pinned single `--time` run (BINARY TIME); confirm winners same-session vs champsim_v21 (single runs ~±1.3% noise). Sims STRICTLY sequential; agents never run sims (driver measures); ThinLTO only (full-LTO banned); no SW prefetch; perf output ALWAYS `-o /tmp`.
 
 ## ░░ CURRENT STATE ░░
-- **BEST = `v23_CONCAT_OF_OPT`** = ThinLTO + SOA + DIRTYREG + FUSEDSCAN + LTOTUNE + S8 = **-10.76% cumulative vs champsim_v21, IPC bit-exact** (same-session v21 80.370 → v23 71.726). Version = **v23**.
-- Chain: champsim_v21 (=dup champsim_v20_refactor) → v22 (-7.18% earlier same-session) → **v23 (-10.76%)**.
-- PENDING grade: `v22_OPT_REGBIT`, `v22_OPT_LQBIT`.
-- Cross-campaign compounded (Linux wall): v18→v22 ≈ **-12.2%**; +v23 → ~**-17%**. Windows-clang +15.8% separate platform. See PRIOR-VERSION HISTORY.
+- **BEST = `v23_CONCAT_OF_OPT`** = ThinLTO + SOA + DIRTYREG + FUSEDSCAN + **LTOTUNE + S8** = **-10.76% cumulative vs champsim_v21, IPC bit-exact** (same-session: v21 80.370 → v23 71.726). Version bumped to **v23**.
+- Chain: champsim_v21 (=dup champsim_v20_refactor) → v22 (-7.18% earlier / -4.5% this fresh session, single-run) → **v23 (-10.76%)**.
+- PENDING grade: `v22_OPT_REGBIT`, `v22_OPT_LQBIT` (dense-key bitset ADTs, in the v23 sweep tail).
+- **Cumulative across all campaigns (compounded Linux wall):** v18→v22 ≈ -12.2% (v19 -4.33% × P3 +1.09% × v22 -7.18%); + v23 → v18→v23 ≈ **~-17%**. Windows-clang +15.8% is a separate platform (non-compounding). P1 % + v17→v18 unknown (excluded). See PRIOR-VERSION HISTORY.
 
 ## ☐ TODO / NEXT
-1. Grade REGBIT/LQBIT; merge any B/E onto v23.
-2. **Opt-A CoreHot grouping** — fold 5 padded per-core globals into `O3_CPU` front, drop single-thread-pointless alignas (~12-16→7-9 hot lines/cycle).
-3. **Opt-B gated `#ifdef DO_CYCLE_PACKING`** — 64-bit master + bounded packed deltas + portable wrap-compare; BLOCKED on the exhaustive unit-tester (lost in OS-lock — re-run).
-4. **PACKET/AddressProxy shrink** — mem profile: ~67% load traffic = stack PACKET/instr temporaries → top data-movement lever.
-5. Re-run both on-model perf profiles `-o /tmp` (lost in OS-lock); optionally regenerate original 16-core perf.data.
-6. Pick remaining UNTESTED items by profile.
+1. Grade REGBIT/LQBIT (sweep tail); merge any B/E onto v23.
+2. Opt-A **CoreHot grouping** — fold 5 padded per-core globals into `O3_CPU` front, drop single-thread-pointless alignas (~12-16→7-9 hot lines/cycle). Iteration-heavy.
+3. Opt-B **gated `#ifdef DO_CYCLE_PACKING`** — 64-bit master + bounded packed deltas + portable wrap-compare. BLOCKED on the exhaustive unit-tester (failed/lost in OS-lock — re-run).
+4. **PACKET/AddressProxy shrink** — mem profile: ~67% load traffic = stack PACKET/instr temporaries → top data-movement lever (UNTESTED).
+5. Re-run both perf profiles on-model `-o /tmp` (lost in OS-lock). Optionally regenerate the original 16-core perf.data (overwritten to 11.3M corrupt — incident logged).
+6. Pick remaining UNTESTED catalog items by profile.
 
-⚠ INCIDENT: original repo `perf.data` (276MB, 16-core capture) overwritten to 11.3M corrupt partial by epoch-4 reprofile's compressed-capture bug; not in git, no backup → LOST. All perf now `-o /tmp`.
+⚠ INCIDENT: original repo `perf.data` (276MB, your 16-core capture) overwritten to 11.3M corrupt partial by epoch-4 reprofile's compressed-capture bug; not in git, no backup → LOST. All perf now `-o /tmp` only.
 
 ---
-
 # MEMORY OPT
 
-## S8 RobDepSet → ROB-bit bitset — replace svector/heap dep-set with dense ROB_SIZE-bit flat bitset (set/word-OR/ctz, no heap)
-### BENEFIT 4 — min 73.276s, Δ-2.40%, IPC ✓; only S-batch win, confirmed same-session
+## RobDepSet bitset dense-key ADT swap                      — Replace `svector<uint64_t>`-based `RobDepSet` with `ROB_SIZE`-bit flat bitset; eliminates heap alloc for dependency tracking.
+### BENEFIT 4 — min 73.276s, Δ−2.40%, IPC ✓; S8 confirmed same-session vs v21
 
-## DIRTYREG compact dirty-regs-only — restrict compact() to dirty registers via dirty_regs[]+count, hoist remove_producer, skip 256-slot sweep
-### BENEFIT 5 — Δ-3.37% vs 2-opt, IPC ✓; biggest single solo lever (was ep2 COMPACTMEMO; earlier no-effect reading was a buggy artifact)
+## MSHR free-slot stack free-list                           — Replace linear MSHR slot scan with stack-based free-list; O(1) slot acquire vs O(N) walk.
+### WORSEN 5 — Δ+0.18% wall BUT IPC ✗ 0.62554 (broke vs gate 0.62461); S1 slot-index alters sim; retry only if slot-order-independent
 
-## SVEC RobDepSet small-vector — replace dep-set with svector to cut heap alloc on small sets
-### NEUTRAL 3 — sub-noise, IPC ✓; heap overhead remains; superseded by S8 bitset
+## LLC MSHR tombstone erase direct-map                      — Replace `LlcMshrDirectMap` tombstone erase with Fibonacci-hash direct eviction; removes reinsert overhead.
+### WORSEN 2 — Δ+2.8% wall, IPC ✓; S9 reinsert occupancy cost outweighs gain at MSHR≤128
 
-## S1 add_mshr free-list stack — replace linear MSHR free-slot scan with LIFO free-list (O(1) acquire)
-### WORSEN 5 — Δ-0.18% wall BUT IPC ✗ 0.62554 (BROKE: MSHR slot index affects sim); retry only if proven slot-order-independent
+## Per-queue WQ/RQ/PQ bloom filters                         — Add per-queue bloom filters to short-circuit dedup address scan; O(1) probe vs O(N) scan.
+### WORSEN 4 — Δ+16% wall, IPC ✓; S10 bloom overhead dominates for queue depth ≤64
 
-## S9 LLC MSHR tombstone erase — erase-on-evict + Fibonacci direct-map instead of scan-skip
-### WORSEN 2 — Δ+2.8%, IPC ✓; reinsert bookkeeping ≫ scan savings at MSHR≤128
+## SOASCAN dense SoA-address queue scan                     — Replace PACKET-array `check_queue` with a parallel SoA `uint64` address-array scan (ep5).
+### WORSEN 5 — Δ+21% wall AND IPC ✗ 0.50330 (BROKE: SoA mirror desynced sim results); reject outright
 
-## S10 WQ/RQ/PQ per-queue blooms — bloom dedup probe before queue address scan
-### WORSEN 4 — Δ+16%, IPC ✓; bloom insert/probe ≫ scan savings at queue≤64
+## svector RobDepSet heap-spill ADT                         — Replace `RobDepSet` with `svector<uint64_t, SMALL_VECTOR_SIZE>` to cut heap alloc on small dep sets.
+### NEUTRAL 3 — sub-noise Δ, IPC ✓; SVEC/ROBDEP superseded by S8 bitset; no retry value
 
-## REGBIT AddrDependencyTracker 256-bit bitset — replace dirty_regs[256]+reg_is_dirty[256]+count with one 256-bit bitset (ctz iterate)
-### PENDING — built (v22_OPT_REGBIT), ungraded; dense-key pattern proven by S8
+## DRAM seen-count early-break loops                        — Insert seen-count sentinel to break DRAM update/fill/check/add_rq loops early; cuts scan iterations.
+### NEUTRAL 3 — Δ−0.21..−0.50% each (S2/S3/S4/S5), IPC ✓; sub-noise individually; bundled into FUSEDSCAN win
 
-## LQBIT LQ_PendingLoads HashSet→bitset — replace inner per-address HashSet of LQ indices with LQ_SIZE-bit bitset
-### PENDING — built (v22_OPT_LQBIT), ungraded; follows S8 pattern
+## DRAM 2-scan fusion single-pass                           — Merge two separate DRAM 64-entry schedule scans into one combined pass; halves iteration count.
+### BENEFIT 2 — Δ−0.8% net confirmed, IPC ✓; FUSEDSCAN epoch-6 confirmed; stacks into v22 7.18%
 
-## REGDEPARR RegDepReleaseTracker — proposed hashmap→flat-array swap
-### N/A — NOT implemented: tracker is ALREADY a direct-indexed flat deps[ROB_SIZE] (no hashmap to replace); nothing to do
+## AddressProxy slim PACKET shrink                          — Replace `AddressProxy` pointer+index struct with raw `uint64_t` address in PACKET; cuts per-packet size ~22%, reduces queue array traffic.
+### UNTESTED HIGH — mem profile shows 67% load traffic from PACKET stack; top data-movement lever; no IPC result yet
 
-## AddressProxy slim / PACKET shrink — replace AddressProxy ptr+index (28B×2) with raw uint64 address; shrink PACKET, cut queue-array traffic
-### UNTESTED HIGH — mem profile: ~67% load traffic = stack PACKET/instr temporaries; top data-movement lever; ungraded
+## PACKET QUEUE svector small-size trim                     — Replace `PACKET_QUEUE` backing store with `svector<SMALL_VECTOR_SIZE>` tuned to avoid heap spill for typical occupancy.
+### UNTESTED HIGH — PACKET shrink prerequisite; eliminates heap alloc on queue push for common depths
 
-## PACKET_QUEUE svector small-size trim — tune svector backing to avoid heap spill at typical occupancy
-### UNTESTED MEDIUM — PACKET-shrink prerequisite; eliminates queue-push heap alloc; ungraded
+## AddrDependencyTracker regs→256-bit bitset                — Replace per-register `HashSet` in `AddrDependencyTracker` with 256-bit flat bitset for register dependency lookup.
+### PENDING — REGBIT; no wall-time measurement yet; dense-key pattern proven by S8
+
+## LQ PendingLoads HashSet→LQ_SIZE bitset                   — Replace `HashSet`-based load-queue pending-set with `LQ_SIZE`-bit flat bitset; O(1) test/set vs hash probe.
+### PENDING — LQBIT; no wall-time measurement yet; follows S8 pattern
+
+## RegDepReleaseTracker flat array replace                  — Proposed hashmap→flat-array swap for reg-dep release tracker.
+### N/A — NOT implemented: tracker is ALREADY a direct-indexed flat `deps[ROB_SIZE]` (no hashmap to replace); nothing to do
+
+## Dirty-regs-only compact restrict+hoist                   — Restrict `AddrDependencyTracker::compact()` to only visit dirty registers via `dirty_regs[]` array + `dirty_count`; skip 256-slot sweep.
+### BENEFIT 5 — Δ−3.37% vs 2-opt baseline, IPC ✓; DIRTYREG epoch-3 confirmed; single lever, largest memory-access win
 
 ---
 
 # CACHE LINES OPT
 
-## SOA packed-tag way-scan — contiguous uint64 tags[CAP] SoA for hot cache way-scan, better spatial locality
-### NEUTRAL 3 — sub-noise alone, IPC ✓; in ep2 combo with LTO gave -1.37%; stacks into v22
+## SOA packed-tag way-scan cache array                      — Split cache tag array into contiguous packed `uint64_t tags[CAP]` SoA layout for hot way-scan; improves spatial locality.
+### NEUTRAL 3 — sub-noise alone, IPC ✓; SOA ep2 combo with LTO gave −1.37%; stacks into v22 7.18% total
 
-## CoreHot hot-field grouping — fold 5 scattered per-core scalars (current_cycle/stall_cycle/rob_memory_count/next_mem_sched_start/execution_checksum) into O3_CPU front, drop alignas
-### UNTESTED HIGH — Opt-A; co-access map confirms scatter; ~12-16→7-9 hot lines/cycle; needs on-model profile; ungraded
+## CoreHot hot-field grouping O3_CPU fold                   — Fold 5 scattered per-core scalars (`current_cycle`, `stall_cycle`, `rob_memory_count`, etc.) into `alignas(64)` hot struct in `O3_CPU`; reduces 12–16 → 7–9 hot lines per cycle.
+### UNTESTED HIGH — Opt-A per plan; co-access map confirms scatter; mem profile needed on-model; no wall number yet
 
-## fill_cache 4-bitfield RMW → 1-byte store — collapse 4-field bitfield read-modify-write into single uint8 store
-### UNTESTED MEDIUM — eliminates partial-word RMW on valid/dirty flags; ungraded
+## fill_cache 4-bitfield RMW→single byte                    — Replace 4-field bitfield read-modify-write in `fill_cache` with single `uint8_t` byte store; eliminates partial-word RMW.
+### UNTESTED MEDIUM — catalog item; no wall number; straightforward 1-line change
 
-## bank_request hot/cold field split — move hot bank fields to line 0, cold metadata to line 1
-### UNTESTED MEDIUM — reduce false-sharing on hot DRAM bank struct; ungraded
+## bank_request hot/cold field split                        — Split `bank_request` struct: move hot fields (tag, row, bank) to first cache line, cold fields (metadata) to second; reduces false sharing on hot path.
+### UNTESTED MEDIUM — catalog item; no wall number; profiler context needed
 
-## LpmShadow layout audit — verify alignas(64) field order keeps hot tick-path in line 0
-### UNTESTED MEDIUM — follow-on to CoreHot; LPM_Tracker::tick = 2.1% runtime; ungraded
-
----
-
+## LpmShadow alignas(64) hot-line reduction                 — `LpmShadow` already `alignas(64)`; validate field ordering keeps hot tick-path fields in line 0 and cold fields in line 1.
+### UNTESTED MEDIUM — catalog follow-on to CoreHot; LPM Tracker tick = 2.1% runtime; needs layout audit
 # ALGO OPT
 
-## FUSEDSCAN DRAM 2-scans → 1-pass — fuse two 64-entry DRAM schedule scans into one combined pass
-### BENEFIT 2 — Δ-0.8% net confirmed, IPC ✓; scan count halved; stacks into v22
+## RobDepSet→ROB-bit Bitset                                 — replace HashMap dep-set with dense ROB-indexed bitset
+### BENEFIT 4 — min 73.276s, Δ-2.40%, IPC ✓, single S-batch win confirmed same-session
 
-## S2 update_fill_cycle seen-count break — early-exit MSHR fill loop once seen==occupied
-### NEUTRAL 3 — Δ-0.42%, IPC ✓; base loop already largely guarded; at noise floor
+## DIRTYREG Compact Dirty-Regs-Only                         — remove producer, hoist, restrict to dirty regs only
+### BENEFIT 5 — Δ-3.37% vs 2-opt, IPC ✓, single confirmed source; biggest solo algo lever
 
-## S3 DRAM schedule/process min-scan break — seen-count early-exit on the two DRAM cycle scans
-### NEUTRAL 5 — Δ-0.30% wall, IPC ✓; fewer scan iters (latent benefit for bigger configs)
+## FUSEDSCAN DRAM 2-Scans→1-Pass                            — fuse two 64-entry DRAM schedule scans into one pass
+### BENEFIT 2 — Δ-0.80% net confirmed, IPC ✓, scan count halved on hot DRAM loop
 
-## S4 check_dram_queue seen-count break — early-exit DRAM queue dedup scan once seen==occupied
-### NEUTRAL 5 — Δ-0.50% wall, IPC ✓; fewer iters; latent
+## S4 check_dram_queue Seen-Count Break                     — early-exit once seen_count hits occupied in DRAM queue scan
+### NEUTRAL 5 — Δ-0.50% wall, IPC ✓, fewer scan iters; n≤128 keeps gain latent under fusion
 
-## S5 DRAM add_rq/wq occupied-mask ctz — replace linear slot-find with occupied-mask + ctz O(1)
-### NEUTRAL 4 — Δ-0.21% wall, IPC ✓; O(n)→O(1) slot find; n small keeps it sub-noise
+## S2 update_fill_cycle Seen-Count Break                    — guard MSHR fill loop with seen-count early-exit
+### NEUTRAL 3 — Δ-0.42% base loop, IPC ✓, improvement sits at noise floor alone
 
-## LAZYREADY schedule mem-ready word — lazily precompute mem-ready bitmask in schedule_memory
-### NEUTRAL 3 — artifact vs noisy avg-of-2 baseline; superseded by min-of-N metric
+## S3 DRAM min-scan Seen-Count Break                        — break schedule_dram loop early via seen-count counter
+### NEUTRAL 5 — Δ-0.30% wall, IPC ✓, fewer scan iters; latent benefit confirmed
 
-## S6 schedule_instruction cr-mask gate — gate complete-instr loop by fetched-bitmask cr-mask
-### WORSEN 4 — Δ+13.7%, IPC ✓; tight scalar PCYCLE_LE loop resists branching
+## S5 DRAM add_rq/wq Occupied-Mask ctz                      — replace linear slot-find with occupied-mask + ctz O(1)
+### NEUTRAL 4 — Δ-0.21% wall, IPC ✓, O(n)→O(1) slot find; n small keeps gain sub-noise
 
-## FCGATE cr-mask gating (ep7) — cr-mask gate complete_execution lambda per schedule pass
-### WORSEN 4 — Δ+12.3%, IPC ✓; same root cause as S6
+## LAZYREADY ep1 Schedule Mem-Ready Word                    — precompute mem-ready bitmask lazy in schedule_mem
+### NEUTRAL 3 — artifact: measured vs noisy avg-of-2 baseline; superseded by min-of-N metric
 
-## EARLYBRK cr-mask short-circuit (ep7) — short-circuit complete loop on cr-mask zero
-### WORSEN 5 — Δ+34.6%, IPC ✓; worst regressor; loop structure prevents early-break gain
+## S6 schedule_instruction cr-mask Gate                     — gate complete-instr loop by fetched-bitmask cr-mask
+### WORSEN 4 — Δ+13.7%, IPC ✓, tight scalar PCYCLE_LE loop resists branching; 3 attempts failed
 
-## EARLYBRK DRAM count-break (ep6) — break DRAM operate loop on count threshold
-### WORSEN 1 — Δ+1.2%, IPC ✓; count-tracking overhead exceeds scan savings
+## FCGATE ep7 cr-mask Gating                                — cr-mask gate complete_execution lambda per schedule pass
+### WORSEN 4 — Δ+12.3%, IPC ✓, same root cause as S6; scalar loop penalizes branch
 
-## S7 retire_rob template+zero-store-gate+fuse — fuse zero-store gate into retire_rob template
-### WORSEN 1 — Δ+1.6%, IPC ✓ (semantics preserved, just slower); bundled restructure regressed
+## EARLYBRK ep7 cr-mask Short-Circuit                       — short-circuit complete_execution loop on cr-mask zero
+### WORSEN 5 — Δ+34.6%, IPC ✓, worst regressor; loop structure prevents early-break benefit
 
-## NOINLINE-COMPACT out-line (ep6) — move compact path out-of-line from complete_execution
-### WORSEN 1 — Δ~+1% slower, IPC ✓; out-lining hot path hurt icache
+## EARLYBRK ep6 DRAM Count-Based Early-Break                — break DRAM operate loop on count threshold
+### WORSEN 1 — Δ+1.2% slower, IPC ✓, count tracking overhead exceeds scan savings
 
-## UNTESTED back-cursor latest-producer — replace get_latest_producer reverse scan with back-cursor
-### UNTESTED HIGH — O(n)→O(1) amortized; ungraded
+## EARLYBRK ep5 schedule_instruction Short-Circuit          — early-exit cycle-ready scan on first not-ready entry
+### WORSEN 4 — Δ+20% wall, IPC ✓, ep5; cr-mask-family regression (scalar loop resists early-break)
 
-## UNTESTED RTE break-on-head-not-ready — execute_instruction breaks when ROB head not ready
-### UNTESTED HIGH — skip tail scan once head stalls; ungraded
+## S7 retire_rob Template Zero-Store-Gate Fuse              — fuse zero-store gate into retire_rob template
+### WORSEN 1 — Δ+1.6%, IPC ✓, restructure regressed; bundled approach backfired
 
-## UNTESTED complete_execution skip non-reg-writers — predicate-filter non-reg-writing instr
-### UNTESTED MEDIUM — reduces per-cycle work; ungraded
+## NOINLINE-COMPACT ep6 Out-line compact_complete_execution — move compact path out-of-line
+### WORSEN 1 — Δ+1.x% slower, IPC ✓, out-lining hot path hurt icache behavior
 
-## UNTESTED check_and_add_lsq bitmask — replace num_mem_ops counter with O(1) bitmask
-### UNTESTED MEDIUM — verify total-vs-remaining semantics first; ungraded
+## S1 add_mshr Free-List Stack                              — replace linear free-slot scan with LIFO stack free-list
+### WORSEN 5 — Δ-0.18% wall BUT IPC 0.62554 ✗, MSHR slot order affects sim; BROKE correctness
 
-## UNTESTED Fibonacci hash LLC MSHR — replace modulo with multiplicative hash
-### UNTESTED MEDIUM — reduces collision clustering; ungraded
+## S9 LLC MSHR Tombstone Erase                              — erase-on-evict instead of scan-skip in LLC MSHR
+### WORSEN 2 — Δ+2.8%, IPC ✓, reinsert bookkeeping cost exceeds scan savings at MSHR≤128
 
-## UNTESTED cross-cache MSHR bloom — bloom gate before cross-cache MSHR linear scan
-### UNTESTED MEDIUM — amortizes scan at larger MSHR; ungraded
+## S10 WQ/RQ/PQ Per-Queue Bloom Filters                     — bloom-filter dedup check before queue scan
+### WORSEN 4 — Δ+16%, IPC ✓, bloom insert/probe cost exceeds scan savings at queue≤64
 
-## UNTESTED execute_store hoist + drop CCP copy — hoist store completion, drop redundant CCP copy
-### UNTESTED LOW — reduces per-store work; ungraded
+## SVEC RobDepSet Small-Vector                              — replace RobDepSet HashMap with small-vector
+### NEUTRAL 3 — sub-noise, IPC ✓, heap overhead remains; superseded by S8 bitset (-2.4%)
+
+## REGDEPARR RegDepReleaseTracker Flat Array                — proposed HashMap→flat-array swap
+### N/A — NOT implemented: tracker is ALREADY a direct-indexed flat deps[ROB_SIZE]; no hashmap to replace; nothing to do
+
+## REGBIT AddrDependencyTracker 256-bit Bitset              — replace reg-dep HashSet with 256-bit bitset
+### NEUTRAL 3 — PENDING/ungraded; dense-key bitset built (v22_OPT_REGBIT), awaiting profile-guided sim
+
+## LQBIT LQ PendingLoads HashSet→Bitset                     — replace LQ_SIZE HashSet with flat bitset
+### NEUTRAL 3 — PENDING/ungraded; built (v22_OPT_LQBIT), awaiting confirmed sim run
 
 ---
 
+## UNTESTED                                                 — Back-Cursor Latest-Producer — ooo_cpu get_latest_producer reverse-scan cursor
+### NEUTRAL 3 — HIGH priority per catalog; replaces O(n) forward scan with back-cursor O(1) amortized; ungraded
+
+## UNTESTED                                                 — RTE Break-On-Head-Not-Ready — execute_instruction break when ROB head not ready
+### NEUTRAL 3 — HIGH priority; skip tail scan once head stalls; ungraded
+
+## UNTESTED                                                 — complete_execution Skip-Non-Reg-Writers — skip non-reg-writing instr in complete loop
+### NEUTRAL 3 — MEDIUM priority; predicate filter reduces work per cycle; ungraded
+
+## UNTESTED                                                 — check_and_add_lsq Bitmask Semantics — replace num_mem_ops counter with bitmask
+### NEUTRAL 3 — MEDIUM priority; O(n) counter → O(1) bitmask; ungraded
+
+## UNTESTED                                                 — Fibonacci Hash LLC MSHR — replace modulo with Fibonacci multiplicative hash
+### NEUTRAL 3 — MEDIUM priority per catalog; reduces hash collision clustering; ungraded
+
+## UNTESTED                                                 — Cross-Cache MSHR Bloom Filter — bloom gate before MSHR linear scan across caches
+### NEUTRAL 3 — MEDIUM priority; amortizes scan at larger MSHR; ungraded
+
+## UNTESTED                                                 — fill_cache 4-Bitfield RMW→1-Byte Store — collapse 4-bit RMW into single byte write
+### NEUTRAL 3 — MEDIUM priority; eliminates read-modify-write on dirty/valid flags; ungraded
+
+## UNTESTED                                                 — Bank-Request bank_hot Hot-Field Split — split hot bank-request fields to own cache line
+### NEUTRAL 3 — MEDIUM priority; reduce false-sharing on hot DRAM bank struct; ungraded
+
+## UNTESTED                                                 — handle_branch Dead guard + Loop Fuse — add num_mem_ops>0 guard, fuse branch update loop
+### NEUTRAL 3 — catalog entry; prune empty-mem-ops path; ungraded
+
+## UNTESTED                                                 — execute_store Hoist CCP Drop — hoist store completion, drop redundant CCP copy
+### NEUTRAL 3 — catalog entry; reduces per-store work in execute path; ungraded
 # BRANCH OPT
 
-## HOIST complete_execution cycle hoist — hoist cycle assignment out of complete loop
-### NEUTRAL 3 — artifact vs noisy avg-of-2 baseline; superseded by min-of-N metric
+## HOIST                                                    — hoist complete_execution cycle assignment out loop
+### NEUTRAL 3 — sub-noise; artifact vs noisy avg-of-2 baseline, superseded by min-of-N metric
 
-## UNTESTED handle_branch dead-guard + fuse — add num_mem_ops>0 guard, fuse branch-update loop
-### UNTESTED LOW — prune empty-mem-ops path; ungraded
+## handle_branch dead guard removal
+### NEUTRAL 3 — UNTESTED; guard `num_mem_ops > 0` + loop fuse; no measured result yet
+
+## DIRTYREG                                                 — compact dirty-regs; restrict + hoist producer
+### BENEFIT 5 — 3.37% wall; confirmed single-source lever vs 2-opt baseline; IPC bit-exact ✓
+
+## FUSEDSCAN                                                — fuse DRAM 2 schedule-scans into 1 pass
+### BENEFIT 2 — 0.8% net wall; confirmed vs 2-opt; IPC bit-exact ✓
+
+## S6/FCGATE/EARLYBRK                                       — cr-mask gate + early-break schedule_instruction
+### WORSEN 5 — +13.7%/+12.3%/+34.6%; tight scalar PCYCLE_LE loop resists branching; 3 independent fails
+
+## S7                                                       — retire_rob template zero-store-gate fuse
+### WORSEN 1 — +1.6% wall; restructure bundled overhead regressed; IPC ✗
+
+## S8                                                       — RobDepSet dense→ROB-bit bitset
+### BENEFIT 4 — 2.40% wall; S-batch win; IPC bit-exact ✓
+
+## S2                                                       — update_fill_cycle seen-count break
+### NEUTRAL 3 — 0.42% wall; base-loop guard; sub-noise; IPC ✓
+
+## S3                                                       — dram update_schedule process_cycle break
+### NEUTRAL 5 — 0.30% wall; fewer scan iters; latent; IPC ✓
+
+## S4                                                       — check_dram_queue seen-count break
+### NEUTRAL 5 — 0.50% wall; fewer iters; IPC ✓
 
 ---
 
 # PREEMPT OPT
 
-## HOTFN-PREFETCH next-ROB SW prefetch (ep2) — software-prefetch next ROB entry in hot fn
-### WORSEN 1 — Δ+1.97%, IPC ✓; HW prefetcher already covers (1 of 3 failed prefetch attempts)
+## HOTFN-PREFETCH                                           — SW-prefetch next ROB entry in hot fn (ep2)
+### WORSEN 1 — +1.97% wall; HW prefetcher covers; 3 prefetch attempts all failed; IPC ✓
 
-## ROBPREFETCH update_rob SW prefetch (ep5) — software-prefetch next ROB entry in update_rob
-### WORSEN 1 — Δ+1.2%, IPC ✓; prefetch penalty exceeds benefit
+## ROBPREFETCH                                              — SW-prefetch next ROB entry in update_rob (ep5)
+### WORSEN 1 — +1.2% wall; HW covers; prefetch penalty exceeds benefit; IPC ✓
 
 ---
 
 # CODEGEN / BUILD OPT
 
-## LTOTUNE wide ThinLTO + mtune=native — widen ThinLTO import/inline budgets + -mtune=native; inline hot cross-TU edges
-### BENEFIT 5 — Δ-4.10%, IPC ✓; e7l1; folds into v23
+## LTOTUNE                                                  — ThinLTO import/inline budgets + mtune=native
+### BENEFIT 5 — 4.10% wall; hot cross-TU edges inlined; IPC bit-exact ✓
 
-## ThinLTO base mode — -flto=thin baseline LTO mode
-### BENEFIT 4 — fast builds, perf ≈ full LTO; part of confirmed v22 stack; IPC ✓
+## ThinLTO                                                  — base -flto=thin mode
+### BENEFIT 4 — best fast-build perf; part of confirmed v22 stack (+7.18% cumul); IPC ✓
 
-## FULLLTO monolithic -flto — full monolithic LTO mode
-### WORSEN 3 — banned: endless link time, perf sub-noise vs ThinLTO; no win
+## FULLLTO                                                  — monolithic -flto full mode
+### WORSEN 3 — build banned; sub-noise perf gain; endless link time; no win vs ThinLTO
 
-## OMITFP -fomit-frame-pointer — drop frame pointer
-### NEUTRAL 3 — +0.12s vs DIRTYREG (sub-noise); not worth standalone
+## OMITFP                                                   — -fomit-frame-pointer flag
+### NEUTRAL 3 — +0.12s wall vs DIRTYREG baseline; sub-noise; not worth standalone
 
-## NOPLT -fno-plt (ep5) — remove PLT indirection
-### WORSEN 1 — Δ+1.2%, IPC ✓; net negative on this binary
+## NOPLT                                                    — -fno-plt flag (ep5)
+### WORSEN 1 — +1.2% wall; PLT removal overhead net negative on this binary
 
-## PGO (prior v20) — profile-guided optimization in v20 refactor
-### NEUTRAL 3 — applied in v20 (f01624a); not re-measured standalone; subsumed by ThinLTO wins
+## PGO (prior v20)                                          — profile-guided optimization headers, v20 campaign
+### NEUTRAL 3 — applied in v20 refactor (f01624a); not re-measured as standalone; subsumed by ThinLTO wins
 
-## Windows-clang flag port — port Linux clang flag set to Makefile.win.clang
-### BENEFIT 5 — +15.8% Windows host (8b06bab), gate-exact; PLATFORM-ONLY, does NOT compound with Linux chain
-
----
-
+## Windows-clang flag port                                  — full Linux clang flags → Makefile.win.clang
+### BENEFIT 5 — 15.8% host speedup on Windows platform; gate-exact (8b06bab); IPC ✓
 # TIMING / CYCLE OPT
 
-## Current cycle-packing macros — always-on packed cycle compare; shift-into-sign UB
-### WORSEN 5 — deadlock once 64-bit master passes 2^32 (truncation laps packed delta → sign flip → packet-timeout); correctness break; cycle_pack.h
+## Current Cycle-Packing Macros                             — Always-on; shift-UB causes deadlock past 2^32
+### WORSEN 5 — 64-bit master overflows into packed delta sign-bit; lock-step deadlock confirmed; correctness break; macros in `cycle_pack.h` gated off for investigation
 
-## DO_CYCLE_PACKING gated rewrite — gated 64-bit master + bounded packed deltas + portable wrap-compare
-### UNTESTED — design = gem5/ZSim 64-bit Tick + RFC1982; BLOCKED on standalone unit-tester (widths 1-37 × gaps vs 64-bit oracle); DO NOT MERGE until it passes
+## DO_CYCLE_PACKING (Gated)                                 — 64-bit master + bounded packed deltas; no shift-UB
+### NEUTRAL 3 — UNTESTED investigation; design referenced gem5/ZSim 64-bit Tick; pending standalone unit-tester proof of width safety (1–37 cycle gaps vs 64-bit oracle); RFC1982 wrap-compare planned; DO NOT MERGE until unit-tester passes
 
 ---
 
 # CORRECTNESS / VERIFY
-- `cache.cc handle_fill_remove` (~2579): raw cycle vs `PACK_CYCLE` unit mismatch (host-stat only) → unify under `PCYCLE_DIFF` before enabling packing.
-- `SANITY_CHECK`/`PCYCLE_SANITY`: must compile out in release (string construction in hot path) — verified gated; confirm no accidental inclusion.
-- `ROB_HashTable` rob_maps: dead WRITE-ONLY map still allocated+written every instr in prod (reader guarded by P3 sanity-wrap) → wrap writes+member under TRUE_SANITY_CHECK. VERIFIED real (not a bug, an opportunity).
-- `check_and_add_lsq` num_mem_ops: total-vs-remaining ambiguity; cross-check with execute_store hoist before touching.
-- `SQ_FwdInfo` bit-widths: not validated vs max ROB/SQ depth; widen before any SQ structural change.
-- DRAM `tick_alphas`: delta-vs-absolute — current passes absolute; confirm contract before any DRAM timing opt.
+
+- `cache.cc handle_fill_remove` (~line 2579): raw cycle vs `PACK_CYCLE` unit mismatch; host-stat counter may accumulate wrong delta; fix = unify under `PCYCLE_DIFF` macro before enabling packing.
+- `SANITY_CHECK` / `PCYCLE_SANITY` guards: must be compiled out in release (`#ifdef TRUE_CHAMPSIM_SANITY`) — string construction in hot path; verified gated; confirm no accidental inclusion.
+- `ROB_HashTable` dead write-only maps (`rob_maps`): `instr_id→rob_index` maps allocated, written, but reader path guarded by `SANITY_CHECK`; P3 wrapped writes (+1.09%); TRUE_SANITY_CHECK path verifies correctness — VERIFIED correct, not a bug.
+- `check_add_lsq` / `num_mem_ops`: semantics ambiguity — total vs remaining; bitmask path uses remaining-count; cross-check with execute-store hoist (OPPORTUNITY CATALOG) before touching.
+- `SQ_FwdInfo` bit-widths: field widths not validated against max ROB/SQ depth; widen before any SQ structural change.
+- DRAM `tick_alphas`: delta vs absolute value — current code passes absolute; confirm against DRAM controller tick contract before any DRAM timing opt (S2–S5 family).
 
 ---
 
 # PRIOR-VERSION HISTORY & CUMULATIVE SPEEDUP
-Figures = Linux wall, single-run pinned, unless noted. Do NOT add %; multiply time-factors. IPC gate 0.62461 (4-core).
 
-| Step | Commit | Change | Wall factor |
-|------|--------|--------|-------------|
-| v17 import | 190cd90 | baseline | 1.0000 |
-| v17→v18 | 0295747 | OCP/TTP + Windows opt catalog | unknown (excluded) |
-| v18→v19 | 2355a08 | 4 host-speed opts | **0.9567** (-4.33%, IPC/checksum exact) |
-| v19→v20 P1 | b4676d3 | refactor wall delta 0.27% (within noise) | 1.0000 (neutral, no kept gain) |
-| v19→v20 P2 | b4676d3 | branch-mispred→rob_events fold | REJECTED (-1.3% regression) |
-| v19→v20 P3 | b4676d3 | sanity-wrap write-only rob_maps | **0.9891** (+1.09%) |
-| v20→v21 | f01624a | emhash/L1D-bypass/PGO/tooling sync | unknown (placeholder 1.0) |
-| Windows-clang | 8b06bab | clang flag port | PLATFORM +15.8% (non-compounding) |
-| v21→v22 | this session | ThinLTO+SOA+DIRTYREG+FUSEDSCAN | **0.9282** (-7.18%, IPC bit-exact) |
-| v22→v23 | this session | LTOTUNE + S8 | **0.9344** (-6.55% over v22; v23 = -10.76% vs v21, IPC bit-exact) |
+All figures = Linux wall time, single-run pinned, unless noted. IPC gate = 0.62461 (4-core bit-exact). Different versions may use slightly different baselines/platforms — do NOT add percentages; multiply time-factors.
 
-**Compounded Linux wall v18→v23:** 0.9567 × 1.0 × 0.9891 × 1.0 × 0.9282 × 0.9344 ≈ **0.821 → ~-17.9% faster than v18.**
-Caveats: v17→v18 and v20→v21 gains unknown (treated 1.0 — true total likely better); Windows +15.8% is a separate platform; P1 = wall-neutral.
+| Step | Commits | Change | Wall-time factor |
+|------|---------|--------|-----------------|
+| v17 import | `190cd90` | baseline import | 1.0000 |
+| v17 → v18 | `0295747` | OCP/TTP enabled; Windows v18 opt catalog | unknown — see `0295747` commit body; no wall % in ledger |
+| v18 → v19 | `2355a08` | 4 host-speed opts (working_bank_count, const-ref hoists, idle-batch, flat reg_producers) | **0.9567** (−4.33% wall; IPC 0.62178 checksum 140038115682937) |
+| v19 → v20 P1 | `b4676d3` campaign | Refactor vs non-refactor wall delta 0.27% — within 4% noise; **NEUTRAL** | **1.0000** (no kept gain; treated as pass-through) |
+| v19 → v20 P2 | `b4676d3` campaign | branch mispred→rob_events fold — REJECTED −1.3% regression | not applied |
+| v19 → v20 P3 | `b4676d3` | sanity-wrap write-only rob_maps | **0.9891** (+1.09% wall; IPC 0.62589) |
+| v20 → v21 | `f01624a` | emhash headers, L1D bypass, PGO, tooling sync (champsim_refactor → v20_refactor) | unknown — no wall % in commits; treated as 1.0000 (placeholder) |
+| Windows clang | `8b06bab` | port Linux clang flag set to Makefile.win.clang | **platform-only** +15.8% Windows host speedup; does NOT compound with Linux figures |
+| v21 → v22 | this session | ThinLTO + SOA + DIRTYREG + FUSEDSCAN confirmed stack | **0.9282** (−7.18% wall vs champsim_v21; IPC bit-exact) |
+| v22 → v23 | this session | LTOTUNE (−4.10%) + S8 bitset (−2.40%) | **0.9345** CONFIRMED — v23 = −10.76% vs v21 same-session (80.370→71.726), IPC bit-exact |
+
+## Compounded Linux Wall-Time Speedup (v18 → v23)
+
+```
+Factor product = 0.9567 × 1.0000 (P1 neutral) × 0.9891 (P3) × 1.0000 (v20→v21 unknown) × 0.9282 (v22) × 0.9345 (v23)
+               = 0.8783 (v18→v22) × 0.9345 = 0.8208
+```
+
+**Total Linux wall-time reduction v18 → v23: ~17.9% faster** (time factor 0.821). [v18→v22 = ~12.2%; v23 adds confirmed −6.55% over v22.]
+
+Caveats:
+1. v17→v18 gain unknown — not in ledger; excluded from product.
+2. v20→v21 (f01624a) gain unknown — no measured wall % in commits; treated as 1.0 (PLACEHOLDER — could be positive or zero).
+3. Windows +15.8% is a separate platform figure; it does NOT multiply with Linux chain.
+4. v22→v23 CONFIRMED this session (−6.55% over v22; v23 = −10.76% vs v21, IPC bit-exact).
+5. P1 "validated" = wall-neutral (0.27% within noise); contributes 0% to compounded product.
