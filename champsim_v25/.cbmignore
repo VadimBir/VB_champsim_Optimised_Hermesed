@@ -1,0 +1,33 @@
+# codebase-memory-mcp scope for champsim_v25
+# Goal: index core simulator (src/ + inc/) only. Exclude dead code, build
+# artifacts, results/logs, Windows build, and swappable algorithm variants
+# that would overflood the graph.
+
+# --- build artifacts / outputs / logs (no source) ---
+bin/
+.lto_cache/
+_ckpt/
+champsim_results/
+ByP_LOOP_LOG/
+profiles_v10/
+win_deps/
+docs/
+
+# --- swappable algorithm module variants (out of src+inc scope) ---
+branch/
+prefetcher/
+replacement/
+tracer/
+
+# --- Windows-specific build (not used in linux build) ---
+Makefile.win
+Makefile.win.clang
+Makefile.win.clang.libstdcxx
+qbuild_v14_win.sh
+qrun_v14_win.sh
+
+# --- empty / stub source (0 bytes, no functions) ---
+src/instruction.cc
+
+# --- analysis notes, not code ---
+*.bounds.md
