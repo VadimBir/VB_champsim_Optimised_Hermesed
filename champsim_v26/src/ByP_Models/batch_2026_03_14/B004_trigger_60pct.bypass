@@ -1,0 +1,15 @@
+#include "cache.h"
+#include "lpm_tracker.h"
+#define L1D_type 4
+#define L2C_type 5
+#define LLC_type 6
+static bool ByP_model_init = false;
+inline bool shall_L1D_Bypass_OnCacheMissedMSHRcap(int cpu, CACHE *L1D, CACHE *L2C, CACHE *LLC) {
+    if (ByP_model_init == false){
+        cout << "Bypass on: L1D trigger 60% MSHR occupancy" << endl;
+        ByP_model_init = true;
+    }
+    if (L1D->MSHR.occupancy * 10 < L1D->MSHR.SIZE * 6) return false;
+    if (L2C->MSHR.occupancy >= L2C->MSHR.SIZE) return false;
+    return true;
+}

@@ -23,8 +23,44 @@ Single source of truth, refreshed each session. Categories at `#`; each opt `## 
 - **(2026-06-22 update) RESTRICT / source-micro-opt class BLOCKED by PGO confound.** Editing any PGO-hot `O3_CPU` function discards that function's PGO profile (build emits `function control flow change detected (hash mismatch)`) → it rebuilds WITHOUT PGO → can regress independent of the opt's merit. Measured this session: `v24_OPT_SMEMRESTRICT` AVG-of-2 **+1.64%** (69.692 vs v24 68.568, IPC ✓), `v24_OPT_SCHEDREST` **+0.63%** (69.002 vs 68.568, IPC ✓) — both regressions, both PGO-confound-flagged, NOT proven bad. A clean verdict on restrict/hoist/CSE needs a **PGO rebuild on the edited binary**. This likely also explains CCPHOIST coming back sub-noise. → Next lever = either PGO-rebuild measurement or wins that DON'T edit hot PGO functions (build flags / layout).
 - **POLLY rejected** (`-mllvm -polly`): runtime alias-check + loop versioning, NOT `restrict`. Three strikes — slow builds (same class as banned full-LTO), can't model the hot loops (they contain function calls: update_rob→complete_execution, reg_dependency→get_latest_producer, check_and_add_lsq→add_load_queue), runtime-check overhead. DO-NOT-USE.
 
+## ▼ champsim_v26 — MERGED STACK MEASURED (2026-06-23) — NEW BEST candidate
+**v26 = v24 + NOHEAP + SMEMRESTRICT + RMGATE + SCHEDREST + CCPHOIST + PRODINLINE** (6 opts; HEAPSCHED dropped for NOHEAP, WMINSKIP dropped — conflicts w/ NOHEAP cr region). Built clean (0 errors, PGO+ThinLTO). Two conflicts composed by hand (both NOHEAP store + ccp-hoist on adjacent lines, semantically identical to applying each alone): `do_scheduling` (NOHEAP×SCHEDREST) and `do_execution` (NOHEAP×CCPHOIST).
+- Measured `taskset -c 3-7`, interleaved, min-of-3: v24 {64.723, 63.727, **62.712**}, v26 {60.294, 61.896, **60.035**}, IPC bit-exact **0.62658** both.
+- **v26 = -4.27% vs v24 (min-of-3); UNAMBIGUOUS — v26 worst (61.896) < v24 best (62.712).**
+- Stack is SUBLINEAR: NOHEAP-alone -3.68%; the 5 independent opts add only ~0.6pp → real stack -4.27% (naive sum of all 6 ≈ -9%; wins do NOT add). Cumulative ≈ **-21% vs champsim_v21** (compounds v24 -17.7% × v26 -4.27%; mixes min-of-3 vs single-run v21, approximate).
+- STATUS: measured win on 256.Pythia only. NOT yet 2nd-trace / long-run validated; NOT yet committed/renamed canonical. → validate before promoting over v24.
+
+## ▼ CORE-7 PINNING CORRUPTION — RE-TIMED `taskset -c 3-7` (2026-06-22)
+⚠ **ALL single-run timing verdicts measured under `taskset -c 7` (one core) are VOID.** ChampSim's `trace_helper` is a SEPARATE thread; pinning sim+trace to one core serialized them asymmetrically per binary and inverted timing verdicts. `avg2.sh` and all 8 gate scripts carried the `-c 7` pin. Correct pin = `-c 3-7`. Affected (now re-timed below): SMEMRESTRICT, SCHEDREST, CCPHOIST, RMGATE, WMINSKIP, PRODINLINE, HEAPSCHED, NOHEAP.
+
+### Full-dir sweep `bfgbk0jsy` — single run, `taskset -c 3-7`, packing OFF
+⚠ IPC reads **0.62658** in this sweep, vs **0.62461** in the earlier `-c 3-7` rechecks (`bbjkfo072`/`bhd0x1o4t`) under a nominally identical gate command — UNEXPLAINED absolute-IPC delta, NOT yet reconciled. Within this sweep every dir is bit-exact at 0.62658 EXCEPT PREFIXCURSOR → **relative ranking is clean; absolute IPC needs reconciliation before banking.** Grades below derive from same-sweep deltas.
+
+**v24-based** (base `champsim_v24` = 64.990s):
+| candidate | time | Δ vs v24 | IPC | GRADE |
+|-----------|------|----------|-----|-------|
+| NOHEAP — cr-bitset, future-bitset matured by ctzll (no heap) | 62.598 | **-3.68%** | ✓ | BENEFIT 5 |
+| HEAPSCHED — cr-bitset fed by lazy min-heap | 63.016 | **-3.04%** | ✓ | BENEFIT 5 |
+| WMINSKIP — per-word min(event_cycle) all-future skip | 63.407 | **-2.44%** | ✓ | BENEFIT 4 (was core-7 +1.99% WORSEN — VOID) |
+| SMEMRESTRICT — __restrict__ on schedule_memory lambda | 63.478 | **-2.33%** | ✓ | BENEFIT 4 (was core-7 +1.64% WORSEN — VOID) |
+| RMGATE — drop redundant gate before update_rob | 64.165 | **-1.27%** | ✓ | BENEFIT 3 (was core-7 +0.48% — VOID) |
+| SCHEDREST — REGDEP-ENTRYREF + GLP-HEAD-INVARIANT | 64.248 | **-1.14%** | ✓ | BENEFIT 3 (was core-7 +0.63% — VOID) |
+| CCPHOIST — hoist current_core_cycle reloads | 64.669 | -0.49% | ✓ | BENEFIT 2 (was core-7 -0.70% neutral) |
+| PRODINLINE — inline ProducerList slots, no heap | 64.722 | -0.41% | ✓ | BENEFIT 1 |
+| ~~PREFIXCURSOR~~ | 62.887 | -3.24% | **✗ 0.71224** | **WORSEN 5 — BROKE IPC (full-window dispatch drift)** |
+
+**v23-based** (base `champsim_v23` = 68.432s): PKTRTE 62.855 (-8.15%, = PKTSLIM+RTEBRK = what v24 IS), PKTSLIM 63.825 (-6.73%), RTEBRK 65.260 (-4.64%), LSQBITMASK 65.470 (-4.33%, built+ran here, IPC ✓).
+
+**v22_OPT_\*** — NO `champsim_v22` dir on disk → **CANNOT GRADE cleanly** (different base): e7l1 67.396, S8 67.377, REGDEPARR 70.036, LQBIT 71.118, REGBIT 71.526.
+
+**Chain (this sweep):** v21 79.009 → v23 68.432 (-13.4%) → **v24 64.990 (-17.7% vs v21)** → +HEAPSCHED 63.016 (**-20.2% vs v21**) / +NOHEAP 62.598 (**-20.8% vs v21**). v25 (packing ON) = 83.321 (+28.2% vs v24, regression reconfirmed). v20_refactor 76.739, v21 79.009 (chain anchors). v17/v18/v19 = no bypass model for this flag (NO_TIME).
+
+**TOP NEXT WIN:** NOHEAP (-3.68%, simpler than HEAPSCHED, no heap-overflow risk) or HEAPSCHED (-3.04%) → merge onto v24 as **champsim_v26** (v25 name is taken by parked packing). Both on `schedule_instruction` cr-build. Pre-merge: 2nd-trace + long-run validation (NOT yet done — do only when asked).
+
 ## ☐ TODO / NEXT
-1. Grade REGBIT/LQBIT (sweep tail); merge any B/E onto **v24** (current best).
+0. **Merge NOHEAP (or HEAPSCHED) onto v24 → champsim_v26** (the −3.68%/−3.04% cr-bitset win) after 2nd-trace + long-run validation.
+1. Reconcile the 0.62658 vs 0.62461 absolute-IPC delta between sweeps (same gate cmd, different IPC).
+2. Grade REGBIT/LQBIT (sweep tail); merge any B/E onto **v24** (current best).
 2. Opt-A **CoreHot grouping** — fold 5 padded per-core globals into `O3_CPU` front, drop single-thread-pointless alignas (~12-16→7-9 hot lines/cycle). Iteration-heavy.
 3. Opt-B **gated `#ifdef DO_CYCLE_PACKING`** — ✅ RESOLVED 2026-06-22 in `champsim_v25`: correct UB-free serial compare via vendored WebRTC `AheadOrAt`, proven safe at infinite run length (gap-bound + wrap test past 2^33). See TIMING/CYCLE OPT entry. Remaining: not a speedup; non-ROB-head gap-bound enumerated-not-formally-proven.
 4. **PACKET/AddressProxy shrink** — PKTSLIM done (-2.17%, in v24). PACKET/queue `event_cycle` NOT yet narrowed (left wide in v25, layout-sensitive); mem profile still says ~67% load traffic = stack PACKET/instr temporaries → top remaining data-movement lever (UNTESTED).
