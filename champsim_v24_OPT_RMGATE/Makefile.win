@@ -1,0 +1,63 @@
+# Makefile.win — native Windows (w64devkit / MinGW g++) build of ChampSim.
+# No WSL2, no MSYS2. Run from a shell with w64devkit\bin on PATH:
+#     make -f Makefile.win
+# Deps live in win_deps/ (sqlite amalgamation, lzma headers, liblzma.dll).
+
+W64    := C:/Users/vasum/w64devkit/bin
+CXX    := $(W64)/g++.exe
+CC     := $(W64)/gcc.exe
+SHELL  := $(W64)/sh.exe
+
+DEPS   := win_deps
+INC    := -Iinc -I$(DEPS)/sqlite -I$(DEPS)/lzma/include -I$(DEPS)/emhash
+
+# Mirrors the Linux build intent (-O3 -std=c++17). MinGW g++ is libstdc++,
+# so the Makefile's "-stdlib=libstdc++ MUST STAY" equivalence note holds here.
+# Dropped: ccache, BOLT, PGO, polly, -mllvm, lld, ELF -Wl flags (all Linux-only).
+# -fno-aggressive-loop-optimizations: inc/set.h:517 writes data.bits[] out of
+# bounds (pre-existing UB, GCC-flagged). This stops GCC-16 -O3 from exploiting
+# that UB and corrupting adjacent fields (was tripping assert at set.h:512).
+# EXTRA_CFLAGS: append-only hook so the qbuild_v14_win.sh wrapper can pass the
+# Linux EXTRA_DEFS (win-mode -DLPM_WIN_* and hermes -DUSE_HERMES/-DNO_HERMES)
+# that select codegen. Empty by default → identical to the prior fixed flags.
+EXTRA_CFLAGS ?=
+CXXFLAGS := -O3 -g -std=c++17 -mavx2 -mbmi2 -D_DEFAULT_SOURCE -fno-aggressive-loop-optimizations $(EXTRA_CFLAGS) $(INC)
+CFLAGS   := -O2 -mavx2 -mbmi2 $(INC)
+LDFLAGS  := -static -pthread   # statically link libgcc/libstdc++/winpthread → self-contained exe
+LZMA_DLL := $(DEPS)/liblzma.dll
+
+OBJDIR := obj_win
+BIN    := bin/champsim.exe
+
+SRCS := $(wildcard src/*.cc) $(wildcard src/hermes/*.cc) \
+        $(wildcard branch/*.cc) $(wildcard replacement/*.cc) \
+        $(wildcard prefetcher/*.cc)
+# Exclude non-active alt-policy files that reference symbols only defined under
+# USE_HERMES (off) + a knobs file that isn't present: folded_xor/HashZoo/knob::hawkeye_*.
+# Active replacement policy here is lru (llc_replacement.cc), so Hawkeye is unused.
+SRCS := $(filter-out replacement/hawkeye.cc replacement/hawkeye_crc2.cc,$(SRCS))
+SRCS := $(filter-out src/main_helper.cc src/cache_helper.cc src/ooo_cpu_helper.cc src/dram_helper.cc src/main_loop.cc src/main_paging.cc,$(SRCS))
+OBJS := $(patsubst %.cc,$(OBJDIR)/%.o,$(SRCS)) $(OBJDIR)/sqlite3.o
+
+.PHONY: all clean
+all: $(BIN)
+
+$(BIN): $(OBJS)
+	@mkdir -p bin
+	@echo "Linking $@ ..."
+	$(CXX) $(OBJS) $(LZMA_DLL) $(LDFLAGS) -o $@
+	@cp $(LZMA_DLL) bin/liblzma-5.dll   # internal SONAME the exe imports
+	@echo "Built $@ (+ liblzma-5.dll beside it)"
+
+$(OBJDIR)/%.o: %.cc
+	@mkdir -p $(dir $@)
+	@echo "Compiling $< ..."
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJDIR)/sqlite3.o: $(DEPS)/sqlite/sqlite3.c
+	@mkdir -p $(dir $@)
+	@echo "Compiling sqlite3.c ..."
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -rf $(OBJDIR) $(BIN)

@@ -1,0 +1,128 @@
+#include <vector>
+#include <algorithm>
+#include <unordered_map>
+#include <cstring>
+
+struct SuffixEntry {
+    int index;
+};
+
+struct Pattern {
+    vector<uint64_t> blocks;
+    int frequency;
+    Pattern(vector<uint64_t> b) : blocks(b), frequency(1) {}
+};
+
+class SuffixPrefetcher {
+    vector<uint64_t> seq;
+    vector<Pattern> patterns;
+    vector<pair<int, int>> active_patterns;
+    static const int MAX_SEQ_LEN = 1024;
+    static const int EXTRACT_INTERVAL = 64;
+    
+    int cmp_suffix(SuffixEntry a, SuffixEntry b, int len) {
+        int min_len = min(len, min(seq.size() - a.index, seq.size() - b.index));
+        return memcmp(&seq[a.index], &seq[b.index], min_len * sizeof(uint64_t));
+    }
+    
+    void extract_patterns() {
+        if (seq.size() < 3) return;
+        
+        int n = seq.size();
+        vector<SuffixEntry> suffixes(n);
+        
+        for (int i = 0; i < n; i++) {
+            suffixes[i].index = i;
+        }
+        
+        sort(suffixes.begin(), suffixes.end(), [this, n](SuffixEntry &a, SuffixEntry &b) {
+            return cmp_suffix(a, b, n) < 0;
+        });
+        
+        unordered_map<vector<uint64_t>, int> pattern_freq;
+        
+        for (int i = 0; i < n - 1; i++) {
+            int lcp = 0;
+            int idx1 = suffixes[i].index, idx2 = suffixes[i + 1].index;
+            
+            while (idx1 + lcp < n && idx2 + lcp < n && seq[idx1 + lcp] == seq[idx2 + lcp]) {
+                lcp++;
+            }
+            
+            if (lcp >= 2 && lcp <= 8) {
+                vector<uint64_t> pattern_vec(seq.begin() + idx1, seq.begin() + idx1 + lcp);
+                pattern_freq[pattern_vec]++;
+            }
+        }
+        
+        patterns.clear();
+        for (auto &pf : pattern_freq) {
+            if (pf.second >= 2) {
+                patterns.emplace_back(pf.first);
+                patterns.back().frequency = pf.second;
+            }
+        }
+    }
+    
+public:
+    void update(uint64_t block_addr) {
+        seq.push_back(block_addr);
+        
+        if (seq.size() > MAX_SEQ_LEN) {
+            seq.erase(seq.begin(), seq.begin() + MAX_SEQ_LEN/2);
+        }
+        
+        if (seq.size() % EXTRACT_INTERVAL == 0) {
+            patterns.clear();
+            extract_patterns();
+        }
+        
+        active_patterns.erase(
+            remove_if(active_patterns.begin(), active_patterns.end(),
+                [this, block_addr](pair<int, int> &ap) {
+                    if (ap.second >= patterns[ap.first].blocks.size()) return true;
+                    return patterns[ap.first].blocks[ap.second] != block_addr;
+                }),
+            active_patterns.end());
+        
+        for (auto &ap : active_patterns) {
+            ap.second++;
+        }
+        
+        for (int i = 0; i < patterns.size(); i++) {
+            if (patterns[i].blocks[0] == block_addr && patterns[i].frequency >= 2) {
+                active_patterns.push_back({i, 1});
+            }
+        }
+    }
+    
+    vector<uint64_t> get_prefetch_blocks() {
+        vector<uint64_t> pf_blocks;
+        for (auto &ap : active_patterns) {
+            if (ap.second < patterns[ap.first].blocks.size()) {
+                pf_blocks.push_back(patterns[ap.first].blocks[ap.second]);
+            }
+        }
+        return pf_blocks;
+    }
+};
+
+SuffixPrefetcher prefetcher;
+
+void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type) {
+    uint64_t block_addr = addr >> LOG2_BLOCK_SIZE;
+    
+    prefetcher.update(block_addr);
+    
+    vector<uint64_t> pf_blocks = prefetcher.get_prefetch_blocks();
+    for (uint64_t pf_block : pf_blocks) {
+        uint64_t pf_addr = pf_block << LOG2_BLOCK_SIZE;
+        prefetch_line(ip, addr, pf_addr, FILL_L1, 0);
+    }
+}
+
+void CACHE::l1d_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in) {}
+
+void CACHE::l1d_prefetcher_final_stats() {
+    cout << "Final: " << prefetcher.patterns.size() << " patterns extracted" << endl;
+}

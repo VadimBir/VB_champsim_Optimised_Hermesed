@@ -609,7 +609,7 @@ const PACKET FETCH_PACKET_TEMPLATE = []{
     return p;
 }();
 void O3_CPU::fetch_instruction() {
-    // ccp-hoist: current_core_cycle[cpu] invariant here; callees (ITLB/L1I.add_rq)
+    // core_cycle_packed-hoist: current_core_cycle[cpu] invariant here; callees (ITLB/L1I.add_rq)
     // do not write it (only writer is main_loop's per-tick increment).
     const uint64_t now = PACK_CYCLE(current_core_cycle[cpu]);
     if ((fetch_stall == 1) && (PCYCLE_GE(now, fetch_resume_cycle)) && (fetch_resume_cycle != 0)) {
@@ -718,24 +718,24 @@ void O3_CPU::schedule_instruction() {
     // the value the original per-word PCYCLE_LE inner loop computed.
     rob_events.per_cpu[cpu].mature(PACK_CYCLE(current_core_cycle[cpu]));
 
-    const uint64_t* fc_ptr = rob_events.per_cpu[cpu].fetched_complete;
-    const uint64_t* sinf_p = rob_events.per_cpu[cpu].sched_inflight;
-    const uint64_t* scmp_p = rob_events.per_cpu[cpu].sched_complete;
-    const uint64_t* cr_ptr = rob_events.per_cpu[cpu].cr_bitset;
-    const uint64_t ccp = PACK_CYCLE(current_core_cycle[cpu]);
+    const uint64_t* fetched_complete_ptr = rob_events.per_cpu[cpu].fetched_complete;
+    const uint64_t* sched_inflight_ptr = rob_events.per_cpu[cpu].sched_inflight;
+    const uint64_t* sched_complete_ptr = rob_events.per_cpu[cpu].sched_complete;
+    const uint64_t* cycle_ready_ptr = rob_events.per_cpu[cpu].cr_bitset;
+    const uint64_t core_cycle_packed = PACK_CYCLE(current_core_cycle[cpu]);
     const uint32_t head = ROB.head;
     const uint32_t limit = ROB.next_fetch[1];
 
     // P15: OR-fold dirty-check skip-guard. The fused scan can only schedule a
-    // bit where (fc & cr & ~sinf & ~scmp & rmask) is set. Since cr and rmask
-    // only narrow, (fc & ~sinf & ~scmp) is a strict per-word superset of any
+    // bit where (fetched_complete & cycle_ready & ~sched_inflight & ~sched_complete & rmask) is set. Since cycle_ready and rmask
+    // only narrow, (fetched_complete & ~sched_inflight & ~sched_complete) is a strict per-word superset of any
     // schedulable bit. Folding it over ALL ROB_WORDS is a superset of the
     // scanned range, so if the fold is zero nothing can be scheduled this cycle
     // and the scan would have no side effects -> safe early return (true no-op).
     {
         uint64_t dirty = 0;
         for (uint32_t w = 0; w < ROB_WORDS; w++)
-            dirty |= fc_ptr[w] & ~sinf_p[w] & ~scmp_p[w];
+            dirty |= fetched_complete_ptr[w] & ~sched_inflight_ptr[w] & ~sched_complete_ptr[w];
         if (dirty == 0)
             return;
     }
@@ -743,17 +743,17 @@ void O3_CPU::schedule_instruction() {
     // Fused single-pass: cycle_ready + AND + range mask + stall + dispatch
     // Only touches words in the active range, not all ROB_WORDS
     // B1: bind explicit __restrict__ scalar locals so the compiler keeps the
-    // four distinct (non-aliasing) array pointers + ccp + self in registers
+    // four distinct (non-aliasing) array pointers + core_cycle_packed + self in registers
     // across the per-word loop instead of spilling/reloading them around the
     // opaque do_scheduling() call. Codegen-only; semantics identical.
-    const uint64_t* __restrict__ fc_l   = fc_ptr;
-    const uint64_t* __restrict__ sinf_l = sinf_p;
-    const uint64_t* __restrict__ scmp_l = scmp_p;
-    const uint64_t* __restrict__ cr_l   = cr_ptr;
-    const uint64_t                ccp_l = ccp;
-    (void)ccp_l;
+    const uint64_t* __restrict__ fetched_complete_l   = fetched_complete_ptr;
+    const uint64_t* __restrict__ sched_inflight_l = sched_inflight_ptr;
+    const uint64_t* __restrict__ sched_complete_l = sched_complete_ptr;
+    const uint64_t* __restrict__ cycle_ready_l   = cycle_ready_ptr;
+    const uint64_t                core_cycle_packed_l = core_cycle_packed;
+    (void)core_cycle_packed_l;
     O3_CPU* __restrict__          self  = this;
-    auto fused_scan = [fc_l, sinf_l, scmp_l, cr_l, ccp_l, self](uint32_t start, uint32_t end) -> bool {
+    auto fused_scan = [fetched_complete_l, sched_inflight_l, sched_complete_l, cycle_ready_l, core_cycle_packed_l, self](uint32_t start, uint32_t end) -> bool {
         const uint32_t ws = start >> 6;
         const uint32_t we = (end + 63) >> 6;
         for (uint32_t w = ws; w < we && w < ROB_WORDS; w++) {
@@ -762,23 +762,23 @@ void O3_CPU::schedule_instruction() {
             if (w == we - 1 && (end & 63)) rmask &= (1ULL << (end & 63)) - 1;
 
             // B3: per-word dirty pre-skip (strict superset of P15 guard).
-            // ready == cr & dirty_word, so dirty_word==0 => no schedules this word.
-            // When also (~fc & rmask)!=0, stall is guaranteed nonzero, so the real
+            // ready == cycle_ready & dirty_word, so dirty_word==0 => no schedules this word.
+            // When also (~fetched_complete & rmask)!=0, stall is guaranteed nonzero, so the real
             // path schedules nothing then returns false. Provable pure no-op.
-            uint64_t dirty_word = fc_l[w] & ~sinf_l[w] & ~scmp_l[w] & rmask;
-            if (dirty_word == 0 && (~fc_l[w] & rmask) != 0)
+            uint64_t dirty_word = fetched_complete_l[w] & ~sched_inflight_l[w] & ~sched_complete_l[w] & rmask;
+            if (dirty_word == 0 && (~fetched_complete_l[w] & rmask) != 0)
                 return false;
 
-            // HEAP-SCHED: cr is read once per word from the maintained cr_bitset
-            // (== original PCYCLE_LE(ec[idx], now) per bit). Snapshotting it here
-            // BEFORE the dispatch loop reproduces the original "compute cr once,
+            // HEAP-SCHED: cycle_ready is read once per word from the maintained cr_bitset
+            // (== original PCYCLE_LE(event_cycle[idx], now) per bit). Snapshotting it here
+            // BEFORE the dispatch loop reproduces the original "compute cycle_ready once,
             // then dispatch" ordering: do_scheduling's non-mem event_cycle bump
-            // clears cr_bitset bits but does NOT affect this word's local cr.
-            uint64_t cr = cr_l[w];
+            // clears cr_bitset bits but does NOT affect this word's local cycle_ready.
+            uint64_t cycle_ready = cycle_ready_l[w];
 
-            uint64_t ready = fc_l[w] & cr & ~sinf_l[w] & ~scmp_l[w] & rmask;
+            uint64_t ready = fetched_complete_l[w] & cycle_ready & ~sched_inflight_l[w] & ~sched_complete_l[w] & rmask;
 
-            uint64_t stall = ~(fc_l[w] & cr) & rmask;
+            uint64_t stall = ~(fetched_complete_l[w] & cycle_ready) & rmask;
             if (stall) {
                 ready &= (1ULL << (__builtin_ctzll(stall))) - 1;
                 while (ready) {
@@ -814,7 +814,7 @@ inline void O3_CPU::do_scheduling(const uint16_t rob_index) {
     // and PACK it ONCE up front into a local; the intervening opaque reg_dependency()
     // call would otherwise force the compiler to reload it at the event_cycle store.
     // Bit-exact (same value either way).
-    const uint64_t ccp_ds = PACK_CYCLE(current_core_cycle[cpu]);
+    const uint64_t core_cycle_packed_ds = PACK_CYCLE(current_core_cycle[cpu]);
     BS_SET(rob_events.per_cpu[cpu].reg_ready, rob_index);
     reg_dependency(rob_index);
     ROB.next_schedule = (rob_index == (ROB.SIZE - 1)) ? 0 : (rob_index + 1);
@@ -824,7 +824,7 @@ inline void O3_CPU::do_scheduling(const uint16_t rob_index) {
         BS_SET(rob_events.per_cpu[cpu].sched_inflight, rob_index);
     } else {
         BS_SET(rob_events.per_cpu[cpu].sched_complete, rob_index);
-        { uint64_t _e = rob_events.per_cpu[cpu].event_cycle[rob_index], _c = ccp_ds;
+        { uint64_t _e = rob_events.per_cpu[cpu].event_cycle[rob_index], _c = core_cycle_packed_ds;
           rob_events.per_cpu[cpu].ec_write(rob_index, PACK_CYCLE((PCYCLE_GE(_e,_c) ? _e : _c) + SCHEDULING_LATENCY), _c); }
         if (BS_TST(rob_events.per_cpu[cpu].reg_ready, rob_index)) {
 
@@ -960,7 +960,7 @@ void O3_CPU::execute_instruction() {
 }
 
 void O3_CPU::do_execution(const uint16_t rob_index) {
-    const uint64_t now = PACK_CYCLE(current_core_cycle[cpu]); // ccp-hoist: invariant, no callees
+    const uint64_t now = PACK_CYCLE(current_core_cycle[cpu]); // core_cycle_packed-hoist: invariant, no callees
     if (BS_TST(rob_events.per_cpu[cpu].reg_ready, rob_index) && BS_TST(rob_events.per_cpu[cpu].sched_complete, rob_index) && PCYCLE_LE(rob_events.per_cpu[cpu].event_cycle[rob_index], now)) {
         ROB.entry[rob_index].executed = INFLIGHT;
         BS_SET(rob_events.per_cpu[cpu].exec_inflight, rob_index);
@@ -1033,9 +1033,9 @@ void O3_CPU::schedule_memory_instruction() {
 
    const uint64_t* im_ptr = rob_events.per_cpu[cpu].is_mem;
    const uint64_t* rr_ptr = rob_events.per_cpu[cpu].reg_ready;
-   const uint64_t* fc_ptr = rob_events.per_cpu[cpu].fetched_complete;
-   const uint64_t* sinf_p = rob_events.per_cpu[cpu].sched_inflight;
-   const uint64_t* scmp_p = rob_events.per_cpu[cpu].sched_complete;
+   const uint64_t* fetched_complete_ptr = rob_events.per_cpu[cpu].fetched_complete;
+   const uint64_t* sched_inflight_ptr = rob_events.per_cpu[cpu].sched_inflight;
+   const uint64_t* sched_complete_ptr = rob_events.per_cpu[cpu].sched_complete;
 
    // SMEMSCHED-RESTRICT: the 5 read arrays are distinct members of
    // rob_events.per_cpu[cpu] (is_mem/reg_ready/fetched_complete/sched_inflight/
@@ -1045,15 +1045,15 @@ void O3_CPU::schedule_memory_instruction() {
    // the per-word loop. Codegen-only; semantics identical.
    const uint64_t* __restrict__ im_l   = im_ptr;
    const uint64_t* __restrict__ rr_l   = rr_ptr;
-   const uint64_t* __restrict__ fc_l   = fc_ptr;
-   const uint64_t* __restrict__ sinf_l = sinf_p;
-   const uint64_t* __restrict__ scmp_l = scmp_p;
+   const uint64_t* __restrict__ fetched_complete_l   = fetched_complete_ptr;
+   const uint64_t* __restrict__ sched_inflight_l = sched_inflight_ptr;
+   const uint64_t* __restrict__ sched_complete_l = sched_complete_ptr;
 
    // Bitwise pipeline: is_mem & reg_ready & fetched_complete & sched_inflight & ~sched_complete
    uint64_t ready[ROB_WORDS];
    uint64_t* __restrict__ ready_l = ready;
    for (uint32_t w = 0; w < ROB_WORDS; w++)
-       ready_l[w] = im_l[w] & rr_l[w] & fc_l[w] & sinf_l[w] & ~scmp_l[w];
+       ready_l[w] = im_l[w] & rr_l[w] & fetched_complete_l[w] & sched_inflight_l[w] & ~sched_complete_l[w];
 
    // Linear scan from next_mem_sched_start, same as baseline
    const uint32_t sched_start = next_mem_sched_start[cpu];
@@ -1073,7 +1073,7 @@ void O3_CPU::schedule_memory_instruction() {
            if (w == we - 1 && (end & 63)) rmask &= (1ULL << (end & 63)) - 1;
 
            // Break on fetch incomplete: first 0 in (is_mem & fc) = stall
-           uint64_t mem_fc = im_l[w] & fc_l[w] & rmask;
+           uint64_t mem_fc = im_l[w] & fetched_complete_l[w] & rmask;
            uint64_t mem_bits = im_l[w] & rmask;
            uint64_t stall = mem_bits & ~mem_fc;
            if (stall) {
@@ -1330,7 +1330,7 @@ void O3_CPU::operate_lsq() {
         return;
 
     const uint64_t curr_cy = current_core_cycle[cpu];
-    const uint64_t ccp     = PACK_CYCLE(curr_cy);
+    const uint64_t core_cycle_packed     = PACK_CYCLE(curr_cy);
 
     // handle store
     uint32_t store_issued = 0, num_iteration = 0;
@@ -1341,7 +1341,7 @@ void O3_CPU::operate_lsq() {
             uint16_t sq_index = RTS0[RTS0_head];
             auto& sqe = SQ.entry[sq_index];
             const uint64_t sqe_ev = sqe.event_cycle;
-            if (PCYCLE_LE(sqe_ev, ccp)) {
+            if (PCYCLE_LE(sqe_ev, core_cycle_packed)) {
 
                 // add it to DTLB
                 sq_data_packet.cpu = cpu;
@@ -1386,7 +1386,7 @@ void O3_CPU::operate_lsq() {
         if (RTS1[RTS1_head] < SQ_SIZE) {
             uint16_t sq_index = RTS1[RTS1_head];
             auto& sqe = SQ.entry[sq_index];
-            if (PCYCLE_LE(sqe.event_cycle, ccp)) {
+            if (PCYCLE_LE(sqe.event_cycle, core_cycle_packed)) {
                 execute_store(sqe.rob_index, sq_index, sqe.data_index);
 
                 RTS1[RTS1_head] = SQ_SIZE;
@@ -1416,7 +1416,7 @@ void O3_CPU::operate_lsq() {
             const uint32_t lq_index = RTL0[RTL0_head];
             auto& lqe = LQ.entry[lq_index];
             const uint64_t lqe_ev = lqe.event_cycle;
-            if (PCYCLE_LE(lqe_ev, ccp)) {
+            if (PCYCLE_LE(lqe_ev, core_cycle_packed)) {
 
                 // add it to DTLB
                 lq_data_packet.cpu = cpu;
@@ -1461,7 +1461,7 @@ void O3_CPU::operate_lsq() {
         if (RTL1[RTL1_head] < LQ_SIZE) {
             const uint32_t lq_index = RTL1[RTL1_head];
             auto& lqe = LQ.entry[lq_index];
-            if (PCYCLE_LE(lqe.event_cycle, ccp)) {
+            if (PCYCLE_LE(lqe.event_cycle, core_cycle_packed)) {
                 int rq_index = execute_load(lqe.rob_index, lq_index, lqe.data_index);
 
                 if (rq_index != -2) {
@@ -1709,7 +1709,7 @@ void O3_CPU::operate_cache() {
 }
 
 void O3_CPU::update_rob() {
-    // ccp-hoist: current_core_cycle[cpu] is invariant across this function and its
+    // core_cycle_packed-hoist: current_core_cycle[cpu] is invariant across this function and its
     // callees (only writer is main_loop's per-tick increment). Hoist the repeated read.
     const uint64_t now = PACK_CYCLE(current_core_cycle[cpu]);
     if (ITLB.PROCESSED.occupancy && (PCYCLE_LE(ITLB.PROCESSED.entry[ITLB.PROCESSED.head].event_cycle, now)))
@@ -1741,15 +1741,15 @@ void O3_CPU::update_rob() {
 
     // update ROB entries with completed executions — bitset skip scan
     if ((inflight_reg_executions > 0) || (inflight_mem_executions > 0)) {
-        const uint64_t* ei_ptr = rob_events.per_cpu[cpu].exec_inflight;
-        const uint64_t* ec_ptr = rob_events.per_cpu[cpu].event_cycle;
-        const uint64_t ccp = now;
+        const uint64_t* exec_inflight_ptr = rob_events.per_cpu[cpu].exec_inflight;
+        const uint64_t* event_cycle_ptr = rob_events.per_cpu[cpu].event_cycle;
+        const uint64_t core_cycle_packed = now;
 
         auto scan_range = [&](uint32_t start, uint32_t end) {
             const uint32_t ws = start >> 6;
             const uint32_t we = (end + 63) >> 6;
             for (uint32_t w = ws; w < we && w < ROB_WORDS; w++) {
-                uint64_t word = ei_ptr[w];
+                uint64_t word = exec_inflight_ptr[w];
                 if (w == ws) word &= ~((1ULL << (start & 63)) - 1);
                 if (w == we - 1 && (end & 63)) word &= (1ULL << (end & 63)) - 1;
                 while (word) {

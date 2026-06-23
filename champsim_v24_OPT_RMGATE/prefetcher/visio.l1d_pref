@@ -1,0 +1,445 @@
+#include "cache.h"
+
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+#include <implot.h>
+#include <thread>
+#include <atomic>
+#include <vector>
+#include <algorithm>
+#include <chrono>
+
+std::atomic<bool> gui_running{false};
+
+constexpr size_t MAX_POINTS = 10000;
+constexpr size_t MAX_PAGE_TRANSITIONS = MAX_POINTS;
+std::atomic<uint64_t> pf_addr_buffer[MAX_POINTS];
+std::atomic<int64_t> delta_buffer[MAX_POINTS];
+std::atomic<uint64_t> cycle_buffer[MAX_POINTS];
+std::atomic<uint8_t> hit_buffer[MAX_POINTS];
+std::atomic<uint64_t> block_buffer[MAX_POINTS];
+std::atomic<uint64_t> page_buffer[MAX_POINTS];
+std::atomic<uint64_t> page_begin_buffer[MAX_POINTS];
+std::atomic<size_t> pf_write_idx{0};
+
+std::atomic<double> page_transition_cycles[MAX_PAGE_TRANSITIONS];
+std::atomic<size_t> page_transition_idx{0};
+
+void gui_thread() {
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "Prefetch Monitor", NULL, NULL);
+    glfwMakeContextCurrent(window);
+    glewInit();
+    glfwSwapInterval(1);
+    
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImPlot::CreateContext();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+    
+    gui_running = true;
+    
+    while (!glfwWindowShouldClose(window)) {
+        glfwPollEvents();
+        
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        
+        const size_t total_written = pf_write_idx.load(std::memory_order_acquire);
+        const size_t num_points = std::min<size_t>(MAX_POINTS, total_written);
+        const size_t start_idx = (total_written - num_points) % MAX_POINTS;
+        
+        std::vector<double> x_data, y_data, y_delta;
+        std::vector<double> x_hit, y_hit, x_miss, y_miss;
+        std::vector<double> x_delta_hit, y_delta_hit, x_delta_miss, y_delta_miss;
+        std::vector<double> page_transitions;
+        x_data.reserve(num_points);
+        y_data.reserve(num_points);
+        y_delta.reserve(num_points);
+        
+        if (start_idx + num_points <= MAX_POINTS) {
+            for (size_t i = start_idx; i < start_idx + num_points; ++i) {
+                x_data.push_back(static_cast<double>(cycle_buffer[i].load(std::memory_order_relaxed)));
+                y_data.push_back(static_cast<double>(pf_addr_buffer[i].load(std::memory_order_relaxed)));
+                y_delta.push_back(static_cast<double>(delta_buffer[i].load(std::memory_order_relaxed)));
+            }
+        } else {
+            const size_t first_segment = MAX_POINTS - start_idx;
+            
+            for (size_t i = start_idx; i < MAX_POINTS; ++i) {
+                x_data.push_back(static_cast<double>(cycle_buffer[i].load(std::memory_order_relaxed)));
+                y_data.push_back(static_cast<double>(pf_addr_buffer[i].load(std::memory_order_relaxed)));
+                y_delta.push_back(static_cast<double>(delta_buffer[i].load(std::memory_order_relaxed)));
+            }
+            
+            const size_t second_segment = num_points - first_segment;
+            for (size_t i = 0; i < second_segment; ++i) {
+                x_data.push_back(static_cast<double>(cycle_buffer[i].load(std::memory_order_relaxed)));
+                y_data.push_back(static_cast<double>(pf_addr_buffer[i].load(std::memory_order_relaxed)));
+                y_delta.push_back(static_cast<double>(delta_buffer[i].load(std::memory_order_relaxed)));
+            }
+        }
+        
+        // Separate data by hit/miss for both plots
+        for (size_t j = 0; j < x_data.size(); ++j) {
+            const size_t buffer_idx = (start_idx + j) % MAX_POINTS;
+            if (hit_buffer[buffer_idx].load(std::memory_order_relaxed)) {
+                x_hit.push_back(x_data[j]);
+                y_hit.push_back(y_data[j]);
+                x_delta_hit.push_back(x_data[j]);
+                y_delta_hit.push_back(y_delta[j]);
+            } else {
+                x_miss.push_back(x_data[j]);
+                y_miss.push_back(y_data[j]);
+                x_delta_miss.push_back(x_data[j]);
+                y_delta_miss.push_back(y_delta[j]);
+            }
+        }
+        
+        // Collect page transitions
+        const size_t total_transitions = page_transition_idx.load(std::memory_order_acquire);
+        const size_t num_transitions = std::min<size_t>(MAX_PAGE_TRANSITIONS, total_transitions);
+        for (size_t i = 0; i < num_transitions; ++i) {
+            page_transitions.push_back(page_transition_cycles[i].load(std::memory_order_relaxed));
+        }
+        
+        ImGui::SetNextWindowSize(ImVec2(640, 400), ImGuiCond_FirstUseEver);
+        ImGui::Begin("PF Address Pattern");
+        if (ImPlot::BeginPlot("Address Pattern", ImVec2(-1, -1))) {
+            ImPlot::SetupAxes("Cycle", "Page Delta");
+            ImPlot::SetupAxisLimits(ImAxis_X1, 
+                static_cast<double>(x_data.empty() ? 0 : x_data.front()), 
+                static_cast<double>(x_data.empty() ? 1000 : x_data.back()), 
+                ImGuiCond_Once);
+            ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.0f, 0.5f, 1.0f, 1.0f));
+            ImPlot::PlotLine("Timeline", x_data.data(), y_data.data(), x_data.size());
+            ImPlot::PopStyleColor();
+            
+            if (!x_hit.empty()) {
+                ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
+                ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0.0f, 0.8f, 0.0f, 1.0f));
+                ImPlot::PlotScatter("Hits", x_hit.data(), y_hit.data(), x_hit.size());
+                ImPlot::PopStyleColor(2);
+            }
+            
+            if (!x_miss.empty()) {
+                ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+                ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0.8f, 0.0f, 0.0f, 1.0f));
+                ImPlot::PlotScatter("Misses", x_miss.data(), y_miss.data(), x_miss.size());
+                ImPlot::PopStyleColor(2);
+            }
+            
+            // Enhanced hover tooltip
+            if (ImPlot::IsPlotHovered()) {
+                ImPlotPoint mouse = ImPlot::GetPlotMousePos();
+                double min_dist = DBL_MAX;
+                size_t closest_idx = SIZE_MAX;
+                
+                for (size_t i = 0; i < x_data.size(); ++i) {
+                    double dx = (x_data[i] - mouse.x);
+                    double dy = (y_data[i] - mouse.y);
+                    double dist = dx*dx + dy*dy;
+                    if (dist < min_dist) {
+                        min_dist = dist;
+                        closest_idx = i;
+                    }
+                }
+                
+                if (closest_idx != SIZE_MAX) {
+                    const size_t buffer_idx = (start_idx + closest_idx) % MAX_POINTS;
+                    ImGui::BeginTooltip();
+                    ImGui::Text("Block: %llu", block_buffer[buffer_idx].load(std::memory_order_relaxed));
+                    ImGui::Text("Page: %llu", page_buffer[buffer_idx].load(std::memory_order_relaxed));
+                    ImGui::Text("Page Begin: %llu", page_begin_buffer[buffer_idx].load(std::memory_order_relaxed));
+                    ImGui::Text("Page Delta: %lld", delta_buffer[buffer_idx].load(std::memory_order_relaxed));
+                    ImGui::Text("Cycle: %.0f", x_data[closest_idx]);
+                    ImGui::Text("Hit: %s", hit_buffer[buffer_idx].load(std::memory_order_relaxed) ? "Yes" : "No");
+                    ImGui::EndTooltip();
+                }
+            }
+            
+            ImPlot::EndPlot();
+        }
+        ImGui::End();
+        
+        ImGui::SetNextWindowSize(ImVec2(640, 400), ImGuiCond_FirstUseEver);
+        ImGui::Begin("Relative Page Delta");
+        if (ImPlot::BeginPlot("Delta Pattern", ImVec2(-1, -1))) {
+            ImPlot::SetupAxes("Cycle", "Relative Page Delta");
+            ImPlot::SetupAxisLimits(ImAxis_X1, 
+                static_cast<double>(x_data.empty() ? 0 : x_data.front()), 
+                static_cast<double>(x_data.empty() ? 1000 : x_data.back()), 
+                ImGuiCond_Once);
+            ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1.0f, 0.5f, 0.0f, 1.0f));
+            ImPlot::PlotLine("Delta Timeline", x_data.data(), y_delta.data(), x_data.size());
+            ImPlot::PopStyleColor();
+            
+            if (!x_delta_hit.empty()) {
+                ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
+                ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0.0f, 0.8f, 0.0f, 1.0f));
+                ImPlot::PlotScatter("Delta Hits", x_delta_hit.data(), y_delta_hit.data(), x_delta_hit.size());
+                ImPlot::PopStyleColor(2);
+            }
+            
+            if (!x_delta_miss.empty()) {
+                ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+                ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0.8f, 0.0f, 0.0f, 1.0f));
+                ImPlot::PlotScatter("Delta Misses", x_delta_miss.data(), y_delta_miss.data(), x_delta_miss.size());
+                ImPlot::PopStyleColor(2);
+            }
+            
+            // Page transition vertical lines
+            if (!page_transitions.empty()) {
+                ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1.0f, 1.0f, 0.0f, 0.8f));
+                ImPlot::PlotInfLines("Page Boundaries", page_transitions.data(), page_transitions.size());
+                ImPlot::PopStyleColor();
+            }
+            
+            // Enhanced hover tooltip
+            if (ImPlot::IsPlotHovered()) {
+                ImPlotPoint mouse = ImPlot::GetPlotMousePos();
+                double min_dist = DBL_MAX;
+                size_t closest_idx = SIZE_MAX;
+                
+                for (size_t i = 0; i < x_data.size(); ++i) {
+                    double dx = (x_data[i] - mouse.x);
+                    double dy = (y_delta[i] - mouse.y);
+                    double dist = dx*dx + dy*dy;
+                    if (dist < min_dist) {
+                        min_dist = dist;
+                        closest_idx = i;
+                    }
+                }
+                
+                if (closest_idx != SIZE_MAX) {
+                    const size_t buffer_idx = (start_idx + closest_idx) % MAX_POINTS;
+                    ImGui::BeginTooltip();
+                    ImGui::Text("Block: %llu", block_buffer[buffer_idx].load(std::memory_order_relaxed));
+                    ImGui::Text("Page: %llu", page_buffer[buffer_idx].load(std::memory_order_relaxed));
+                    ImGui::Text("Page Begin: %llu", page_begin_buffer[buffer_idx].load(std::memory_order_relaxed));
+                    ImGui::Text("Page Delta: %lld", delta_buffer[buffer_idx].load(std::memory_order_relaxed));
+                    ImGui::Text("Cycle: %.0f", x_data[closest_idx]);
+                    ImGui::Text("Hit: %s", hit_buffer[buffer_idx].load(std::memory_order_relaxed) ? "Yes" : "No");
+                    ImGui::EndTooltip();
+                }
+            }
+            
+            ImPlot::EndPlot();
+        }
+        ImGui::End();
+        
+        ImGui::Render();
+        int w, h;
+        glfwGetFramebufferSize(window, &w, &h);
+        glViewport(0, 0, w, h);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        glfwSwapBuffers(window);
+    }
+    
+    ImPlot::DestroyContext();
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    gui_running = false;
+}
+
+std::thread gui_thread_obj;
+void CACHE::l1d_prefetcher_initialize() {
+    gui_thread_obj = std::thread(gui_thread);
+}
+
+uint64_t pre_page = 0;
+int pageDelta = 0;
+struct APCEntry {
+    uint64_t addrBlock;
+    uint64_t cycle;
+};
+
+class APCStruct {
+private:
+    APCEntry* entries;
+    int window_size;
+    int head;
+    int tail;
+    int count;
+
+public:
+    APCStruct(int size = 128) : window_size(size), head(0), tail(0), count(0) {
+        entries = new APCEntry[window_size];
+    }
+    
+    ~APCStruct() {
+        delete[] entries;
+    }
+    
+    void add(uint64_t addrBlock, uint64_t cycle) {
+        if (count == window_size) {
+            head = (head + 1) % window_size;
+        } else {
+            count++;
+        }
+        entries[tail].addrBlock = addrBlock;
+        entries[tail].cycle = cycle;
+        tail = (tail + 1) % window_size;
+    }
+    
+    double get() {
+        if (count < 2) return 0.0;
+        
+        // Find min/max cycles in current window
+        uint64_t min_cycle = UINT64_MAX, max_cycle = 0;
+        for (int i = 0; i < count; i++) {
+            int idx = (head + i) % window_size;
+            min_cycle = std::min(min_cycle, entries[idx].cycle);
+            max_cycle = std::max(max_cycle, entries[idx].cycle);
+        }
+        
+        if (max_cycle == min_cycle) return 0.0;
+        double apc = (double)count / (max_cycle - min_cycle + 1);
+        return std::round(apc * 1000.0) / 1000.0;
+    }
+};
+
+// Usage:
+APCStruct apc(256);  // Custom window size
+APCStruct apc7(128);  // Custom window size
+APCStruct apc6(64);  // Custom window size
+APCStruct apc5(32);  // Custom window size
+APCStruct apc4(16);  // Custom window size
+APCStruct apc3(8);  // Custom window size
+APCStruct apc2(4);  // Custom window size
+
+#define RESET "\033[0m"
+
+// RGB color function
+string rgb(int r, int g, int b) {
+    return "\033[38;2;" + to_string(r) + ";" + to_string(g) + ";" + to_string(b) + "m";
+}
+
+// Hash-based color mapping
+class ColorMapper {
+public:
+    std::unordered_map<uint64_t, string> color_cache;
+    string getColor(uint64_t value) {
+    if (color_cache.find(value) != color_cache.end()) {
+        return color_cache[value];
+    }
+    
+    // XOR shift for better bit mixing
+    value ^= value >> 33;
+    value *= 0xff51afd7ed558ccd;
+    value ^= value >> 33;
+    value *= 0xc4ceb9fe1a85ec53;
+    value ^= value >> 33;
+    
+    int r = 100 + ((value >> 16) % 156);
+    int g = 100 + ((value >> 8) % 156);
+    int b = 100 + (value % 156);
+    
+    string color = rgb(r, g, b);
+    color_cache[value] = color;
+    return color;
+}
+};
+
+ColorMapper page_colors, ip_colors;
+
+uint64_t pre_cycle;
+void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type) {
+    uint64_t pf_addr = ((addr>>LOG2_BLOCK_SIZE)+1) << LOG2_BLOCK_SIZE;
+    uint64_t block_addr = addr >> LOG2_BLOCK_SIZE;
+    uint64_t page_startBlock = ((addr >> LOG2_PAGE_SIZE) << LOG2_PAGE_SIZE) >> LOG2_BLOCK_SIZE;
+    int64_t relative2page_delta = block_addr - page_startBlock;
+    uint64_t current_page = (addr >> LOG2_PAGE_SIZE);
+    apc.add(block_addr, current_core_cycle[0]);
+    apc7.add(block_addr, current_core_cycle[0]);
+    apc6.add(block_addr, current_core_cycle[0]);
+    apc5.add(block_addr, current_core_cycle[0]);
+    apc4.add(block_addr, current_core_cycle[0]);
+    apc3.add(block_addr, current_core_cycle[0]);
+    apc2.add(block_addr, current_core_cycle[0]);
+
+    
+    cout << "^8 " << setprecision(3) << setw(5) << apc.get() 
+     << " ^7 " << setprecision(3) << setw(5) << apc7.get() 
+     << " ^6 " << setprecision(3) << setw(5) << apc6.get() 
+     << " ^5 " << setprecision(3) << setw(5) << apc5.get() 
+     << " ^4 " << setprecision(3) << setw(5) << apc4.get() 
+     << " ^3 " << setprecision(3) << setw(5) << apc3.get() 
+     << " ^2 " << setprecision(3) << setw(5) << apc2.get() 
+     << " MSHR " << setw(2) << MSHR.occupancy << " H " << (cache_hit ? 1 : 0)
+     << " Cy " << setw(4) << (current_core_cycle[0] -pre_cycle)
+     << page_colors.getColor((current_page << 16) | relative2page_delta)
+     << " Blk " << setw(3) << relative2page_delta 
+     << " Pg " << setw(11) << current_page 
+     << RESET
+     << ip_colors.getColor(ip)
+     << "  IP  " << setw(13) << ip << " Type " << setw(3) << (int)type
+     << RESET << endl;
+    //  << " PgDlta " << setw(3) << relative2page_delta << endl;
+    // cout << "^8 " << setprecision(3) << setw(5) << apc.get() 
+    //  << " ^7 " << setprecision(3) << setw(5) << apc7.get() 
+    //  << " ^6 " << setprecision(3) << setw(5) << apc6.get() 
+    //  << " ^5 " << setprecision(3) << setw(5) << apc5.get() 
+    //  << " ^4 " << setprecision(3) << setw(5) << apc4.get() 
+    //  << " ^3 " << setprecision(3) << setw(5) << apc3.get() 
+    //  << " ^2 " << setprecision(3) << setw(5) << apc2.get() 
+    //  << " MSHR " << setw(2) << MSHR.occupancy 
+    //  << " Cy " << setw(8) << current_core_cycle[0] 
+    // //  << " Blk " << setw(12) << block_addr 
+    //  << " Blk " << setw(4) << relative2page_delta 
+    //  << " Pg " << setw(11) << current_page 
+    // //  << " PgB " << setw(13) << page_startBlock 
+    //  << "  IP  " << setw(13) << ip 
+    //  << " PgDlta " << setw(3) << relative2page_delta << endl;
+    
+    // Check for page transition
+    if (current_page != pre_page && pre_page != 0) {
+        const size_t transition_idx = page_transition_idx.fetch_add(1, std::memory_order_relaxed) % MAX_PAGE_TRANSITIONS;
+        page_transition_cycles[transition_idx].store(static_cast<double>(current_core_cycle[0]), std::memory_order_relaxed);
+    }
+    
+    const size_t idx = pf_write_idx.fetch_add(1, std::memory_order_relaxed) % MAX_POINTS;
+    pf_addr_buffer[idx].store((addr >> LOG2_PAGE_SIZE), std::memory_order_relaxed);
+    delta_buffer[idx].store(relative2page_delta, std::memory_order_relaxed);
+    cycle_buffer[idx].store(current_core_cycle[0], std::memory_order_relaxed);
+    hit_buffer[idx].store(cache_hit, std::memory_order_relaxed);
+    block_buffer[idx].store(block_addr, std::memory_order_relaxed);
+    page_buffer[idx].store(current_page, std::memory_order_relaxed);
+    page_begin_buffer[idx].store(page_startBlock, std::memory_order_relaxed);
+    
+    // prefetch_line(ip, addr >> LOG2_BLOCK_SIZE << LOG2_BLOCK_SIZE, pf_addr, FILL_L1, 0);
+    pre_page = current_page;
+    pre_cycle = current_core_cycle[0];
+    // stop on Cy  349 Blk  33 Pg 41059520838  IP  140039398220679 Type   0
+    if (current_core_cycle[0] == 349 && relative2page_delta == 33 && current_page == 41059520838 && ip == 140039398220679) {
+        cout << "stop on Cy " << setw(3) << current_core_cycle[0] 
+             << " Blk " << setw(3) << relative2page_delta 
+             << " Pg " << setw(11) << current_page 
+             << "  IP  " << setw(13) << ip 
+             << " Type " << setw(3) << (int)type
+             << endl;
+        exit(0);
+    }
+}
+
+void CACHE::l1d_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in) {
+}
+
+void CACHE::l1d_prefetcher_final_stats() {
+    if (gui_thread_obj.joinable()) {
+        gui_thread_obj.join();
+    }
+}
